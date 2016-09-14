@@ -1,0 +1,47 @@
+<?xml version="1.0" ?>
+
+<project default="test" basedir=".">
+
+	<property name="src-main-java" location="src/main/java" />
+	<property name="src-test-java" location="src/test/java" />
+	<property name="src-test-resources" location="src/test/resources" />
+	<property name="output-main" location="target/classes" />
+	<property name="output-test" location="target/test-classes" />
+
+	<target name="compile-main">
+		<delete dir="${output-main}" />
+		<mkdir dir="${output-main}" />
+
+		<javac srcdir="${src-main-java}" destdir="${output-main}" debug="on" />
+
+	</target>
+
+	<target name="compile-test" depends="compile-main">
+		<delete dir="${output-test}" />
+		<mkdir dir="${output-test}" />
+
+		<javac srcdir="${src-test-java}" destdir="${output-test}" debug="on" classpath="${output-main}" />
+		<copy todir="${output-test}">
+			<fileset dir="${src-test-resources}" />
+		</copy>
+	</target>
+
+	<target name="test" depends="compile-test">
+		<echo>Running the tests</echo>
+
+		<java classname="com.ingerlflori.util.regex.RegExTest" fork="true" resultproperty="return.code">
+			<classpath>
+				<pathelement location="${output-main}" />
+				<pathelement location="${output-test}" />
+			</classpath>
+		</java>
+		<condition property="problem">
+			<not>
+				<equals arg1="${return.code}" arg2="0" />
+			</not>
+		</condition>
+		<fail if="problem" message="RegExTest.class exited with return code ${return.code}" />
+
+	</target>
+
+</project>

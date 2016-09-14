@@ -3906,7 +3906,7 @@ public final class Pattern implements java.io.Serializable {
 	 * method as appropriate. This class is an accepting node, so its match()
 	 * always returns true.
 	 */
-	static class Node extends Object {
+	static class Node {
 		Node next;
 
 		Node() {

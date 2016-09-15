@@ -11,14 +11,11 @@ public class ConditionalTest {
 
 		Pattern pattern = Pattern.compile("(a)?bbb(?(1)yy|zz)st");
 
-		Matcher matcher = pattern.matcher(
-				"First match: abbbyyst Second match: bbbzzst Not the third match: abbbzzst Also not the third match: bbbyyst");
+		Matcher matcher = pattern
+				.matcher("First match: abbbyyst Not the whole second match: abbbzzst Not the third match: bbbyyst");
 
 		assertTrue(matcher.find());
 		assertEquals("abbbyyst", matcher.group());
-
-		assertTrue(matcher.find());
-		assertEquals("bbbzzst", matcher.group());
 
 		assertTrue(matcher.find());
 		assertEquals("bbbzzst", matcher.group());

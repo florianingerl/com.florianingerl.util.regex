@@ -1284,6 +1284,9 @@ public class RegExTest {
 	}
 
 	private static void reluctantRepetitionTest() throws Exception {
+
+		check("%b{1,4}?foo", "%bbbbfoo", new String[] { "%bbbbfoo" });
+
 		Pattern p = Pattern.compile("1(\\s\\S+?){1,3}?[\\s,]2");
 		check(p, "1 word word word 2", true);
 		check(p, "1 wor wo w 2", true);
@@ -1292,6 +1295,11 @@ public class RegExTest {
 		check(p, "1 wo w w 2", true);
 		check(p, "1 wo w 2", true);
 		check(p, "1 wor w 2", true);
+		check(p, "1 word word word 2", true);
+		check(p, "1 w w w 2", true);
+		check(p, "1 wor wo wo 2", true);
+		check(p, "1 wor wo 2", true);
+		check(p, "1 wor 2", true);
 
 		p = Pattern.compile("([a-z])+?c");
 		Matcher m = p.matcher("ababcdefdec");

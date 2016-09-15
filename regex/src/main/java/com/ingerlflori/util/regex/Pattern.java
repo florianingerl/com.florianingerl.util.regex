@@ -2263,7 +2263,7 @@ public final class Pattern implements java.io.Serializable {
 				System.out.println("**** end contents Loop body");
 			} else if (node instanceof Curly) {
 				System.out.println(node);
-				printObjectTree(((Curly) node).atom);
+				printObjectTree(((Curly) node).beginNode);
 				System.out.println("**** end contents Curly body");
 			} else if (node instanceof GroupCurly) {
 				System.out.println(node);
@@ -2646,7 +2646,7 @@ public final class Pattern implements java.io.Serializable {
 				break;
 			}
 
-			node = closure(node);
+			node = closure(node, node);
 
 			if (head == null) {
 				head = tail = node;
@@ -3417,7 +3417,7 @@ public final class Pattern implements java.io.Serializable {
 		flags = save;
 
 		// Check for quantifiers
-		Node node = closure(head);
+		Node node = closure(head, tail);
 		if (node == head) { // No closure
 			root = tail;
 			return node; // Dual return
@@ -3444,33 +3444,23 @@ public final class Pattern implements java.io.Serializable {
 			return head;
 		} else if (node instanceof Curly) {
 			Curly curly = (Curly) node;
-			if (curly.type == POSSESSIVE) {
-				root = node;
-				return node;
-			}
-			// Discover if the group is deterministic
-			TreeInfo info = new TreeInfo();
-			if (head.study(info)) { // Deterministic
-				GroupTail temp = (GroupTail) tail;
-				head = root = new GroupCurly(head.next, curly.cmin, curly.cmax, curly.type,
-						((GroupTail) tail).localIndex, ((GroupTail) tail).groupIndex, capturingGroup);
-				return head;
-			} else { // Non-deterministic
-				int temp = ((GroupHead) head).localIndex;
-				Loop loop;
-				if (curly.type == GREEDY)
-					loop = new Loop(this.localCount, temp);
-				else // Reluctant Curly
-					loop = new LazyLoop(this.localCount, temp);
-				Prolog prolog = new Prolog(loop);
-				this.localCount += 1;
-				loop.cmin = curly.cmin;
-				loop.cmax = curly.cmax;
-				loop.body = head;
-				tail.next = loop;
-				root = loop;
-				return prolog; // Dual return
-			}
+			root = node;
+			return node;
+			/*
+			 * if (curly.type == POSSESSIVE) { root = node; return node; } //
+			 * Discover if the group is deterministic TreeInfo info = new
+			 * TreeInfo(); if (head.study(info)) { // Deterministic GroupTail
+			 * temp = (GroupTail) tail; head = root = new GroupCurly(head.next,
+			 * curly.cmin, curly.cmax, curly.type, ((GroupTail)
+			 * tail).localIndex, ((GroupTail) tail).groupIndex, capturingGroup);
+			 * return head; } else { // Non-deterministic int temp =
+			 * ((GroupHead) head).localIndex; Loop loop; if (curly.type ==
+			 * GREEDY) loop = new Loop(this.localCount, temp); else // Reluctant
+			 * Curly loop = new LazyLoop(this.localCount, temp); Prolog prolog =
+			 * new Prolog(loop); this.localCount += 1; loop.cmin = curly.cmin;
+			 * loop.cmax = curly.cmax; loop.body = head; tail.next = loop; root
+			 * = loop; return prolog; // Dual return }
+			 */
 		}
 		throw error("Internal logic error");
 	}
@@ -3588,7 +3578,7 @@ public final class Pattern implements java.io.Serializable {
 	 * new nodes must be appended to handle the repetition. Prev could be a
 	 * single or a group, so it could be a chain of nodes.
 	 */
-	private Node closure(Node prev) {
+	private Node closure(Node beginNode, Node endNode) {
 		Node atom;
 		int ch = peek();
 		switch (ch) {
@@ -3596,32 +3586,32 @@ public final class Pattern implements java.io.Serializable {
 			ch = next();
 			if (ch == '?') {
 				next();
-				return new Ques(prev, LAZY);
+				return new Ques(beginNode, LAZY);
 			} else if (ch == '+') {
 				next();
-				return new Ques(prev, POSSESSIVE);
+				return new Ques(beginNode, POSSESSIVE);
 			}
-			return new Ques(prev, GREEDY);
+			return new Ques(beginNode, GREEDY);
 		case '*':
 			ch = next();
 			if (ch == '?') {
 				next();
-				return new Curly(prev, 0, MAX_REPS, LAZY);
+				return new Curly(beginNode, endNode, 0, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
-				return new Curly(prev, 0, MAX_REPS, POSSESSIVE);
+				return new Curly(beginNode, endNode, 0, MAX_REPS, POSSESSIVE);
 			}
-			return new Curly(prev, 0, MAX_REPS, GREEDY);
+			return new Curly(beginNode, endNode, 0, MAX_REPS, GREEDY);
 		case '+':
 			ch = next();
 			if (ch == '?') {
 				next();
-				return new Curly(prev, 1, MAX_REPS, LAZY);
+				return new Curly(beginNode, endNode, 1, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
-				return new Curly(prev, 1, MAX_REPS, POSSESSIVE);
+				return new Curly(beginNode, endNode, 1, MAX_REPS, POSSESSIVE);
 			}
-			return new Curly(prev, 1, MAX_REPS, GREEDY);
+			return new Curly(beginNode, endNode, 1, MAX_REPS, GREEDY);
 		case '{':
 			ch = temp[cursor + 1];
 			if (ASCII.isDigit(ch)) {
@@ -3650,19 +3640,19 @@ public final class Pattern implements java.io.Serializable {
 				ch = peek();
 				if (ch == '?') {
 					next();
-					curly = new Curly(prev, cmin, cmax, LAZY);
+					curly = new Curly(beginNode, endNode, cmin, cmax, LAZY);
 				} else if (ch == '+') {
 					next();
-					curly = new Curly(prev, cmin, cmax, POSSESSIVE);
+					curly = new Curly(beginNode, endNode, cmin, cmax, POSSESSIVE);
 				} else {
-					curly = new Curly(prev, cmin, cmax, GREEDY);
+					curly = new Curly(beginNode, endNode, cmin, cmax, GREEDY);
 				}
 				return curly;
 			} else {
 				throw error("Illegal repetition");
 			}
 		default:
-			return prev;
+			return beginNode;
 		}
 	}
 
@@ -4760,109 +4750,122 @@ public final class Pattern implements java.io.Serializable {
 	 * class handles the three types.
 	 */
 	static final class Curly extends Node {
-		Node atom;
+		Node beginNode;
+		Node endNode;
 		int type;
 		int cmin;
 		int cmax;
 
-		Curly(Node node, int cmin, int cmax, int type) {
-			this.atom = node;
+		Curly(Node beginNode, Node endNode, int cmin, int cmax, int type) {
+			this.beginNode = beginNode;
+			this.endNode = endNode;
 			this.type = type;
 			this.cmin = cmin;
 			this.cmax = cmax;
 		}
 
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			int j;
-			for (j = 0; j < cmin; j++) {
-				if (atom.match(matcher, i, seq)) {
-					i = matcher.last;
-					continue;
-				}
-				return false;
+		private class MaxGreedyRepeater extends Node {
+			private int counter;
+
+			MaxGreedyRepeater(int cmax) {
+				this.counter = cmax;
 			}
-			if (type == GREEDY)
-				return match0(matcher, i, j, seq);
-			else if (type == LAZY)
-				return match1(matcher, i, j, seq);
-			else
-				return match2(matcher, i, j, seq);
+
+			@Override
+			boolean match(Matcher matcher, int i, CharSequence seq) {
+				if (counter == 0) {
+					return Curly.this.next.match(matcher, i, seq);
+				}
+				--counter;
+				endNode.next = this;
+				boolean r = beginNode.match(matcher, i, seq);
+				if (!r)
+					++counter;
+				return r || Curly.this.next.match(matcher, i, seq);
+			}
+
 		}
 
-		// Greedy match.
-		// i is the index to start matching at
-		// j is the number of atoms that have matched
-		boolean match0(Matcher matcher, int i, int j, CharSequence seq) {
-			if (j >= cmax) {
-				// We have matched the maximum... continue with the rest of
-				// the regular expression
-				return next.match(matcher, i, seq);
+		private class MaxLazyRepeater extends Node {
+			private int counter;
+
+			MaxLazyRepeater(int cmax) {
+				this.counter = cmax;
 			}
-			int backLimit = j;
-			while (atom.match(matcher, i, seq)) {
-				// k is the length of this match
-				int k = matcher.last - i;
-				if (k == 0) // Zero length match
-					break;
-				// Move up index and number matched
-				i = matcher.last;
-				j++;
-				// We are greedy so match as many as we can
-				while (j < cmax) {
-					if (!atom.match(matcher, i, seq))
-						break;
-					if (i + k != matcher.last) {
-						if (match0(matcher, matcher.last, j + 1, seq))
-							return true;
+
+			@Override
+			boolean match(Matcher matcher, int i, CharSequence seq) {
+				if (Curly.this.next.match(matcher, i, seq)) {
+					return true;
+				}
+				if (counter == 0) {
+					return false;
+				}
+				--counter;
+				endNode.next = this;
+				boolean r = beginNode.match(matcher, i, seq);
+				if (!r)
+					++counter;
+				return r;
+			}
+
+		}
+
+		private class MinRepeater extends Node {
+			private int cmin;
+			private int counter;
+
+			MinRepeater(Node next, int cmin) {
+				this.next = next;
+				this.cmin = this.counter = cmin;
+			}
+
+			@Override
+			public boolean match(Matcher matcher, int i, CharSequence seq) {
+				if (counter == 0) {
+					// If here false is returned the counter has to be reset
+					return next.match(matcher, i, seq);
+				}
+				--counter;
+				endNode.next = this;
+				boolean r = beginNode.match(matcher, i, seq);
+				if (!r)
+					++counter;
+				return r;
+			}
+		}
+
+		@Override
+		boolean match(Matcher matcher, int i, CharSequence seq) {
+
+			if (type == GREEDY) {
+				MaxGreedyRepeater mgr = new MaxGreedyRepeater(cmax - cmin);
+				MinRepeater mr = new MinRepeater(mgr, cmin);
+				return mr.match(matcher, i, seq);
+			} else if (type == LAZY) {
+				MaxLazyRepeater mlr = new MaxLazyRepeater(cmax - cmin);
+				MinRepeater mr = new MinRepeater(mlr, cmin);
+				return mr.match(matcher, i, seq);
+			} else // Possesive
+			{
+				endNode.next = accept;
+				int j;
+				for (j = 0; j < cmin; j++) {
+					if (beginNode.match(matcher, i, seq)) {
+						i = matcher.last;
+						continue;
+					}
+					return false;
+				}
+				for (; j < cmax; j++) {
+					if (!beginNode.match(matcher, i, seq)) {
 						break;
 					}
-					i += k;
-					j++;
+					i = matcher.last;
 				}
-				// Handle backing off if match fails
-				while (j >= backLimit) {
-					if (next.match(matcher, i, seq))
-						return true;
-					i -= k;
-					j--;
-				}
-				return false;
+				return next.match(matcher, i, seq);
 			}
-			return next.match(matcher, i, seq);
-		}
 
-		// Reluctant match. At this point, the minimum has been satisfied.
-		// i is the index to start matching at
-		// j is the number of atoms that have matched
-		boolean match1(Matcher matcher, int i, int j, CharSequence seq) {
-			for (;;) {
-				// Try finishing match without consuming any more
-				if (next.match(matcher, i, seq))
-					return true;
-				// At the maximum, no match found
-				if (j >= cmax)
-					return false;
-				// Okay, must try one more atom
-				if (!atom.match(matcher, i, seq))
-					return false;
-				// If we haven't moved forward then must break out
-				if (i == matcher.last)
-					return false;
-				// Move up index and number matched
-				i = matcher.last;
-				j++;
-			}
-		}
-
-		boolean match2(Matcher matcher, int i, int j, CharSequence seq) {
-			for (; j < cmax; j++) {
-				if (!atom.match(matcher, i, seq))
-					break;
-				if (i == matcher.last)
-					break;
-				i = matcher.last;
-			}
-			return next.match(matcher, i, seq);
 		}
 
 		boolean study(TreeInfo info) {
@@ -4873,7 +4876,7 @@ public final class Pattern implements java.io.Serializable {
 			boolean detm = info.deterministic;
 			info.reset();
 
-			atom.study(info);
+			beginNode.study(info);
 
 			int temp = info.minLength * cmin + minL;
 			if (temp < minL) {

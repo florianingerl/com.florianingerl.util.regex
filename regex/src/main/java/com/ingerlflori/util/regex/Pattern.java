@@ -1450,12 +1450,7 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	transient volatile Map<String, Integer> namedGroups;
 
-	/**
-	 * Temporary storage used while parsing group references.
-	 */
-	transient GroupHead[] groupNodes;
-
-	private transient GroupHeadAndTail[] groupHeadAndTailNodes;
+	private transient ArrayList<GroupHeadAndTail> groupHeadAndTailNodes;
 
 	/**
 	 * Temporary null terminated code point array used by pattern compiling.
@@ -2204,8 +2199,8 @@ public final class Pattern implements java.io.Serializable {
 
 		// Allocate all temporary objects here.
 		buffer = new int[32];
-		groupNodes = new GroupHead[10];
-		groupHeadAndTailNodes = new GroupHeadAndTail[10];
+		groupHeadAndTailNodes = new ArrayList<GroupHeadAndTail>(10);
+		groupHeadAndTailNodes.add(null);
 		namedGroups = null;
 
 		if (has(LITERAL)) {
@@ -2240,7 +2235,6 @@ public final class Pattern implements java.io.Serializable {
 		// Release temporary storage
 		temp = null;
 		buffer = null;
-		groupNodes = null;
 		patternLength = 0;
 		compiled = true;
 	}
@@ -3397,16 +3391,8 @@ public final class Pattern implements java.io.Serializable {
 			default: // (?xxx:) inlined match flags or (?digit) recursive group
 						// call
 				unread();
-				if (ASCII.isDigit(ch)) {
-					int groupNumber = 0;
-					while (ASCII.isDigit(ch = peek())) {
-						groupNumber = groupNumber * 10 + ch - '0';
-						read();
-					}
-					if (ch != ')') {
-						throw error("Unknown recursive group call syntax");
-					}
-					head = tail = new RecursiveGroupCall(groupNumber);
+				if (ASCII.isDigit(ch)) { // recursive group call
+					head = tail = recursiveGroupCall();
 					break;
 				} else {
 
@@ -3483,6 +3469,28 @@ public final class Pattern implements java.io.Serializable {
 		throw error("Internal logic error");
 	}
 
+	private Node recursiveGroupCall() {
+		int groupNumber = readNumber();
+		if (groupNumber == 0)
+			throw error("Recursion to group 0 is not yet supported by this regex engine");
+		if (groupNumber >= capturingGroupCount)
+			throw error("Can't recurse to unexisting group " + groupNumber);
+		if (peek() != ')') {
+			throw error("Unknown recursive group call syntax");
+		}
+		return new RecursiveGroupCall(groupNumber);
+	}
+
+	private int readNumber() {
+		int number = 0;
+		int ch;
+		while (ASCII.isDigit(ch = peek())) {
+			number = number * 10 + ch - '0';
+			read();
+		}
+		return number;
+	}
+
 	/**
 	 * Create group head and tail nodes using double return. If the group is
 	 * created with anonymous true then it is a pure group and should not affect
@@ -3496,9 +3504,8 @@ public final class Pattern implements java.io.Serializable {
 		GroupHead head = new GroupHead(localIndex);
 		GroupTail tail = new GroupTail(localIndex, groupIndex);
 		root = tail;
-		if (!anonymous && groupIndex < 10) {
-			groupNodes[groupIndex] = head;
-			groupHeadAndTailNodes[groupIndex] = new GroupHeadAndTail(head, tail);
+		if (!anonymous) {
+			groupHeadAndTailNodes.add(new GroupHeadAndTail(head, tail));
 		}
 		return head;
 	}
@@ -3918,22 +3925,14 @@ public final class Pattern implements java.io.Serializable {
 	 * always returns true.
 	 */
 	static class Node {
-		private Node nexxxt;
-		private Node previous;
+		private Node next;
 
 		Node getNext() {
-			return nexxxt;
+			return next;
 		}
 
 		void setNext(Node next) {
-			this.nexxxt = next;
-			if (next != null) {
-				next.previous = this;
-			}
-		}
-
-		Node getPrevious() {
-			return previous;
+			this.next = next;
 		}
 
 		Node() {
@@ -4801,37 +4800,9 @@ public final class Pattern implements java.io.Serializable {
 			this.cmax = cmax;
 		}
 
-		private class MaxGreedyRepeater extends Node {
-			private int counter;
-			private Node initialEndNext = endNode.getNext();
-
-			MaxGreedyRepeater(int cmax) {
-				this.counter = cmax;
-			}
-
-			@Override
-			boolean match(Matcher matcher, int i, CharSequence seq) {
-				if (counter == 0) {
-					Node oldEndNext = endNode.getNext();
-					endNode.setNext(initialEndNext);
-					boolean r = Curly.this.getNext().match(matcher, i, seq);
-					endNode.setNext(oldEndNext);
-					return r;
-				}
-				--counter;
-				Node oldEndNext = endNode.getNext();
-				endNode.setNext(this);
-				boolean r = beginNode.match(matcher, i, seq);
-				++counter;
-				endNode.setNext(oldEndNext);
-				return r || Curly.this.getNext().match(matcher, i, seq);
-			}
-
-		}
-
 		private class MaxLazyRepeater extends Node {
 			private int counter;
-			private Node initialEndNodeNext = endNode.getNext();
+			private Node initialEndNext = endNode.getNext();
 
 			MaxLazyRepeater(int cmax) {
 				this.counter = cmax;
@@ -4840,7 +4811,7 @@ public final class Pattern implements java.io.Serializable {
 			@Override
 			boolean match(Matcher matcher, int i, CharSequence seq) {
 				Node oldEndNodeNext = endNode.getNext();
-				endNode.setNext(initialEndNodeNext);
+				endNode.setNext(initialEndNext);
 				boolean r = Curly.this.getNext().match(matcher, i, seq);
 				endNode.setNext(oldEndNodeNext);
 				if (r)
@@ -4860,13 +4831,15 @@ public final class Pattern implements java.io.Serializable {
 
 		}
 
-		private class MinRepeater extends Node {
+		private class Repeater extends Node {
 			private int counter;
 			private Node initialEndNext = endNode.getNext();
+			private boolean isMax;
 
-			MinRepeater(Node next, int cmin) {
+			Repeater(Node next, int counter, boolean isMax) {
 				this.setNext(next);
-				this.counter = cmin;
+				this.counter = counter;
+				this.isMax = isMax;
 			}
 
 			@Override
@@ -4884,6 +4857,8 @@ public final class Pattern implements java.io.Serializable {
 				boolean r = beginNode.match(matcher, i, seq);
 				++counter;
 				endNode.setNext(oldEndNext);
+				if (isMax)
+					r = r || getNext().match(matcher, i, seq);
 				return r;
 			}
 		}
@@ -4892,14 +4867,14 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 
 			if (type == GREEDY) {
-				MaxGreedyRepeater mgr = new MaxGreedyRepeater(cmax - cmin);
-				MinRepeater mr = new MinRepeater(mgr, cmin);
+				Repeater mgr = new Repeater(this.getNext(), cmax - cmin, true);
+				Repeater mr = new Repeater(mgr, cmin, false);
 				return mr.match(matcher, i, seq);
 			} else if (type == LAZY) {
 				MaxLazyRepeater mlr = new MaxLazyRepeater(cmax - cmin);
-				MinRepeater mr = new MinRepeater(mlr, cmin);
+				Repeater mr = new Repeater(mlr, cmin, false);
 				return mr.match(matcher, i, seq);
-			} else // Possesive
+			} else // Possessive
 			{
 				// This is problematic
 				Node oldEndNext = endNode.getNext();
@@ -5377,33 +5352,27 @@ public final class Pattern implements java.io.Serializable {
 		private GroupTail groupTail;
 
 		RecursiveGroupCall(int groupNumber) {
-			GroupHeadAndTail ghat = groupHeadAndTailNodes[groupNumber];
+			GroupHeadAndTail ghat = groupHeadAndTailNodes.get(groupNumber);
 			groupHead = ghat.groupHead;
 			groupTail = ghat.groupTail;
 		}
 
 		private class InternalRecursiveGroupCall extends Node {
 			boolean first = true;
-			GroupTail oldGroupTail;
-			GroupTail newGroupTail;
+			Node groupTailsNext = groupTail.getNext();
 
 			@Override
 			boolean match(Matcher matcher, int i, CharSequence seq) {
 				if (first) {
 					first = false;
-					oldGroupTail = (GroupTail) groupTail.getPrevious().getNext();
-					newGroupTail = groupTail.copy();
-					groupTail.getPrevious().setNext(newGroupTail);
-					newGroupTail.setNext(this);
+					groupTail.setNext(this);
 					boolean r = groupHead.match(matcher, i, seq);
-					groupTail.getPrevious().setNext(oldGroupTail);
+					groupTail.setNext(groupTailsNext);
 					return r;
 				} else {
-					groupTail.getPrevious().setNext(oldGroupTail);
+					groupTail.setNext(groupTailsNext);
 					boolean r = RecursiveGroupCall.this.getNext().match(matcher, i, seq);
-					if (!r) {
-						groupTail.getPrevious().setNext(newGroupTail);
-					}
+					groupTail.setNext(this);
 					return r;
 				}
 			}

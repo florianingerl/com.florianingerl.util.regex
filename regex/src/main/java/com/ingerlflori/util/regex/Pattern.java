@@ -1455,6 +1455,8 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	transient GroupHead[] groupNodes;
 
+	private transient GroupHeadAndTail[] groupHeadAndTailNodes;
+
 	/**
 	 * Temporary null terminated code point array used by pattern compiling.
 	 */
@@ -2203,12 +2205,13 @@ public final class Pattern implements java.io.Serializable {
 		// Allocate all temporary objects here.
 		buffer = new int[32];
 		groupNodes = new GroupHead[10];
+		groupHeadAndTailNodes = new GroupHeadAndTail[10];
 		namedGroups = null;
 
 		if (has(LITERAL)) {
 			// Literal pattern handling
 			matchRoot = newSlice(temp, patternLength, hasSupplementary);
-			matchRoot.next = lastAccept;
+			matchRoot.setNext(lastAccept);
 		} else {
 			// Start recursive descent parsing
 			matchRoot = expr(lastAccept);
@@ -2271,12 +2274,12 @@ public final class Pattern implements java.io.Serializable {
 				System.out.println("**** end contents GroupCurly body");
 			} else if (node instanceof GroupTail) {
 				System.out.println(node);
-				System.out.println("Tail next is " + node.next);
+				System.out.println("Tail next is " + node.getNext());
 				return;
 			} else {
 				System.out.println(node);
 			}
-			node = node.next;
+			node = node.getNext();
 			if (node != null)
 				System.out.println("->next:");
 			if (node == Pattern.accept) {
@@ -2517,7 +2520,7 @@ public final class Pattern implements java.io.Serializable {
 				// Branch
 				if (branchConn == null) {
 					branchConn = new BranchConn();
-					branchConn.next = end;
+					branchConn.setNext(end);
 				}
 				if (node == end) {
 					// if the node returned from sequence() is "end"
@@ -2526,7 +2529,7 @@ public final class Pattern implements java.io.Serializable {
 					node = null;
 				} else {
 					// the "tail.next" of each atom goes to branchConn
-					nodeTail.next = branchConn;
+					nodeTail.setNext(branchConn);
 				}
 				if (prev == branch) {
 					branch.add(node);
@@ -2537,7 +2540,7 @@ public final class Pattern implements java.io.Serializable {
 						// replace the "end" with "branchConn" at its tail.next
 						// when put the "prev" into the branch as the first
 						// atom.
-						firstTail.next = branchConn;
+						firstTail.setNext(branchConn);
 					}
 					prev = branch = new Branch(prev, node, branchConn);
 				}
@@ -2570,7 +2573,7 @@ public final class Pattern implements java.io.Serializable {
 				if (head == null)
 					head = node;
 				else
-					tail.next = node;
+					tail.setNext(node);
 				// Double return: Tail was returned in root
 				tail = root;
 				continue;
@@ -2651,14 +2654,14 @@ public final class Pattern implements java.io.Serializable {
 			if (head == null) {
 				head = tail = node;
 			} else {
-				tail.next = node;
+				tail.setNext(node);
 				tail = node;
 			}
 		}
 		if (head == null) {
 			return end;
 		}
-		tail.next = end;
+		tail.setNext(end);
 		root = tail; // double return
 		return head;
 	}
@@ -3334,13 +3337,13 @@ public final class Pattern implements java.io.Serializable {
 			case ':': // (?:xxx) pure group
 				head = createGroup(true);
 				tail = root;
-				head.next = expr(tail);
+				head.setNext(expr(tail));
 				break;
 			case '=': // (?=xxx) and (?!xxx) lookahead
 			case '!':
 				head = createGroup(true);
 				tail = root;
-				head.next = expr(tail);
+				head.setNext(expr(tail));
 				if (ch == '=') {
 					head = tail = new Pos(head);
 				} else {
@@ -3350,7 +3353,7 @@ public final class Pattern implements java.io.Serializable {
 			case '>': // (?>xxx) independent group
 				head = createGroup(true);
 				tail = root;
-				head.next = expr(tail);
+				head.setNext(expr(tail));
 				head = tail = new Ques(head, INDEPENDENT);
 				break;
 			case '<': // (?<xxx) look behind
@@ -3364,14 +3367,14 @@ public final class Pattern implements java.io.Serializable {
 					head = createGroup(false);
 					tail = root;
 					namedGroups().put(name, capturingGroupCount - 1);
-					head.next = expr(tail);
+					head.setNext(expr(tail));
 					break;
 				}
 				int start = cursor;
 				head = createGroup(true);
 				tail = root;
-				head.next = expr(tail);
-				tail.next = lookbehindEnd;
+				head.setNext(expr(tail));
+				tail.setNext(lookbehindEnd);
 				TreeInfo info = new TreeInfo();
 				head.study(info);
 				if (info.maxValid == false) {
@@ -3391,26 +3394,41 @@ public final class Pattern implements java.io.Serializable {
 			case '$':
 			case '@':
 				throw error("Unknown group type");
-			default: // (?xxx:) inlined match flags
+			default: // (?xxx:) inlined match flags or (?digit) recursive group
+						// call
 				unread();
-				addFlag();
-				ch = read();
-				if (ch == ')') {
-					return null; // Inline modifier only
+				if (ASCII.isDigit(ch)) {
+					int groupNumber = 0;
+					while (ASCII.isDigit(ch = peek())) {
+						groupNumber = groupNumber * 10 + ch - '0';
+						read();
+					}
+					if (ch != ')') {
+						throw error("Unknown recursive group call syntax");
+					}
+					head = tail = new RecursiveGroupCall(groupNumber);
+					break;
+				} else {
+
+					addFlag();
+					ch = read();
+					if (ch == ')') {
+						return null; // Inline modifier only
+					}
+					if (ch != ':') {
+						throw error("Unknown inline modifier");
+					}
+					head = createGroup(true);
+					tail = root;
+					head.setNext(expr(tail));
+					break;
 				}
-				if (ch != ':') {
-					throw error("Unknown inline modifier");
-				}
-				head = createGroup(true);
-				tail = root;
-				head.next = expr(tail);
-				break;
 			}
 		} else { // (xxx) a regular group
 			capturingGroup = true;
 			head = createGroup(false);
 			tail = root;
-			head.next = expr(tail);
+			head.setNext(expr(tail));
 		}
 
 		accept(')', "Unclosed group");
@@ -3433,8 +3451,8 @@ public final class Pattern implements java.io.Serializable {
 				root = node;
 				return node;
 			}
-			tail.next = new BranchConn();
-			tail = tail.next;
+			tail.setNext(new BranchConn());
+			tail = tail.getNext();
 			if (ques.type == GREEDY) {
 				head = new Branch(head, null, tail);
 			} else { // Reluctant quantifier
@@ -3476,9 +3494,12 @@ public final class Pattern implements java.io.Serializable {
 		if (!anonymous)
 			groupIndex = capturingGroupCount++;
 		GroupHead head = new GroupHead(localIndex);
-		root = new GroupTail(localIndex, groupIndex);
-		if (!anonymous && groupIndex < 10)
+		GroupTail tail = new GroupTail(localIndex, groupIndex);
+		root = tail;
+		if (!anonymous && groupIndex < 10) {
 			groupNodes[groupIndex] = head;
+			groupHeadAndTailNodes[groupIndex] = new GroupHeadAndTail(head, tail);
+		}
 		return head;
 	}
 
@@ -3897,10 +3918,26 @@ public final class Pattern implements java.io.Serializable {
 	 * always returns true.
 	 */
 	static class Node {
-		Node next;
+		private Node nexxxt;
+		private Node previous;
+
+		Node getNext() {
+			return nexxxt;
+		}
+
+		void setNext(Node next) {
+			this.nexxxt = next;
+			if (next != null) {
+				next.previous = this;
+			}
+		}
+
+		Node getPrevious() {
+			return previous;
+		}
 
 		Node() {
-			next = Pattern.accept;
+			this.setNext(Pattern.accept);
 		}
 
 		/**
@@ -3917,8 +3954,8 @@ public final class Pattern implements java.io.Serializable {
 		 * This method is good for all zero length assertions.
 		 */
 		boolean study(TreeInfo info) {
-			if (next != null) {
-				return next.study(info);
+			if (getNext() != null) {
+				return getNext().study(info);
 			} else {
 				return info.deterministic;
 			}
@@ -3950,9 +3987,9 @@ public final class Pattern implements java.io.Serializable {
 		int minLength;
 
 		Start(Node node) {
-			this.next = node;
+			this.setNext(node);
 			TreeInfo info = new TreeInfo();
-			next.study(info);
+			getNext().study(info);
 			minLength = info.minLength;
 		}
 
@@ -3963,7 +4000,7 @@ public final class Pattern implements java.io.Serializable {
 			}
 			int guard = matcher.to - minLength;
 			for (; i <= guard; i++) {
-				if (next.match(matcher, i, seq)) {
+				if (getNext().match(matcher, i, seq)) {
 					matcher.first = i;
 					matcher.groups[0] = matcher.first;
 					matcher.groups[1] = matcher.last;
@@ -3975,7 +4012,7 @@ public final class Pattern implements java.io.Serializable {
 		}
 
 		boolean study(TreeInfo info) {
-			next.study(info);
+			getNext().study(info);
 			info.maxValid = false;
 			info.deterministic = false;
 			return false;
@@ -3997,8 +4034,8 @@ public final class Pattern implements java.io.Serializable {
 			}
 			int guard = matcher.to - minLength;
 			while (i <= guard) {
-				// if ((ret = next.match(matcher, i, seq)) || i == guard)
-				if (next.match(matcher, i, seq)) {
+				// if ((ret = getNext().match(matcher, i, seq)) || i == guard)
+				if (getNext().match(matcher, i, seq)) {
 					matcher.first = i;
 					matcher.groups[0] = matcher.first;
 					matcher.groups[1] = matcher.last;
@@ -4027,7 +4064,7 @@ public final class Pattern implements java.io.Serializable {
 	static final class Begin extends Node {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			int fromIndex = (matcher.anchoringBounds) ? matcher.from : 0;
-			if (i == fromIndex && next.match(matcher, i, seq)) {
+			if (i == fromIndex && getNext().match(matcher, i, seq)) {
 				matcher.first = i;
 				matcher.groups[0] = i;
 				matcher.groups[1] = matcher.last;
@@ -4047,7 +4084,7 @@ public final class Pattern implements java.io.Serializable {
 			int endIndex = (matcher.anchoringBounds) ? matcher.to : matcher.getTextLength();
 			if (i == endIndex) {
 				matcher.hitEnd = true;
-				return next.match(matcher, i, seq);
+				return getNext().match(matcher, i, seq);
 			}
 			return false;
 		}
@@ -4079,7 +4116,7 @@ public final class Pattern implements java.io.Serializable {
 				if (ch == '\r' && seq.charAt(i) == '\n')
 					return false;
 			}
-			return next.match(matcher, i, seq);
+			return getNext().match(matcher, i, seq);
 		}
 	}
 
@@ -4105,7 +4142,7 @@ public final class Pattern implements java.io.Serializable {
 					return false;
 				}
 			}
-			return next.match(matcher, i, seq);
+			return getNext().match(matcher, i, seq);
 		}
 	}
 
@@ -4117,7 +4154,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			if (i != matcher.oldLast)
 				return false;
-			return next.match(matcher, i, seq);
+			return getNext().match(matcher, i, seq);
 		}
 	}
 
@@ -4170,10 +4207,10 @@ public final class Pattern implements java.io.Serializable {
 					if (i > 0 && seq.charAt(i - 1) == '\r')
 						return false;
 					if (multiline)
-						return next.match(matcher, i, seq);
+						return getNext().match(matcher, i, seq);
 				} else if (ch == '\r' || ch == '\u0085' || (ch | 1) == '\u2029') {
 					if (multiline)
-						return next.match(matcher, i, seq);
+						return getNext().match(matcher, i, seq);
 				} else { // No line terminator, no match
 					return false;
 				}
@@ -4183,11 +4220,11 @@ public final class Pattern implements java.io.Serializable {
 			// If a $ matches because of end of input, then more input
 			// could cause it to fail!
 			matcher.requireEnd = true;
-			return next.match(matcher, i, seq);
+			return getNext().match(matcher, i, seq);
 		}
 
 		boolean study(TreeInfo info) {
-			next.study(info);
+			getNext().study(info);
 			return info.deterministic;
 		}
 	}
@@ -4212,10 +4249,10 @@ public final class Pattern implements java.io.Serializable {
 					// match at very end or one before end
 					if (multiline == false && i != endIndex - 1)
 						return false;
-					// If multiline return next.match without setting
+					// If multiline return getNext().match without setting
 					// matcher.hitEnd
 					if (multiline)
-						return next.match(matcher, i, seq);
+						return getNext().match(matcher, i, seq);
 				} else {
 					return false;
 				}
@@ -4226,11 +4263,11 @@ public final class Pattern implements java.io.Serializable {
 			// If a $ matches because of end of input, then more input
 			// could cause it to fail!
 			matcher.requireEnd = true;
-			return next.match(matcher, i, seq);
+			return getNext().match(matcher, i, seq);
 		}
 
 		boolean study(TreeInfo info) {
-			next.study(info);
+			getNext().study(info);
 			return info.deterministic;
 		}
 	}
@@ -4244,12 +4281,12 @@ public final class Pattern implements java.io.Serializable {
 			if (i < matcher.to) {
 				int ch = seq.charAt(i);
 				if (ch == 0x0A || ch == 0x0B || ch == 0x0C || ch == 0x85 || ch == 0x2028 || ch == 0x2029)
-					return next.match(matcher, i + 1, seq);
+					return getNext().match(matcher, i + 1, seq);
 				if (ch == 0x0D) {
 					i++;
 					if (i < matcher.to && seq.charAt(i) == 0x0A)
 						i++;
-					return next.match(matcher, i, seq);
+					return getNext().match(matcher, i, seq);
 				}
 			} else {
 				matcher.hitEnd = true;
@@ -4260,7 +4297,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean study(TreeInfo info) {
 			info.minLength++;
 			info.maxLength += 2;
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -4282,7 +4319,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			if (i < matcher.to) {
 				int ch = Character.codePointAt(seq, i);
-				return isSatisfiedBy(ch) && next.match(matcher, i + Character.charCount(ch), seq);
+				return isSatisfiedBy(ch) && getNext().match(matcher, i + Character.charCount(ch), seq);
 			} else {
 				matcher.hitEnd = true;
 				return false;
@@ -4292,7 +4329,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean study(TreeInfo info) {
 			info.minLength++;
 			info.maxLength++;
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -4303,7 +4340,7 @@ public final class Pattern implements java.io.Serializable {
 	private static abstract class BmpCharProperty extends CharProperty {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			if (i < matcher.to) {
-				return isSatisfiedBy(seq.charAt(i)) && next.match(matcher, i + 1, seq);
+				return isSatisfiedBy(seq.charAt(i)) && getNext().match(matcher, i + 1, seq);
 			} else {
 				matcher.hitEnd = true;
 				return false;
@@ -4480,7 +4517,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean study(TreeInfo info) {
 			info.minLength += buffer.length;
 			info.maxLength += buffer.length;
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -4503,7 +4540,7 @@ public final class Pattern implements java.io.Serializable {
 				if (buf[j] != seq.charAt(i + j))
 					return false;
 			}
-			return next.match(matcher, i + len, seq);
+			return getNext().match(matcher, i + len, seq);
 		}
 	}
 
@@ -4528,7 +4565,7 @@ public final class Pattern implements java.io.Serializable {
 				if (buf[j] != c && buf[j] != ASCII.toLower(c))
 					return false;
 			}
-			return next.match(matcher, i + len, seq);
+			return getNext().match(matcher, i + len, seq);
 		}
 	}
 
@@ -4553,7 +4590,7 @@ public final class Pattern implements java.io.Serializable {
 				if (buf[j] != c && buf[j] != Character.toLowerCase(Character.toUpperCase(c)))
 					return false;
 			}
-			return next.match(matcher, i + len, seq);
+			return getNext().match(matcher, i + len, seq);
 		}
 	}
 
@@ -4583,7 +4620,7 @@ public final class Pattern implements java.io.Serializable {
 					return false;
 				}
 			}
-			return next.match(matcher, x, seq);
+			return getNext().match(matcher, x, seq);
 		}
 	}
 
@@ -4617,7 +4654,7 @@ public final class Pattern implements java.io.Serializable {
 					return false;
 				}
 			}
-			return next.match(matcher, x, seq);
+			return getNext().match(matcher, x, seq);
 		}
 	}
 
@@ -4716,17 +4753,17 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			switch (type) {
 			case GREEDY:
-				return (atom.match(matcher, i, seq) && next.match(matcher, matcher.last, seq))
-						|| next.match(matcher, i, seq);
+				return (atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last, seq))
+						|| getNext().match(matcher, i, seq);
 			case LAZY:
-				return next.match(matcher, i, seq)
-						|| (atom.match(matcher, i, seq) && next.match(matcher, matcher.last, seq));
+				return getNext().match(matcher, i, seq)
+						|| (atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last, seq));
 			case POSSESSIVE:
 				if (atom.match(matcher, i, seq))
 					i = matcher.last;
-				return next.match(matcher, i, seq);
+				return getNext().match(matcher, i, seq);
 			default:
-				return atom.match(matcher, i, seq) && next.match(matcher, matcher.last, seq);
+				return atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last, seq);
 			}
 		}
 
@@ -4736,10 +4773,10 @@ public final class Pattern implements java.io.Serializable {
 				atom.study(info);
 				info.minLength = minL;
 				info.deterministic = false;
-				return next.study(info);
+				return getNext().study(info);
 			} else {
 				atom.study(info);
-				return next.study(info);
+				return getNext().study(info);
 			}
 		}
 	}
@@ -4766,6 +4803,7 @@ public final class Pattern implements java.io.Serializable {
 
 		private class MaxGreedyRepeater extends Node {
 			private int counter;
+			private Node initialEndNext = endNode.getNext();
 
 			MaxGreedyRepeater(int cmax) {
 				this.counter = cmax;
@@ -4774,20 +4812,26 @@ public final class Pattern implements java.io.Serializable {
 			@Override
 			boolean match(Matcher matcher, int i, CharSequence seq) {
 				if (counter == 0) {
-					return Curly.this.next.match(matcher, i, seq);
+					Node oldEndNext = endNode.getNext();
+					endNode.setNext(initialEndNext);
+					boolean r = Curly.this.getNext().match(matcher, i, seq);
+					endNode.setNext(oldEndNext);
+					return r;
 				}
 				--counter;
-				endNode.next = this;
+				Node oldEndNext = endNode.getNext();
+				endNode.setNext(this);
 				boolean r = beginNode.match(matcher, i, seq);
-				if (!r)
-					++counter;
-				return r || Curly.this.next.match(matcher, i, seq);
+				++counter;
+				endNode.setNext(oldEndNext);
+				return r || Curly.this.getNext().match(matcher, i, seq);
 			}
 
 		}
 
 		private class MaxLazyRepeater extends Node {
 			private int counter;
+			private Node initialEndNodeNext = endNode.getNext();
 
 			MaxLazyRepeater(int cmax) {
 				this.counter = cmax;
@@ -4795,42 +4839,51 @@ public final class Pattern implements java.io.Serializable {
 
 			@Override
 			boolean match(Matcher matcher, int i, CharSequence seq) {
-				if (Curly.this.next.match(matcher, i, seq)) {
+				Node oldEndNodeNext = endNode.getNext();
+				endNode.setNext(initialEndNodeNext);
+				boolean r = Curly.this.getNext().match(matcher, i, seq);
+				endNode.setNext(oldEndNodeNext);
+				if (r)
 					return true;
-				}
+
 				if (counter == 0) {
 					return false;
 				}
 				--counter;
-				endNode.next = this;
-				boolean r = beginNode.match(matcher, i, seq);
-				if (!r)
-					++counter;
+				oldEndNodeNext = endNode.getNext();
+				endNode.setNext(this);
+				r = beginNode.match(matcher, i, seq);
+				++counter;
+				endNode.setNext(oldEndNodeNext);
 				return r;
 			}
 
 		}
 
 		private class MinRepeater extends Node {
-			private int cmin;
 			private int counter;
+			private Node initialEndNext = endNode.getNext();
 
 			MinRepeater(Node next, int cmin) {
-				this.next = next;
-				this.cmin = this.counter = cmin;
+				this.setNext(next);
+				this.counter = cmin;
 			}
 
 			@Override
 			public boolean match(Matcher matcher, int i, CharSequence seq) {
 				if (counter == 0) {
-					// If here false is returned the counter has to be reset
-					return next.match(matcher, i, seq);
+					Node oldEndNext = endNode.getNext();
+					endNode.setNext(initialEndNext);
+					boolean r = getNext().match(matcher, i, seq);
+					endNode.setNext(oldEndNext);
+					return r;
 				}
 				--counter;
-				endNode.next = this;
+				Node oldEndNext = endNode.getNext();
+				endNode.setNext(this);
 				boolean r = beginNode.match(matcher, i, seq);
-				if (!r)
-					++counter;
+				++counter;
+				endNode.setNext(oldEndNext);
 				return r;
 			}
 		}
@@ -4848,13 +4901,16 @@ public final class Pattern implements java.io.Serializable {
 				return mr.match(matcher, i, seq);
 			} else // Possesive
 			{
-				endNode.next = accept;
+				// This is problematic
+				Node oldEndNext = endNode.getNext();
+				endNode.setNext(accept);
 				int j;
 				for (j = 0; j < cmin; j++) {
 					if (beginNode.match(matcher, i, seq)) {
 						i = matcher.last;
 						continue;
 					}
+					endNode.setNext(oldEndNext);
 					return false;
 				}
 				for (; j < cmax; j++) {
@@ -4863,7 +4919,9 @@ public final class Pattern implements java.io.Serializable {
 					}
 					i = matcher.last;
 				}
-				return next.match(matcher, i, seq);
+				boolean r = getNext().match(matcher, i, seq);
+				endNode.setNext(oldEndNext);
+				return r;
 			}
 
 		}
@@ -4898,7 +4956,7 @@ public final class Pattern implements java.io.Serializable {
 				info.deterministic = detm;
 			else
 				info.deterministic = false;
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -5019,7 +5077,7 @@ public final class Pattern implements java.io.Serializable {
 					}
 				}
 				while (j > min) {
-					if (next.match(matcher, i, seq)) {
+					if (getNext().match(matcher, i, seq)) {
 						if (capture) {
 							groups[groupIndex + 1] = i;
 							groups[groupIndex] = i - k;
@@ -5041,13 +5099,13 @@ public final class Pattern implements java.io.Serializable {
 				groups[groupIndex] = save0;
 				groups[groupIndex + 1] = save1;
 			}
-			return next.match(matcher, i, seq);
+			return getNext().match(matcher, i, seq);
 		}
 
 		// Reluctant matching
 		boolean match1(Matcher matcher, int i, int j, CharSequence seq) {
 			for (;;) {
-				if (next.match(matcher, i, seq))
+				if (getNext().match(matcher, i, seq))
 					return true;
 				if (j >= cmax)
 					return false;
@@ -5079,7 +5137,7 @@ public final class Pattern implements java.io.Serializable {
 				}
 				i = matcher.last;
 			}
-			return next.match(matcher, i, seq);
+			return getNext().match(matcher, i, seq);
 		}
 
 		boolean study(TreeInfo info) {
@@ -5113,7 +5171,7 @@ public final class Pattern implements java.io.Serializable {
 			} else {
 				info.deterministic = false;
 			}
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -5128,7 +5186,7 @@ public final class Pattern implements java.io.Serializable {
 		};
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			return next.match(matcher, i, seq);
+			return getNext().match(matcher, i, seq);
 		}
 
 		boolean study(TreeInfo info) {
@@ -5164,7 +5222,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			for (int n = 0; n < size; n++) {
 				if (atoms[n] == null) {
-					if (conn.next.match(matcher, i, seq))
+					if (conn.getNext().match(matcher, i, seq))
 						return true;
 				} else if (atoms[n].match(matcher, i, seq)) {
 					return true;
@@ -5193,7 +5251,7 @@ public final class Pattern implements java.io.Serializable {
 			maxL += maxL2;
 
 			info.reset();
-			conn.next.study(info);
+			conn.getNext().study(info);
 
 			info.minLength += minL;
 			info.maxLength += maxL;
@@ -5221,7 +5279,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			int save = matcher.locals[localIndex];
 			matcher.locals[localIndex] = i;
-			boolean ret = next.match(matcher, i, seq);
+			boolean ret = getNext().match(matcher, i, seq);
 			matcher.locals[localIndex] = save;
 			return ret;
 		}
@@ -5229,7 +5287,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean matchRef(Matcher matcher, int i, CharSequence seq) {
 			int save = matcher.locals[localIndex];
 			matcher.locals[localIndex] = ~i; // HACK
-			boolean ret = next.match(matcher, i, seq);
+			boolean ret = getNext().match(matcher, i, seq);
 			matcher.locals[localIndex] = save;
 			return ret;
 		}
@@ -5248,13 +5306,13 @@ public final class Pattern implements java.io.Serializable {
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			return head.matchRef(matcher, i, seq) && next.match(matcher, matcher.last, seq);
+			return head.matchRef(matcher, i, seq) && getNext().match(matcher, matcher.last, seq);
 		}
 
 		boolean study(TreeInfo info) {
 			info.maxValid = false;
 			info.deterministic = false;
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -5275,6 +5333,10 @@ public final class Pattern implements java.io.Serializable {
 			groupIndex = groupCount + groupCount;
 		}
 
+		GroupTail copy() {
+			return new GroupTail(localIndex, groupIndex / 2);
+		}
+
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			int tmp = matcher.locals[localIndex];
 			if (tmp >= 0) { // This is the normal group case.
@@ -5285,7 +5347,7 @@ public final class Pattern implements java.io.Serializable {
 
 				matcher.groups[groupIndex] = tmp;
 				matcher.groups[groupIndex + 1] = i;
-				if (next.match(matcher, i, seq)) {
+				if (getNext().match(matcher, i, seq)) {
 					return true;
 				}
 				matcher.groups[groupIndex] = groupStart;
@@ -5298,6 +5360,62 @@ public final class Pattern implements java.io.Serializable {
 				return true;
 			}
 		}
+	}
+
+	static class GroupHeadAndTail {
+		GroupHead groupHead;
+		GroupTail groupTail;
+
+		GroupHeadAndTail(GroupHead groupHead, GroupTail groupTail) {
+			this.groupHead = groupHead;
+			this.groupTail = groupTail;
+		}
+	}
+
+	final class RecursiveGroupCall extends Node {
+		private GroupHead groupHead;
+		private GroupTail groupTail;
+
+		RecursiveGroupCall(int groupNumber) {
+			GroupHeadAndTail ghat = groupHeadAndTailNodes[groupNumber];
+			groupHead = ghat.groupHead;
+			groupTail = ghat.groupTail;
+		}
+
+		private class InternalRecursiveGroupCall extends Node {
+			boolean first = true;
+			GroupTail oldGroupTail;
+			GroupTail newGroupTail;
+
+			@Override
+			boolean match(Matcher matcher, int i, CharSequence seq) {
+				if (first) {
+					first = false;
+					oldGroupTail = (GroupTail) groupTail.getPrevious().getNext();
+					newGroupTail = groupTail.copy();
+					groupTail.getPrevious().setNext(newGroupTail);
+					newGroupTail.setNext(this);
+					boolean r = groupHead.match(matcher, i, seq);
+					groupTail.getPrevious().setNext(oldGroupTail);
+					return r;
+				} else {
+					groupTail.getPrevious().setNext(oldGroupTail);
+					boolean r = RecursiveGroupCall.this.getNext().match(matcher, i, seq);
+					if (!r) {
+						groupTail.getPrevious().setNext(newGroupTail);
+					}
+					return r;
+				}
+			}
+
+		}
+
+		@Override
+		boolean match(Matcher matcher, int i, CharSequence seq) {
+			InternalRecursiveGroupCall ircc = new InternalRecursiveGroupCall();
+			return ircc.match(matcher, i, seq);
+		}
+
 	}
 
 	/**
@@ -5367,7 +5485,7 @@ public final class Pattern implements java.io.Serializable {
 						return true;
 				}
 			}
-			return next.match(matcher, i, seq);
+			return getNext().match(matcher, i, seq);
 		}
 
 		boolean matchInit(Matcher matcher, int i, CharSequence seq) {
@@ -5380,9 +5498,9 @@ public final class Pattern implements java.io.Serializable {
 				matcher.locals[countIndex] = 1;
 				ret = body.match(matcher, i, seq);
 				if (ret == false)
-					ret = next.match(matcher, i, seq);
+					ret = getNext().match(matcher, i, seq);
 			} else {
-				ret = next.match(matcher, i, seq);
+				ret = getNext().match(matcher, i, seq);
 			}
 			matcher.locals[countIndex] = save;
 			return ret;
@@ -5419,7 +5537,7 @@ public final class Pattern implements java.io.Serializable {
 						matcher.locals[countIndex] = count;
 					return result;
 				}
-				if (next.match(matcher, i, seq))
+				if (getNext().match(matcher, i, seq))
 					return true;
 				if (count < cmax) {
 					matcher.locals[countIndex] = count + 1;
@@ -5432,7 +5550,7 @@ public final class Pattern implements java.io.Serializable {
 				}
 				return false;
 			}
-			return next.match(matcher, i, seq);
+			return getNext().match(matcher, i, seq);
 		}
 
 		boolean matchInit(Matcher matcher, int i, CharSequence seq) {
@@ -5441,7 +5559,7 @@ public final class Pattern implements java.io.Serializable {
 			if (0 < cmin) {
 				matcher.locals[countIndex] = 1;
 				ret = body.match(matcher, i, seq);
-			} else if (next.match(matcher, i, seq)) {
+			} else if (getNext().match(matcher, i, seq)) {
 				ret = true;
 			} else if (0 < cmax) {
 				matcher.locals[countIndex] = 1;
@@ -5490,12 +5608,12 @@ public final class Pattern implements java.io.Serializable {
 				if (seq.charAt(i + index) != seq.charAt(j + index))
 					return false;
 
-			return next.match(matcher, i + groupSize, seq);
+			return getNext().match(matcher, i + groupSize, seq);
 		}
 
 		boolean study(TreeInfo info) {
 			info.maxValid = false;
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -5546,12 +5664,12 @@ public final class Pattern implements java.io.Serializable {
 				j += Character.charCount(c2);
 			}
 
-			return next.match(matcher, i + groupSize, seq);
+			return getNext().match(matcher, i + groupSize, seq);
 		}
 
 		boolean study(TreeInfo info) {
 			info.maxValid = false;
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -5569,7 +5687,7 @@ public final class Pattern implements java.io.Serializable {
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			if (atom instanceof BnM) {
-				return atom.match(matcher, i, seq) && next.match(matcher, matcher.last, seq);
+				return atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last, seq);
 			}
 			for (;;) {
 				if (i > matcher.to) {
@@ -5577,7 +5695,7 @@ public final class Pattern implements java.io.Serializable {
 					return false;
 				}
 				if (atom.match(matcher, i, seq)) {
-					return next.match(matcher, matcher.last, seq);
+					return getNext().match(matcher, matcher.last, seq);
 				}
 				i += countChars(seq, i, 1);
 				matcher.first++;
@@ -5588,7 +5706,7 @@ public final class Pattern implements java.io.Serializable {
 			atom.study(info);
 			info.maxValid = false;
 			info.deterministic = false;
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -5626,7 +5744,7 @@ public final class Pattern implements java.io.Serializable {
 			info.maxLength = maxL + Math.max(maxL2, info.maxLength);
 			info.maxValid = (maxV & maxV2 & info.maxValid);
 			info.deterministic = false;
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -5653,7 +5771,7 @@ public final class Pattern implements java.io.Serializable {
 				// Reinstate region boundaries
 				matcher.to = savedTo;
 			}
-			return conditionMatched && next.match(matcher, i, seq);
+			return conditionMatched && getNext().match(matcher, i, seq);
 		}
 	}
 
@@ -5687,7 +5805,7 @@ public final class Pattern implements java.io.Serializable {
 				// Reinstate region boundaries
 				matcher.to = savedTo;
 			}
-			return conditionMatched && next.match(matcher, i, seq);
+			return conditionMatched && getNext().match(matcher, i, seq);
 		}
 	}
 
@@ -5730,7 +5848,7 @@ public final class Pattern implements java.io.Serializable {
 			}
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
-			return conditionMatched && next.match(matcher, i, seq);
+			return conditionMatched && getNext().match(matcher, i, seq);
 		}
 	}
 
@@ -5762,7 +5880,7 @@ public final class Pattern implements java.io.Serializable {
 			}
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
-			return conditionMatched && next.match(matcher, i, seq);
+			return conditionMatched && getNext().match(matcher, i, seq);
 		}
 	}
 
@@ -5795,7 +5913,7 @@ public final class Pattern implements java.io.Serializable {
 			// Reinstate region boundaries
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
-			return !conditionMatched && next.match(matcher, i, seq);
+			return !conditionMatched && getNext().match(matcher, i, seq);
 		}
 	}
 
@@ -5826,7 +5944,7 @@ public final class Pattern implements java.io.Serializable {
 			// Reinstate region boundaries
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
-			return !conditionMatched && next.match(matcher, i, seq);
+			return !conditionMatched && getNext().match(matcher, i, seq);
 		}
 	}
 
@@ -5916,7 +6034,7 @@ public final class Pattern implements java.io.Serializable {
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			return (check(matcher, i, seq) & type) > 0 && next.match(matcher, i, seq);
+			return (check(matcher, i, seq) & type) > 0 && getNext().match(matcher, i, seq);
 		}
 	}
 
@@ -6025,15 +6143,15 @@ public final class Pattern implements java.io.Serializable {
 			// Set the guard value because of unicode compression
 			optoSft[patternLength - 1] = 1;
 			if (node instanceof SliceS)
-				return new BnMS(src, lastOcc, optoSft, node.next);
-			return new BnM(src, lastOcc, optoSft, node.next);
+				return new BnMS(src, lastOcc, optoSft, node.getNext());
+			return new BnM(src, lastOcc, optoSft, node.getNext());
 		}
 
 		BnM(int[] src, int[] lastOcc, int[] optoSft, Node next) {
 			this.buffer = src;
 			this.lastOcc = lastOcc;
 			this.optoSft = optoSft;
-			this.next = next;
+			this.setNext(next);
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
@@ -6055,7 +6173,7 @@ public final class Pattern implements java.io.Serializable {
 				}
 				// Entire pattern matched starting at i
 				matcher.first = i;
-				boolean ret = next.match(matcher, i + patternLength, seq);
+				boolean ret = getNext().match(matcher, i + patternLength, seq);
 				if (ret) {
 					matcher.first = i;
 					matcher.groups[0] = matcher.first;
@@ -6074,7 +6192,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean study(TreeInfo info) {
 			info.minLength += buffer.length;
 			info.maxValid = false;
-			return next.study(info);
+			return getNext().study(info);
 		}
 	}
 
@@ -6114,7 +6232,7 @@ public final class Pattern implements java.io.Serializable {
 				}
 				// Entire pattern matched starting at i
 				matcher.first = i;
-				boolean ret = next.match(matcher, i + lengthInChars, seq);
+				boolean ret = getNext().match(matcher, i + lengthInChars, seq);
 				if (ret) {
 					matcher.first = i;
 					matcher.groups[0] = matcher.first;

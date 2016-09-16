@@ -61,8 +61,6 @@ public class RegExTest {
 	 *
 	 */
 	public static void main(String[] args) throws Exception {
-
-		System.out.println("Hello form the main method of RegExTest.java");
 		// Most of the tests are in a file
 		processFile("TestCases.txt");
 		// processFile("PerlCases.txt");
@@ -96,6 +94,7 @@ public class RegExTest {
 		patternMatchesTest();
 
 		// Misc
+		recursiveGroupTest();
 		lookbehindTest();
 		nullArgumentTest();
 		backRefTest();
@@ -556,6 +555,43 @@ public class RegExTest {
 		}
 		if (!Arrays.asList(expected).equals(result))
 			failCount++;
+	}
+
+	private static void recursiveGroupTest() throws Exception {
+		check("(a(?1)?z)", "---az---aazz---aaazzz---aaaazzzz---aaaazzz",
+				new String[] { "az", "aazz", "aaazzz", "aaaazzzz", "aaazzz" });
+		check("(a(?1)??z)", "---az---aazz---aaazzz---aaaazzzz---aaaazzz",
+				new String[] { "az", "aazz", "aaazzz", "aaaazzzz", "aaazzz" });
+		check("(a(?1)z|q)", "---q---aqz---aaqzz---aaaqzzz", new String[] { "q", "aqz", "aaqzz", "aaaqzzz" });
+		check("1(a(?1)z|q)2", "1aaqzz2", true);
+		check("1(a(?1){1}z|q)2", "1aaqzz2", true);
+
+		String pattern = "1(a(?1){3}z|q)2";
+		check(pattern, "1q2", true);
+		check(pattern, "1aqqqz2", true);
+		check(pattern, "1aqqaqqqzz2", true);
+		check(pattern, "1aaqqqzqqz2", true);
+		check(pattern, "1aqaqqqzqz2", true);
+		check(pattern, "1aqqaqqqzz2", true);
+		check("(a(?1){3}z|q)", "---q---aqqqz---aaqqqzqqz---aqaqqqzqz---aqqaqqqzz",
+				new String[] { "q", "aqqqz", "aaqqqzqqz", "aqaqqqzqz", "aqqaqqqzz" });
+
+		// Equal number of brackets
+		check("(\\(([^()]+|(?1))*\\))", "(nixda (oja (hier) isjagut) nachher", new String[] { "(oja (hier) isjagut)" });
+
+		check("1\\<2", "1<2", true);
+		check("1\\>2", "1>2", true);
+		String javaTypePattern = "\\b([A-Za-z]\\w*(\\s*\\<(\\s*(?1)\\s*(,|(?=\\>)))*\\>)?)\\b";
+
+		// In this pattern, there might still be a mistake somewhere
+		/*
+		 * check(javaTypePattern,
+		 * "Map <String, Tuple<Integer, Integer> >  List<Tuple<String,Boolean> > Integer"
+		 * , new String[] { "Map <String, Tuple<Integer, Integer> >",
+		 * "List<Tuple<String,Boolean> >", "Integer" });
+		 */
+		report("Recursive group test");
+
 	}
 
 	private static void lookbehindTest() throws Exception {

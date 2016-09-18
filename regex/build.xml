@@ -20,11 +20,11 @@
 		<delete dir="${output-test}" />
 		<mkdir dir="${output-test}" />
 
-		<javac srcdir="${src-test-java}" destdir="${output-test}" debug="on" >
+		<javac srcdir="${src-test-java}" destdir="${output-test}" debug="on">
 			<classpath>
-				<pathelement location="${output-main}"/>
+				<pathelement location="${output-main}" />
 				<pathelement location="lib/junit-4.12.jar" />
-				<pathelement location="lib/hamcrest-core-1.3.jar"/>
+				<pathelement location="lib/hamcrest-core-1.3.jar" />
 			</classpath>
 		</javac>
 		<copy todir="${output-test}">
@@ -39,6 +39,8 @@
 			<classpath>
 				<pathelement location="${output-main}" />
 				<pathelement location="${output-test}" />
+				<pathelement location="lib/junit-4.12.jar" />
+				<pathelement location="lib/hamcrest-core-1.3.jar" />
 			</classpath>
 		</java>
 		<condition property="problem">
@@ -53,9 +55,10 @@
 				<pathelement location="${output-main}" />
 				<pathelement location="${output-test}" />
 				<pathelement location="lib/junit-4.12.jar" />
-				<pathelement location="lib/hamcrest-core-1.3.jar"/>
+				<pathelement location="lib/hamcrest-core-1.3.jar" />
 			</classpath>
 			<test name="com.ingerlflori.util.regex.ConditionalTest" />
+			<test name="com.ingerlflori.util.regex.LearningTests" />
 		</junit>
 
 	</target>

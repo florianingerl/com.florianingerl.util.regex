@@ -576,6 +576,13 @@ public class RegExTest {
 		check("(a(?1){3}z|q)", "---q---aqqqz---aaqqqzqqz---aqaqqqzqz---aqqaqqqzz",
 				new String[] { "q", "aqqqz", "aaqqqzqqz", "aqaqqqzqz", "aqqaqqqzz" });
 
+		pattern = "1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2";
+		check(pattern, "1jT2", true);
+		check(pattern, "1jT<jT>2", true);
+		check(pattern, "1jT<jT,jT>2", true);
+		check(pattern, "1jT<jT<jT>>2", true);
+		check(pattern, "1jT<jT<jT>,jT<jT,jT>>2", true);
+
 		// Equal number of brackets
 		check("(\\(([^()]+|(?1))*\\))", "(nixda (oja (hier) isjagut) nachher", new String[] { "(oja (hier) isjagut)" });
 

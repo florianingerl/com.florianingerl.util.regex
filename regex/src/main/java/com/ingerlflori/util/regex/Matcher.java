@@ -26,6 +26,8 @@
 package com.ingerlflori.util.regex;
 
 import java.util.Objects;
+import java.util.Stack;
+import java.util.Vector;
 
 /**
  * An engine that performs match operations on a
@@ -133,7 +135,9 @@ public final class Matcher implements MatchResult {
 	 * The storage used by groups. They may contain invalid values if a group
 	 * was skipped during the matching.
 	 */
-	int[] groups;
+	// int[] groups;
+
+	Vector<Stack<Capture>> captures;
 
 	/**
 	 * The range within the sequence that is to be matched. Anchors will match
@@ -184,6 +188,7 @@ public final class Matcher implements MatchResult {
 	 * on this field to hold state during a match.
 	 */
 	int[] locals;
+	Vector<Stack<Integer>> localVector;
 
 	/**
 	 * Boolean indicating whether or not more input could change the results of
@@ -237,8 +242,13 @@ public final class Matcher implements MatchResult {
 
 		// Allocate state storage
 		int parentGroupCount = Math.max(parent.capturingGroupCount, 10);
-		groups = new int[parentGroupCount * 2];
+		// groups = new int[parentGroupCount * 2];
+		captures = new Vector<Stack<Capture>>(parentGroupCount);
+		captures.setSize(parentGroupCount);
+
 		locals = new int[parent.localCount];
+		localVector = new Vector<Stack<Integer>>(parent.localCount);
+		localVector.setSize(parent.localCount);
 
 		// Put fields into initial states
 		reset();
@@ -265,7 +275,8 @@ public final class Matcher implements MatchResult {
 		Matcher result = new Matcher(this.parentPattern, text.toString());
 		result.first = this.first;
 		result.last = this.last;
-		result.groups = this.groups.clone();
+		// result.groups = this.groups.clone();
+		result.captures = (Vector<Stack<Capture>>) this.captures.clone();
 		return result;
 	}
 
@@ -293,12 +304,17 @@ public final class Matcher implements MatchResult {
 
 		// Reallocate state storage
 		int parentGroupCount = Math.max(newPattern.capturingGroupCount, 10);
-		groups = new int[parentGroupCount * 2];
+		// groups = new int[parentGroupCount * 2];
 		locals = new int[newPattern.localCount];
-		for (int i = 0; i < groups.length; i++)
-			groups[i] = -1;
-		for (int i = 0; i < locals.length; i++)
+		localVector = new Vector<Stack<Integer>>(newPattern.localCount);
+		localVector.setSize(newPattern.localCount);
+		/*
+		 * for (int i = 0; i < groups.length; i++) groups[i] = -1;
+		 */
+		for (int i = 0; i < locals.length; i++) {
 			locals[i] = -1;
+			localVector.set(i, new Stack<Integer>());
+		}
 		return this;
 	}
 
@@ -317,10 +333,16 @@ public final class Matcher implements MatchResult {
 		first = -1;
 		last = 0;
 		oldLast = -1;
-		for (int i = 0; i < groups.length; i++)
-			groups[i] = -1;
-		for (int i = 0; i < locals.length; i++)
+		/*
+		 * for (int i = 0; i < groups.length; i++) { groups[i] = -1; }
+		 */
+		for (int i = 0; i < captures.size(); ++i) {
+			captures.set(i, new Stack<Capture>());
+		}
+		for (int i = 0; i < locals.length; i++) {
 			locals[i] = -1;
+			localVector.set(i, new Stack<Integer>());
+		}
 		lastAppendPosition = 0;
 		from = 0;
 		to = getTextLength();
@@ -392,7 +414,8 @@ public final class Matcher implements MatchResult {
 			throw new IllegalStateException("No match available");
 		if (group < 0 || group > groupCount())
 			throw new IndexOutOfBoundsException("No group " + group);
-		return groups[group * 2];
+		return captures.get(group).peek().getStart();
+		// return groups[group * 2];
 	}
 
 	/**
@@ -417,7 +440,9 @@ public final class Matcher implements MatchResult {
 	 * @since 1.8
 	 */
 	public int start(String name) {
-		return groups[getMatchedGroupIndex(name) * 2];
+		int group = getMatchedGroupIndex(name);
+		return captures.get(group).peek().getStart();
+		// return groups[getMatchedGroupIndex(name) * 2];
 	}
 
 	/**
@@ -466,7 +491,8 @@ public final class Matcher implements MatchResult {
 			throw new IllegalStateException("No match available");
 		if (group < 0 || group > groupCount())
 			throw new IndexOutOfBoundsException("No group " + group);
-		return groups[group * 2 + 1];
+		return captures.get(group).peek().getEnd();
+		// return groups[group * 2 + 1];
 	}
 
 	/**
@@ -491,7 +517,9 @@ public final class Matcher implements MatchResult {
 	 * @since 1.8
 	 */
 	public int end(String name) {
-		return groups[getMatchedGroupIndex(name) * 2 + 1];
+		int group = getMatchedGroupIndex(name);
+		return captures.get(group).peek().getEnd();
+		// return groups[getMatchedGroupIndex(name) * 2 + 1];
 	}
 
 	/**
@@ -565,9 +593,15 @@ public final class Matcher implements MatchResult {
 			throw new IllegalStateException("No match found");
 		if (group < 0 || group > groupCount())
 			throw new IndexOutOfBoundsException("No group " + group);
-		if ((groups[group * 2] == -1) || (groups[group * 2 + 1] == -1))
+		if (captures.get(group).isEmpty())
 			return null;
-		return getSubSequence(groups[group * 2], groups[group * 2 + 1]).toString();
+		Capture last = captures.get(group).peek();
+		return last.getValue();
+		/*
+		 * if ((groups[group * 2] == -1) || (groups[group * 2 + 1] == -1))
+		 * return null; return getSubSequence(groups[group * 2], groups[group *
+		 * 2 + 1]).toString();
+		 */
 	}
 
 	/**
@@ -601,9 +635,26 @@ public final class Matcher implements MatchResult {
 	 */
 	public String group(String name) {
 		int group = getMatchedGroupIndex(name);
-		if ((groups[group * 2] == -1) || (groups[group * 2 + 1] == -1))
+		if (captures.get(group).isEmpty())
 			return null;
-		return getSubSequence(groups[group * 2], groups[group * 2 + 1]).toString();
+		Capture last = captures.get(group).peek();
+		return last.getValue();
+		/*
+		 * if ((groups[group * 2] == -1) || (groups[group * 2 + 1] == -1))
+		 * return null; return getSubSequence(groups[group * 2], groups[group *
+		 * 2 + 1]).toString();
+		 */
+	}
+
+	public Stack<Capture> captures(int group) {
+		if (group < 0 || group > groupCount())
+			throw new IndexOutOfBoundsException("No group " + group);
+		return captures.get(group);
+	}
+
+	public Stack<Capture> captures(String name) {
+		int group = getMatchedGroupIndex(name);
+		return captures(group);
 	}
 
 	/**
@@ -668,8 +719,12 @@ public final class Matcher implements MatchResult {
 
 		// If next search starts beyond region then it fails
 		if (nextSearchIndex > to) {
-			for (int i = 0; i < groups.length; i++)
-				groups[i] = -1;
+			/*
+			 * for (int i = 0; i < groups.length; i++) { groups[i] = -1; }
+			 */
+			for (int i = 0; i < captures.size(); ++i) {
+				captures.set(i, new Stack<Capture>());
+			}
 			return false;
 		}
 		return search(nextSearchIndex);
@@ -1326,8 +1381,12 @@ public final class Matcher implements MatchResult {
 		from = from < 0 ? 0 : from;
 		this.first = from;
 		this.oldLast = oldLast < 0 ? from : oldLast;
-		for (int i = 0; i < groups.length; i++)
-			groups[i] = -1;
+		/*
+		 * for (int i = 0; i < groups.length; i++) groups[i] = -1;
+		 */
+		for (int i = 0; i < captures.size(); ++i) {
+			captures.set(i, new Stack<Capture>());
+		}
 		acceptMode = NOANCHOR;
 		boolean result = parentPattern.root.match(this, from, text);
 		if (!result)
@@ -1348,8 +1407,12 @@ public final class Matcher implements MatchResult {
 		from = from < 0 ? 0 : from;
 		this.first = from;
 		this.oldLast = oldLast < 0 ? from : oldLast;
-		for (int i = 0; i < groups.length; i++)
-			groups[i] = -1;
+		/*
+		 * for (int i = 0; i < groups.length; i++) groups[i] = -1;
+		 */
+		for (int i = 0; i < captures.size(); ++i) {
+			captures.set(i, new Stack<Capture>());
+		}
 		acceptMode = anchor;
 		boolean result = parentPattern.matchRoot.match(this, from, text);
 		if (!result)
@@ -1401,5 +1464,14 @@ public final class Matcher implements MatchResult {
 		if (!parentPattern.namedGroups().containsKey(name))
 			throw new IllegalArgumentException("No group with name <" + name + ">");
 		return parentPattern.namedGroups().get(name);
+	}
+
+	void setGroup0(CharSequence seq, int start, int end) {
+		Capture capture = new Capture(seq, start, end);
+		if (captures.get(0).isEmpty())
+			captures.get(0).push(capture);
+		else {
+			captures.get(0).set(0, capture);
+		}
 	}
 }

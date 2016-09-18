@@ -2250,22 +2250,23 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	private static void printObjectTree(Node node) {
 		while (node != null) {
-			if (node instanceof Prolog) {
-				System.out.println(node);
-				printObjectTree(((Prolog) node).loop);
-				System.out.println("**** end contents prolog loop");
-			} else if (node instanceof Loop) {
-				System.out.println(node);
-				printObjectTree(((Loop) node).body);
-				System.out.println("**** end contents Loop body");
-			} else if (node instanceof Curly) {
+			/*
+			 * if (node instanceof Prolog) { System.out.println(node);
+			 * printObjectTree(((Prolog) node).loop); System.out.println(
+			 * "**** end contents prolog loop"); } else if (node instanceof
+			 * Loop) { System.out.println(node); printObjectTree(((Loop)
+			 * node).body); System.out.println("**** end contents Loop body");
+			 */
+			if (node instanceof Curly) {
 				System.out.println(node);
 				printObjectTree(((Curly) node).beginNode);
 				System.out.println("**** end contents Curly body");
-			} else if (node instanceof GroupCurly) {
-				System.out.println(node);
-				printObjectTree(((GroupCurly) node).atom);
-				System.out.println("**** end contents GroupCurly body");
+				/*
+				 * } else if (node instanceof GroupCurly) {
+				 * System.out.println(node); printObjectTree(((GroupCurly)
+				 * node).atom); System.out.println(
+				 * "**** end contents GroupCurly body");
+				 */
 			} else if (node instanceof GroupTail) {
 				System.out.println(node);
 				System.out.println("Tail next is " + node.getNext());
@@ -3944,8 +3945,7 @@ public final class Pattern implements java.io.Serializable {
 		 */
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			matcher.last = i;
-			matcher.groups[0] = matcher.first;
-			matcher.groups[1] = matcher.last;
+			matcher.setGroup0(seq, matcher.first, matcher.last);
 			return true;
 		}
 
@@ -3970,8 +3970,7 @@ public final class Pattern implements java.io.Serializable {
 			if (matcher.acceptMode == Matcher.ENDANCHOR && i != matcher.to)
 				return false;
 			matcher.last = i;
-			matcher.groups[0] = matcher.first;
-			matcher.groups[1] = matcher.last;
+			matcher.setGroup0(seq, matcher.first, matcher.last);
 			return true;
 		}
 	}
@@ -4001,8 +4000,7 @@ public final class Pattern implements java.io.Serializable {
 			for (; i <= guard; i++) {
 				if (getNext().match(matcher, i, seq)) {
 					matcher.first = i;
-					matcher.groups[0] = matcher.first;
-					matcher.groups[1] = matcher.last;
+					matcher.setGroup0(seq, matcher.first, matcher.last);
 					return true;
 				}
 			}
@@ -4036,8 +4034,7 @@ public final class Pattern implements java.io.Serializable {
 				// if ((ret = getNext().match(matcher, i, seq)) || i == guard)
 				if (getNext().match(matcher, i, seq)) {
 					matcher.first = i;
-					matcher.groups[0] = matcher.first;
-					matcher.groups[1] = matcher.last;
+					matcher.setGroup0(seq, matcher.first, matcher.last);
 					return true;
 				}
 				if (i == guard)
@@ -4065,8 +4062,7 @@ public final class Pattern implements java.io.Serializable {
 			int fromIndex = (matcher.anchoringBounds) ? matcher.from : 0;
 			if (i == fromIndex && getNext().match(matcher, i, seq)) {
 				matcher.first = i;
-				matcher.groups[0] = i;
-				matcher.groups[1] = matcher.last;
+				matcher.setGroup0(seq, i, matcher.last);
 				return true;
 			} else {
 				return false;
@@ -4943,212 +4939,81 @@ public final class Pattern implements java.io.Serializable {
 	 * is true then this class saves group settings and ensures that groups are
 	 * unset when backing off of a group match.
 	 */
-	static final class GroupCurly extends Node {
-		Node atom;
-		int type;
-		int cmin;
-		int cmax;
-		int localIndex;
-		int groupIndex;
-		boolean capture;
-
-		GroupCurly(Node node, int cmin, int cmax, int type, int local, int group, boolean capture) {
-			this.atom = node;
-			this.type = type;
-			this.cmin = cmin;
-			this.cmax = cmax;
-			this.localIndex = local;
-			this.groupIndex = group;
-			this.capture = capture;
-		}
-
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			int[] groups = matcher.groups;
-			int[] locals = matcher.locals;
-			int save0 = locals[localIndex];
-			int save1 = 0;
-			int save2 = 0;
-
-			if (capture) {
-				save1 = groups[groupIndex];
-				save2 = groups[groupIndex + 1];
-			}
-
-			// Notify GroupTail there is no need to setup group info
-			// because it will be set here
-			locals[localIndex] = -1;
-
-			boolean ret = true;
-			for (int j = 0; j < cmin; j++) {
-				if (atom.match(matcher, i, seq)) {
-					if (capture) {
-						groups[groupIndex] = i;
-						groups[groupIndex + 1] = matcher.last;
-					}
-					i = matcher.last;
-				} else {
-					ret = false;
-					break;
-				}
-			}
-			if (ret) {
-				if (type == GREEDY) {
-					ret = match0(matcher, i, cmin, seq);
-				} else if (type == LAZY) {
-					ret = match1(matcher, i, cmin, seq);
-				} else {
-					ret = match2(matcher, i, cmin, seq);
-				}
-			}
-			if (!ret) {
-				locals[localIndex] = save0;
-				if (capture) {
-					groups[groupIndex] = save1;
-					groups[groupIndex + 1] = save2;
-				}
-			}
-			return ret;
-		}
-
-		// Aggressive group match
-		boolean match0(Matcher matcher, int i, int j, CharSequence seq) {
-			// don't back off passing the starting "j"
-			int min = j;
-			int[] groups = matcher.groups;
-			int save0 = 0;
-			int save1 = 0;
-			if (capture) {
-				save0 = groups[groupIndex];
-				save1 = groups[groupIndex + 1];
-			}
-			for (;;) {
-				if (j >= cmax)
-					break;
-				if (!atom.match(matcher, i, seq))
-					break;
-				int k = matcher.last - i;
-				if (k <= 0) {
-					if (capture) {
-						groups[groupIndex] = i;
-						groups[groupIndex + 1] = i + k;
-					}
-					i = i + k;
-					break;
-				}
-				for (;;) {
-					if (capture) {
-						groups[groupIndex] = i;
-						groups[groupIndex + 1] = i + k;
-					}
-					i = i + k;
-					if (++j >= cmax)
-						break;
-					if (!atom.match(matcher, i, seq))
-						break;
-					if (i + k != matcher.last) {
-						if (match0(matcher, i, j, seq))
-							return true;
-						break;
-					}
-				}
-				while (j > min) {
-					if (getNext().match(matcher, i, seq)) {
-						if (capture) {
-							groups[groupIndex + 1] = i;
-							groups[groupIndex] = i - k;
-						}
-						return true;
-					}
-					// backing off
-					i = i - k;
-					if (capture) {
-						groups[groupIndex + 1] = i;
-						groups[groupIndex] = i - k;
-					}
-					j--;
-
-				}
-				break;
-			}
-			if (capture) {
-				groups[groupIndex] = save0;
-				groups[groupIndex + 1] = save1;
-			}
-			return getNext().match(matcher, i, seq);
-		}
-
-		// Reluctant matching
-		boolean match1(Matcher matcher, int i, int j, CharSequence seq) {
-			for (;;) {
-				if (getNext().match(matcher, i, seq))
-					return true;
-				if (j >= cmax)
-					return false;
-				if (!atom.match(matcher, i, seq))
-					return false;
-				if (i == matcher.last)
-					return false;
-				if (capture) {
-					matcher.groups[groupIndex] = i;
-					matcher.groups[groupIndex + 1] = matcher.last;
-				}
-				i = matcher.last;
-				j++;
-			}
-		}
-
-		// Possessive matching
-		boolean match2(Matcher matcher, int i, int j, CharSequence seq) {
-			for (; j < cmax; j++) {
-				if (!atom.match(matcher, i, seq)) {
-					break;
-				}
-				if (capture) {
-					matcher.groups[groupIndex] = i;
-					matcher.groups[groupIndex + 1] = matcher.last;
-				}
-				if (i == matcher.last) {
-					break;
-				}
-				i = matcher.last;
-			}
-			return getNext().match(matcher, i, seq);
-		}
-
-		boolean study(TreeInfo info) {
-			// Save original info
-			int minL = info.minLength;
-			int maxL = info.maxLength;
-			boolean maxV = info.maxValid;
-			boolean detm = info.deterministic;
-			info.reset();
-
-			atom.study(info);
-
-			int temp = info.minLength * cmin + minL;
-			if (temp < minL) {
-				temp = 0xFFFFFFF; // Arbitrary large number
-			}
-			info.minLength = temp;
-
-			if (maxV & info.maxValid) {
-				temp = info.maxLength * cmax + maxL;
-				info.maxLength = temp;
-				if (temp < maxL) {
-					info.maxValid = false;
-				}
-			} else {
-				info.maxValid = false;
-			}
-
-			if (info.deterministic && cmin == cmax) {
-				info.deterministic = detm;
-			} else {
-				info.deterministic = false;
-			}
-			return getNext().study(info);
-		}
-	}
+	/*
+	 * static final class GroupCurly extends Node { Node atom; int type; int
+	 * cmin; int cmax; int localIndex; int groupIndex; boolean capture;
+	 * 
+	 * GroupCurly(Node node, int cmin, int cmax, int type, int local, int group,
+	 * boolean capture) { this.atom = node; this.type = type; this.cmin = cmin;
+	 * this.cmax = cmax; this.localIndex = local; this.groupIndex = group;
+	 * this.capture = capture; }
+	 * 
+	 * boolean match(Matcher matcher, int i, CharSequence seq) { int[] groups =
+	 * matcher.groups; int[] locals = matcher.locals; int save0 =
+	 * locals[localIndex]; int save1 = 0; int save2 = 0;
+	 * 
+	 * if (capture) { save1 = groups[groupIndex]; save2 = groups[groupIndex +
+	 * 1]; }
+	 * 
+	 * // Notify GroupTail there is no need to setup group info // because it
+	 * will be set here locals[localIndex] = -1;
+	 * 
+	 * boolean ret = true; for (int j = 0; j < cmin; j++) { if
+	 * (atom.match(matcher, i, seq)) { if (capture) { groups[groupIndex] = i;
+	 * groups[groupIndex + 1] = matcher.last; } i = matcher.last; } else { ret =
+	 * false; break; } } if (ret) { if (type == GREEDY) { ret = match0(matcher,
+	 * i, cmin, seq); } else if (type == LAZY) { ret = match1(matcher, i, cmin,
+	 * seq); } else { ret = match2(matcher, i, cmin, seq); } } if (!ret) {
+	 * locals[localIndex] = save0; if (capture) { groups[groupIndex] = save1;
+	 * groups[groupIndex + 1] = save2; } } return ret; }
+	 * 
+	 * // Aggressive group match boolean match0(Matcher matcher, int i, int j,
+	 * CharSequence seq) { // don't back off passing the starting "j" int min =
+	 * j; int[] groups = matcher.groups; int save0 = 0; int save1 = 0; if
+	 * (capture) { save0 = groups[groupIndex]; save1 = groups[groupIndex + 1]; }
+	 * for (;;) { if (j >= cmax) break; if (!atom.match(matcher, i, seq)) break;
+	 * int k = matcher.last - i; if (k <= 0) { if (capture) { groups[groupIndex]
+	 * = i; groups[groupIndex + 1] = i + k; } i = i + k; break; } for (;;) { if
+	 * (capture) { groups[groupIndex] = i; groups[groupIndex + 1] = i + k; } i =
+	 * i + k; if (++j >= cmax) break; if (!atom.match(matcher, i, seq)) break;
+	 * if (i + k != matcher.last) { if (match0(matcher, i, j, seq)) return true;
+	 * break; } } while (j > min) { if (getNext().match(matcher, i, seq)) { if
+	 * (capture) { groups[groupIndex + 1] = i; groups[groupIndex] = i - k; }
+	 * return true; } // backing off i = i - k; if (capture) { groups[groupIndex
+	 * + 1] = i; groups[groupIndex] = i - k; } j--;
+	 * 
+	 * } break; } if (capture) { groups[groupIndex] = save0; groups[groupIndex +
+	 * 1] = save1; } return getNext().match(matcher, i, seq); }
+	 * 
+	 * // Reluctant matching boolean match1(Matcher matcher, int i, int j,
+	 * CharSequence seq) { for (;;) { if (getNext().match(matcher, i, seq))
+	 * return true; if (j >= cmax) return false; if (!atom.match(matcher, i,
+	 * seq)) return false; if (i == matcher.last) return false; if (capture) {
+	 * matcher.groups[groupIndex] = i; matcher.groups[groupIndex + 1] =
+	 * matcher.last; } i = matcher.last; j++; } }
+	 * 
+	 * // Possessive matching boolean match2(Matcher matcher, int i, int j,
+	 * CharSequence seq) { for (; j < cmax; j++) { if (!atom.match(matcher, i,
+	 * seq)) { break; } if (capture) { matcher.groups[groupIndex] = i;
+	 * matcher.groups[groupIndex + 1] = matcher.last; } if (i == matcher.last) {
+	 * break; } i = matcher.last; } return getNext().match(matcher, i, seq); }
+	 * 
+	 * boolean study(TreeInfo info) { // Save original info int minL =
+	 * info.minLength; int maxL = info.maxLength; boolean maxV = info.maxValid;
+	 * boolean detm = info.deterministic; info.reset();
+	 * 
+	 * atom.study(info);
+	 * 
+	 * int temp = info.minLength * cmin + minL; if (temp < minL) { temp =
+	 * 0xFFFFFFF; // Arbitrary large number } info.minLength = temp;
+	 * 
+	 * if (maxV & info.maxValid) { temp = info.maxLength * cmax + maxL;
+	 * info.maxLength = temp; if (temp < maxL) { info.maxValid = false; } } else
+	 * { info.maxValid = false; }
+	 * 
+	 * if (info.deterministic && cmin == cmax) { info.deterministic = detm; }
+	 * else { info.deterministic = false; } return getNext().study(info); } }
+	 */
 
 	/**
 	 * A Guard node at the end of each atom node in a Branch. It serves the
@@ -5259,36 +5124,6 @@ public final class Pattern implements java.io.Serializable {
 			return ret;
 		}
 
-		boolean matchRef(Matcher matcher, int i, CharSequence seq) {
-			int save = matcher.locals[localIndex];
-			matcher.locals[localIndex] = ~i; // HACK
-			boolean ret = getNext().match(matcher, i, seq);
-			matcher.locals[localIndex] = save;
-			return ret;
-		}
-	}
-
-	/**
-	 * Recursive reference to a group in the regular expression. It calls
-	 * matchRef because if the reference fails to match we would not unset the
-	 * group.
-	 */
-	static final class GroupRef extends Node {
-		GroupHead head;
-
-		GroupRef(GroupHead head) {
-			this.head = head;
-		}
-
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			return head.matchRef(matcher, i, seq) && getNext().match(matcher, matcher.last, seq);
-		}
-
-		boolean study(TreeInfo info) {
-			info.maxValid = false;
-			info.deterministic = false;
-			return getNext().study(info);
-		}
 	}
 
 	/**
@@ -5305,35 +5140,28 @@ public final class Pattern implements java.io.Serializable {
 
 		GroupTail(int localCount, int groupCount) {
 			localIndex = localCount;
-			groupIndex = groupCount + groupCount;
-		}
-
-		GroupTail copy() {
-			return new GroupTail(localIndex, groupIndex / 2);
+			// if groupCount <= 0, this is an anonymous group
+			groupIndex = groupCount;
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			int tmp = matcher.locals[localIndex];
-			if (tmp >= 0) { // This is the normal group case.
-				// Save the group so we can unset it if it
-				// backs off of a match.
-				int groupStart = matcher.groups[groupIndex];
-				int groupEnd = matcher.groups[groupIndex + 1];
+			// Save the group so we can unset it if it
+			// backs off of a match.
+			/*
+			 * int groupStart = matcher.groups[groupIndex]; int groupEnd =
+			 * matcher.groups[groupIndex + 1];
+			 */
 
-				matcher.groups[groupIndex] = tmp;
-				matcher.groups[groupIndex + 1] = i;
-				if (getNext().match(matcher, i, seq)) {
-					return true;
-				}
-				matcher.groups[groupIndex] = groupStart;
-				matcher.groups[groupIndex + 1] = groupEnd;
-				return false;
-			} else {
-				// This is a group reference case. We don't need to save any
-				// group info because it isn't really a group.
-				matcher.last = i;
+			if (groupIndex > 0)
+				matcher.captures.get(groupIndex).push(new Capture(seq, tmp, i));
+			if (getNext().match(matcher, i, seq)) {
 				return true;
 			}
+			if (groupIndex > 0)
+				matcher.captures.get(groupIndex).pop();
+			return false;
+
 		}
 	}
 
@@ -5390,21 +5218,16 @@ public final class Pattern implements java.io.Serializable {
 	/**
 	 * This sets up a loop to handle a recursive quantifier structure.
 	 */
-	static final class Prolog extends Node {
-		Loop loop;
-
-		Prolog(Loop loop) {
-			this.loop = loop;
-		}
-
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			return loop.matchInit(matcher, i, seq);
-		}
-
-		boolean study(TreeInfo info) {
-			return loop.study(info);
-		}
-	}
+	/*
+	 * static final class Prolog extends Node { Loop loop;
+	 * 
+	 * Prolog(Loop loop) { this.loop = loop; }
+	 * 
+	 * boolean match(Matcher matcher, int i, CharSequence seq) { return
+	 * loop.matchInit(matcher, i, seq); }
+	 * 
+	 * boolean study(TreeInfo info) { return loop.study(info); } }
+	 */
 
 	/**
 	 * Handles the repetition count for a greedy Curly. The matchInit is called
@@ -5412,75 +5235,41 @@ public final class Pattern implements java.io.Serializable {
 	 * A zero length group check occurs in the normal match but is skipped in
 	 * the matchInit.
 	 */
-	static class Loop extends Node {
-		Node body;
-		int countIndex; // local count index in matcher locals
-		int beginIndex; // group beginning index
-		int cmin, cmax;
-
-		Loop(int countIndex, int beginIndex) {
-			this.countIndex = countIndex;
-			this.beginIndex = beginIndex;
-		}
-
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			// Avoid infinite loop in zero-length case.
-			if (i > matcher.locals[beginIndex]) {
-				int count = matcher.locals[countIndex];
-
-				// This block is for before we reach the minimum
-				// iterations required for the loop to match
-				if (count < cmin) {
-					matcher.locals[countIndex] = count + 1;
-					boolean b = body.match(matcher, i, seq);
-					// If match failed we must backtrack, so
-					// the loop count should NOT be incremented
-					if (!b)
-						matcher.locals[countIndex] = count;
-					// Return success or failure since we are under
-					// minimum
-					return b;
-				}
-				// This block is for after we have the minimum
-				// iterations required for the loop to match
-				if (count < cmax) {
-					matcher.locals[countIndex] = count + 1;
-					boolean b = body.match(matcher, i, seq);
-					// If match failed we must backtrack, so
-					// the loop count should NOT be incremented
-					if (!b)
-						matcher.locals[countIndex] = count;
-					else
-						return true;
-				}
-			}
-			return getNext().match(matcher, i, seq);
-		}
-
-		boolean matchInit(Matcher matcher, int i, CharSequence seq) {
-			int save = matcher.locals[countIndex];
-			boolean ret = false;
-			if (0 < cmin) {
-				matcher.locals[countIndex] = 1;
-				ret = body.match(matcher, i, seq);
-			} else if (0 < cmax) {
-				matcher.locals[countIndex] = 1;
-				ret = body.match(matcher, i, seq);
-				if (ret == false)
-					ret = getNext().match(matcher, i, seq);
-			} else {
-				ret = getNext().match(matcher, i, seq);
-			}
-			matcher.locals[countIndex] = save;
-			return ret;
-		}
-
-		boolean study(TreeInfo info) {
-			info.maxValid = false;
-			info.deterministic = false;
-			return false;
-		}
-	}
+	/*
+	 * static class Loop extends Node { Node body; int countIndex; // local
+	 * count index in matcher locals int beginIndex; // group beginning index
+	 * int cmin, cmax;
+	 * 
+	 * Loop(int countIndex, int beginIndex) { this.countIndex = countIndex;
+	 * this.beginIndex = beginIndex; }
+	 * 
+	 * boolean match(Matcher matcher, int i, CharSequence seq) { // Avoid
+	 * infinite loop in zero-length case. if (i > matcher.locals[beginIndex]) {
+	 * int count = matcher.locals[countIndex];
+	 * 
+	 * // This block is for before we reach the minimum // iterations required
+	 * for the loop to match if (count < cmin) { matcher.locals[countIndex] =
+	 * count + 1; boolean b = body.match(matcher, i, seq); // If match failed we
+	 * must backtrack, so // the loop count should NOT be incremented if (!b)
+	 * matcher.locals[countIndex] = count; // Return success or failure since we
+	 * are under // minimum return b; } // This block is for after we have the
+	 * minimum // iterations required for the loop to match if (count < cmax) {
+	 * matcher.locals[countIndex] = count + 1; boolean b = body.match(matcher,
+	 * i, seq); // If match failed we must backtrack, so // the loop count
+	 * should NOT be incremented if (!b) matcher.locals[countIndex] = count;
+	 * else return true; } } return getNext().match(matcher, i, seq); }
+	 * 
+	 * boolean matchInit(Matcher matcher, int i, CharSequence seq) { int save =
+	 * matcher.locals[countIndex]; boolean ret = false; if (0 < cmin) {
+	 * matcher.locals[countIndex] = 1; ret = body.match(matcher, i, seq); } else
+	 * if (0 < cmax) { matcher.locals[countIndex] = 1; ret = body.match(matcher,
+	 * i, seq); if (ret == false) ret = getNext().match(matcher, i, seq); } else
+	 * { ret = getNext().match(matcher, i, seq); } matcher.locals[countIndex] =
+	 * save; return ret; }
+	 * 
+	 * boolean study(TreeInfo info) { info.maxValid = false; info.deterministic
+	 * = false; return false; } }
+	 */
 
 	/**
 	 * Handles the repetition count for a reluctant Curly. The matchInit is
@@ -5488,62 +5277,34 @@ public final class Pattern implements java.io.Serializable {
 	 * stored. A zero length group check occurs in the normal match but is
 	 * skipped in the matchInit.
 	 */
-	static final class LazyLoop extends Loop {
-		LazyLoop(int countIndex, int beginIndex) {
-			super(countIndex, beginIndex);
-		}
-
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			// Check for zero length group
-			if (i > matcher.locals[beginIndex]) {
-				int count = matcher.locals[countIndex];
-				if (count < cmin) {
-					matcher.locals[countIndex] = count + 1;
-					boolean result = body.match(matcher, i, seq);
-					// If match failed we must backtrack, so
-					// the loop count should NOT be incremented
-					if (!result)
-						matcher.locals[countIndex] = count;
-					return result;
-				}
-				if (getNext().match(matcher, i, seq))
-					return true;
-				if (count < cmax) {
-					matcher.locals[countIndex] = count + 1;
-					boolean result = body.match(matcher, i, seq);
-					// If match failed we must backtrack, so
-					// the loop count should NOT be incremented
-					if (!result)
-						matcher.locals[countIndex] = count;
-					return result;
-				}
-				return false;
-			}
-			return getNext().match(matcher, i, seq);
-		}
-
-		boolean matchInit(Matcher matcher, int i, CharSequence seq) {
-			int save = matcher.locals[countIndex];
-			boolean ret = false;
-			if (0 < cmin) {
-				matcher.locals[countIndex] = 1;
-				ret = body.match(matcher, i, seq);
-			} else if (getNext().match(matcher, i, seq)) {
-				ret = true;
-			} else if (0 < cmax) {
-				matcher.locals[countIndex] = 1;
-				ret = body.match(matcher, i, seq);
-			}
-			matcher.locals[countIndex] = save;
-			return ret;
-		}
-
-		boolean study(TreeInfo info) {
-			info.maxValid = false;
-			info.deterministic = false;
-			return false;
-		}
-	}
+	/*
+	 * static final class LazyLoop extends Loop { LazyLoop(int countIndex, int
+	 * beginIndex) { super(countIndex, beginIndex); }
+	 * 
+	 * boolean match(Matcher matcher, int i, CharSequence seq) { // Check for
+	 * zero length group if (i > matcher.locals[beginIndex]) { int count =
+	 * matcher.locals[countIndex]; if (count < cmin) {
+	 * matcher.locals[countIndex] = count + 1; boolean result =
+	 * body.match(matcher, i, seq); // If match failed we must backtrack, so //
+	 * the loop count should NOT be incremented if (!result)
+	 * matcher.locals[countIndex] = count; return result; } if
+	 * (getNext().match(matcher, i, seq)) return true; if (count < cmax) {
+	 * matcher.locals[countIndex] = count + 1; boolean result =
+	 * body.match(matcher, i, seq); // If match failed we must backtrack, so //
+	 * the loop count should NOT be incremented if (!result)
+	 * matcher.locals[countIndex] = count; return result; } return false; }
+	 * return getNext().match(matcher, i, seq); }
+	 * 
+	 * boolean matchInit(Matcher matcher, int i, CharSequence seq) { int save =
+	 * matcher.locals[countIndex]; boolean ret = false; if (0 < cmin) {
+	 * matcher.locals[countIndex] = 1; ret = body.match(matcher, i, seq); } else
+	 * if (getNext().match(matcher, i, seq)) { ret = true; } else if (0 < cmax)
+	 * { matcher.locals[countIndex] = 1; ret = body.match(matcher, i, seq); }
+	 * matcher.locals[countIndex] = save; return ret; }
+	 * 
+	 * boolean study(TreeInfo info) { info.maxValid = false; info.deterministic
+	 * = false; return false; } }
+	 */
 
 	/**
 	 * Refers to a group in the regular expression. Attempts to match whatever
@@ -5554,17 +5315,18 @@ public final class Pattern implements java.io.Serializable {
 
 		BackRef(int groupCount) {
 			super();
-			groupIndex = groupCount + groupCount;
+			groupIndex = groupCount;
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			int j = matcher.groups[groupIndex];
-			int k = matcher.groups[groupIndex + 1];
+			// If the referenced group didn't match, neither can this
+			if (matcher.captures.get(groupIndex).isEmpty())
+				return false;
+			Capture last = matcher.captures.get(groupIndex).peek();
+			int j = last.getStart();
+			int k = last.getEnd();
 
 			int groupSize = k - j;
-			// If the referenced group didn't match, neither can this
-			if (j < 0)
-				return false;
 
 			// If there isn't enough input left no match
 			if (i + groupSize > matcher.to) {
@@ -5592,19 +5354,19 @@ public final class Pattern implements java.io.Serializable {
 
 		CIBackRef(int groupCount, boolean doUnicodeCase) {
 			super();
-			groupIndex = groupCount + groupCount;
+			groupIndex = groupCount;
 			this.doUnicodeCase = doUnicodeCase;
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			int j = matcher.groups[groupIndex];
-			int k = matcher.groups[groupIndex + 1];
+			// If the referenced group didn't match, neither can this
+			if (matcher.captures.get(groupIndex).isEmpty())
+				return false;
+			Capture last = matcher.captures.get(groupIndex).peek();
+			int j = last.getStart();
+			int k = last.getEnd();
 
 			int groupSize = k - j;
-
-			// If the referenced group didn't match, neither can this
-			if (j < 0)
-				return false;
 
 			// If there isn't enough input left no match
 			if (i + groupSize > matcher.to) {
@@ -6145,8 +5907,7 @@ public final class Pattern implements java.io.Serializable {
 				boolean ret = getNext().match(matcher, i + patternLength, seq);
 				if (ret) {
 					matcher.first = i;
-					matcher.groups[0] = matcher.first;
-					matcher.groups[1] = matcher.last;
+					matcher.setGroup0(seq, matcher.first, matcher.last);
 					return true;
 				}
 				i++;
@@ -6204,8 +5965,7 @@ public final class Pattern implements java.io.Serializable {
 				boolean ret = getNext().match(matcher, i + lengthInChars, seq);
 				if (ret) {
 					matcher.first = i;
-					matcher.groups[0] = matcher.first;
-					matcher.groups[1] = matcher.last;
+					matcher.setGroup0(seq, matcher.first, matcher.last);
 					return true;
 				}
 				i += countChars(seq, i, 1);

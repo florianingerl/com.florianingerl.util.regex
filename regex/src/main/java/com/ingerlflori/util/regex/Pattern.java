@@ -35,6 +35,8 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.Stack;
+import java.util.Vector;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -3346,10 +3348,7 @@ public final class Pattern implements java.io.Serializable {
 				}
 				break;
 			case '>': // (?>xxx) independent group
-				head = createGroup(true);
-				tail = root;
-				head.setNext(expr(tail));
-				head = tail = new Ques(head, INDEPENDENT);
+				head = tail = new AtomicGroup(expr(accept));
 				break;
 			case '<': // (?<xxx) look behind
 				ch = read();
@@ -3432,42 +3431,8 @@ public final class Pattern implements java.io.Serializable {
 			return node; // Dual return
 		}
 
-		if (node instanceof Ques) {
-			Ques ques = (Ques) node;
-			if (ques.type == POSSESSIVE) {
-				root = node;
-				return node;
-			}
-			tail.setNext(new BranchConn());
-			tail = tail.getNext();
-			if (ques.type == GREEDY) {
-				head = new Branch(head, null, tail);
-			} else { // Reluctant quantifier
-				head = new Branch(null, head, tail);
-			}
-			root = tail;
-			return head;
-		} else if (node instanceof Curly) {
-			Curly curly = (Curly) node;
-			root = node;
-			return node;
-			/*
-			 * if (curly.type == POSSESSIVE) { root = node; return node; } //
-			 * Discover if the group is deterministic TreeInfo info = new
-			 * TreeInfo(); if (head.study(info)) { // Deterministic GroupTail
-			 * temp = (GroupTail) tail; head = root = new GroupCurly(head.next,
-			 * curly.cmin, curly.cmax, curly.type, ((GroupTail)
-			 * tail).localIndex, ((GroupTail) tail).groupIndex, capturingGroup);
-			 * return head; } else { // Non-deterministic int temp =
-			 * ((GroupHead) head).localIndex; Loop loop; if (curly.type ==
-			 * GREEDY) loop = new Loop(this.localCount, temp); else // Reluctant
-			 * Curly loop = new LazyLoop(this.localCount, temp); Prolog prolog =
-			 * new Prolog(loop); this.localCount += 1; loop.cmin = curly.cmin;
-			 * loop.cmax = curly.cmax; loop.body = head; tail.next = loop; root
-			 * = loop; return prolog; // Dual return }
-			 */
-		}
-		throw error("Internal logic error");
+		root = node;
+		return node;
 	}
 
 	private Node recursiveGroupCall() {
@@ -3598,10 +3563,6 @@ public final class Pattern implements java.io.Serializable {
 
 	static final int LAZY = 1;
 
-	static final int POSSESSIVE = 2;
-
-	static final int INDEPENDENT = 3;
-
 	/**
 	 * Processes repetition. If the next character peeked is a quantifier then
 	 * new nodes must be appended to handle the repetition. Prev could be a
@@ -3615,12 +3576,12 @@ public final class Pattern implements java.io.Serializable {
 			ch = next();
 			if (ch == '?') {
 				next();
-				return new Ques(beginNode, LAZY);
+				return new Curly(beginNode, endNode, 0, 1, LAZY);
 			} else if (ch == '+') {
 				next();
-				return new Ques(beginNode, POSSESSIVE);
+				return new AtomicGroup(new Curly(beginNode, endNode, 0, 1, GREEDY));
 			}
-			return new Ques(beginNode, GREEDY);
+			return new Curly(beginNode, endNode, 0, 1, GREEDY);
 		case '*':
 			ch = next();
 			if (ch == '?') {
@@ -3628,7 +3589,7 @@ public final class Pattern implements java.io.Serializable {
 				return new Curly(beginNode, endNode, 0, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
-				return new Curly(beginNode, endNode, 0, MAX_REPS, POSSESSIVE);
+				return new AtomicGroup(new Curly(beginNode, endNode, 0, MAX_REPS, GREEDY));
 			}
 			return new Curly(beginNode, endNode, 0, MAX_REPS, GREEDY);
 		case '+':
@@ -3638,7 +3599,7 @@ public final class Pattern implements java.io.Serializable {
 				return new Curly(beginNode, endNode, 1, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
-				return new Curly(beginNode, endNode, 1, MAX_REPS, POSSESSIVE);
+				return new AtomicGroup(new Curly(beginNode, endNode, 1, MAX_REPS, GREEDY));
 			}
 			return new Curly(beginNode, endNode, 1, MAX_REPS, GREEDY);
 		case '{':
@@ -3665,14 +3626,14 @@ public final class Pattern implements java.io.Serializable {
 					throw error("Unclosed counted closure");
 				if (((cmin) | (cmax) | (cmax - cmin)) < 0)
 					throw error("Illegal repetition range");
-				Curly curly;
+				Node curly;
 				ch = peek();
 				if (ch == '?') {
 					next();
 					curly = new Curly(beginNode, endNode, cmin, cmax, LAZY);
 				} else if (ch == '+') {
 					next();
-					curly = new Curly(beginNode, endNode, cmin, cmax, POSSESSIVE);
+					curly = new AtomicGroup(new Curly(beginNode, endNode, cmin, cmax, GREEDY));
 				} else {
 					curly = new Curly(beginNode, endNode, cmin, cmax, GREEDY);
 				}
@@ -4736,45 +4697,26 @@ public final class Pattern implements java.io.Serializable {
 	/**
 	 * The 0 or 1 quantifier. This one class implements all three types.
 	 */
-	static final class Ques extends Node {
-		Node atom;
-		int type;
-
-		Ques(Node node, int type) {
-			this.atom = node;
-			this.type = type;
-		}
-
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			switch (type) {
-			case GREEDY:
-				return (atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last, seq))
-						|| getNext().match(matcher, i, seq);
-			case LAZY:
-				return getNext().match(matcher, i, seq)
-						|| (atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last, seq));
-			case POSSESSIVE:
-				if (atom.match(matcher, i, seq))
-					i = matcher.last;
-				return getNext().match(matcher, i, seq);
-			default:
-				return atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last, seq);
-			}
-		}
-
-		boolean study(TreeInfo info) {
-			if (type != INDEPENDENT) {
-				int minL = info.minLength;
-				atom.study(info);
-				info.minLength = minL;
-				info.deterministic = false;
-				return getNext().study(info);
-			} else {
-				atom.study(info);
-				return getNext().study(info);
-			}
-		}
-	}
+	/*
+	 * static final class Ques extends Node { Node atom; int type;
+	 * 
+	 * Ques(Node node, int type) { this.atom = node; this.type = type; }
+	 * 
+	 * boolean match(Matcher matcher, int i, CharSequence seq) { switch (type) {
+	 * case GREEDY: return (atom.match(matcher, i, seq) &&
+	 * getNext().match(matcher, matcher.last, seq)) || getNext().match(matcher,
+	 * i, seq); case LAZY: return getNext().match(matcher, i, seq) ||
+	 * (atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last,
+	 * seq)); case POSSESSIVE: if (atom.match(matcher, i, seq)) i =
+	 * matcher.last; return getNext().match(matcher, i, seq); default: return
+	 * atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last,
+	 * seq); } }
+	 * 
+	 * boolean study(TreeInfo info) { if (type != INDEPENDENT) { int minL =
+	 * info.minLength; atom.study(info); info.minLength = minL;
+	 * info.deterministic = false; return getNext().study(info); } else {
+	 * atom.study(info); return getNext().study(info); } } }
+	 */
 
 	/**
 	 * Handles the curly-brace style repetition with a specified minimum and
@@ -5101,6 +5043,28 @@ public final class Pattern implements java.io.Serializable {
 		}
 	}
 
+	static final class AtomicGroup extends Node {
+		private Node atom;
+
+		AtomicGroup(Node atom) {
+			this.atom = atom;
+		}
+
+		@Override
+		boolean match(Matcher matcher, int i, CharSequence seq) {
+			Vector<Stack<Capture>> captures = matcher.cloneCaptures();
+			if (atom.match(matcher, i, seq))
+				i = matcher.last;
+			else
+				return false;
+			boolean r = getNext().match(matcher, i, seq);
+			if (!r)
+				matcher.captures = captures;
+			return r;
+		}
+
+	}
+
 	/**
 	 * The GroupHead saves the location where the group begins in the locals and
 	 * restores them when the match is done.
@@ -5117,10 +5081,9 @@ public final class Pattern implements java.io.Serializable {
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			int save = matcher.locals[localIndex];
-			matcher.locals[localIndex] = i;
+			matcher.localVector.get(localIndex).push(i);
 			boolean ret = getNext().match(matcher, i, seq);
-			matcher.locals[localIndex] = save;
+			matcher.localVector.get(localIndex).pop();
 			return ret;
 		}
 
@@ -5145,7 +5108,7 @@ public final class Pattern implements java.io.Serializable {
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			int tmp = matcher.locals[localIndex];
+			int tmp = matcher.localVector.get(localIndex).pop();
 			// Save the group so we can unset it if it
 			// backs off of a match.
 			/*
@@ -5155,12 +5118,11 @@ public final class Pattern implements java.io.Serializable {
 
 			if (groupIndex > 0)
 				matcher.captures.get(groupIndex).push(new Capture(seq, tmp, i));
-			if (getNext().match(matcher, i, seq)) {
-				return true;
-			}
-			if (groupIndex > 0)
+			boolean r = getNext().match(matcher, i, seq);
+			if (!r && groupIndex > 0)
 				matcher.captures.get(groupIndex).pop();
-			return false;
+			matcher.localVector.get(localIndex).push(tmp);
+			return r;
 
 		}
 	}

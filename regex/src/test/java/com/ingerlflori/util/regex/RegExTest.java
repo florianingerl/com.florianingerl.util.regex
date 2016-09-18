@@ -39,7 +39,14 @@ package com.ingerlflori.util.regex;
  */
 
 import java.util.regex.*;
-import java.util.Random;
+
+import com.ingerlflori.util.regex.Matcher;
+import com.ingerlflori.util.regex.Pattern;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.*;
 import java.util.*;
 import java.nio.CharBuffer;
@@ -95,6 +102,7 @@ public class RegExTest {
 
 		// Misc
 		recursiveGroupTest();
+		capturesTest();
 		lookbehindTest();
 		nullArgumentTest();
 		backRefTest();
@@ -598,6 +606,66 @@ public class RegExTest {
 		 * "List<Tuple<String,Boolean> >", "Integer" });
 		 */
 		report("Recursive group test");
+
+	}
+
+	private static void capturesTest() throws Exception {
+		{
+			Pattern p = Pattern.compile("([a-f])+ef");
+			Matcher matcher = p.matcher("abcdef");
+
+			assertTrue(matcher.find());
+
+			Stack<Capture> captures = matcher.captures(1);
+			assertEquals(4, captures.size());
+
+			for (int i = 0; i < captures.size(); ++i) {
+				assertEquals(new String(new byte[] { (byte) ('a' + i) }), captures.get(i).getValue());
+			}
+
+		}
+
+		{
+			Pattern pattern = Pattern.compile("1((r)++)?rrr2");
+			Matcher matcher = pattern.matcher("1rrr2");
+
+			assertTrue(matcher.find());
+			assertEquals(-1, matcher.start(1));
+			assertNull(matcher.group(1));
+			assertEquals(0, matcher.captures(1).size());
+			assertNull(matcher.group(2));
+			assertEquals(-1, matcher.start(2));
+			assertEquals(0, matcher.captures(2).size());
+		}
+
+		{
+			Pattern pattern = Pattern.compile("1((?>(r)+))?rrr2");
+			Matcher matcher = pattern.matcher("1rrr2");
+
+			assertTrue(matcher.find());
+			assertEquals(-1, matcher.start(1));
+			assertNull(matcher.group(1));
+			assertEquals(0, matcher.captures(1).size());
+			assertNull(matcher.group(2));
+			assertEquals(-1, matcher.start(2));
+			assertEquals(0, matcher.captures(2).size());
+		}
+
+		{
+			Pattern pattern = Pattern.compile("1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2");
+			Matcher matcher = pattern.matcher("1jT<jT<jT>,jT<jT,jT>>2");
+			assertTrue(matcher.find());
+			assertEquals(6, matcher.captures(1).size());
+			Stack<Capture> captures = matcher.captures(1);
+			assertEquals("jT<jT<jT>,jT<jT,jT>>", captures.pop().getValue());
+			assertEquals("jT<jT,jT>", captures.pop().getValue());
+			assertEquals("jT", captures.pop().getValue());
+			assertEquals("jT", captures.pop().getValue());
+			assertEquals("jT<jT>", captures.pop().getValue());
+			assertEquals("jT", captures.pop().getValue());
+		}
+
+		report("Captures test");
 
 	}
 

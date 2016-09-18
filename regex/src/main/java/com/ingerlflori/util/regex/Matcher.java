@@ -187,7 +187,7 @@ public final class Matcher implements MatchResult {
 	 * and where groups begin. The nodes themselves are stateless, so they rely
 	 * on this field to hold state during a match.
 	 */
-	int[] locals;
+	// int[] locals;
 	Vector<Stack<Integer>> localVector;
 
 	/**
@@ -246,7 +246,7 @@ public final class Matcher implements MatchResult {
 		captures = new Vector<Stack<Capture>>(parentGroupCount);
 		captures.setSize(parentGroupCount);
 
-		locals = new int[parent.localCount];
+		// locals = new int[parent.localCount];
 		localVector = new Vector<Stack<Integer>>(parent.localCount);
 		localVector.setSize(parent.localCount);
 
@@ -276,7 +276,7 @@ public final class Matcher implements MatchResult {
 		result.first = this.first;
 		result.last = this.last;
 		// result.groups = this.groups.clone();
-		result.captures = (Vector<Stack<Capture>>) this.captures.clone();
+		result.captures = cloneCaptures();
 		return result;
 	}
 
@@ -305,14 +305,14 @@ public final class Matcher implements MatchResult {
 		// Reallocate state storage
 		int parentGroupCount = Math.max(newPattern.capturingGroupCount, 10);
 		// groups = new int[parentGroupCount * 2];
-		locals = new int[newPattern.localCount];
+		// locals = new int[newPattern.localCount];
 		localVector = new Vector<Stack<Integer>>(newPattern.localCount);
 		localVector.setSize(newPattern.localCount);
 		/*
 		 * for (int i = 0; i < groups.length; i++) groups[i] = -1;
 		 */
-		for (int i = 0; i < locals.length; i++) {
-			locals[i] = -1;
+		for (int i = 0; i < localVector.size(); i++) {
+			// locals[i] = -1;
 			localVector.set(i, new Stack<Integer>());
 		}
 		return this;
@@ -339,8 +339,8 @@ public final class Matcher implements MatchResult {
 		for (int i = 0; i < captures.size(); ++i) {
 			captures.set(i, new Stack<Capture>());
 		}
-		for (int i = 0; i < locals.length; i++) {
-			locals[i] = -1;
+		for (int i = 0; i < localVector.size(); i++) {
+			// locals[i] = -1;
 			localVector.set(i, new Stack<Integer>());
 		}
 		lastAppendPosition = 0;
@@ -414,6 +414,8 @@ public final class Matcher implements MatchResult {
 			throw new IllegalStateException("No match available");
 		if (group < 0 || group > groupCount())
 			throw new IndexOutOfBoundsException("No group " + group);
+		if (captures.get(group).isEmpty())
+			return -1;
 		return captures.get(group).peek().getStart();
 		// return groups[group * 2];
 	}
@@ -441,6 +443,8 @@ public final class Matcher implements MatchResult {
 	 */
 	public int start(String name) {
 		int group = getMatchedGroupIndex(name);
+		if (captures.get(group).isEmpty())
+			return -1;
 		return captures.get(group).peek().getStart();
 		// return groups[getMatchedGroupIndex(name) * 2];
 	}
@@ -491,6 +495,8 @@ public final class Matcher implements MatchResult {
 			throw new IllegalStateException("No match available");
 		if (group < 0 || group > groupCount())
 			throw new IndexOutOfBoundsException("No group " + group);
+		if (captures.get(group).isEmpty())
+			return -1;
 		return captures.get(group).peek().getEnd();
 		// return groups[group * 2 + 1];
 	}
@@ -518,6 +524,8 @@ public final class Matcher implements MatchResult {
 	 */
 	public int end(String name) {
 		int group = getMatchedGroupIndex(name);
+		if (captures.get(group).isEmpty())
+			return -1;
 		return captures.get(group).peek().getEnd();
 		// return groups[getMatchedGroupIndex(name) * 2 + 1];
 	}
@@ -1473,5 +1481,24 @@ public final class Matcher implements MatchResult {
 		else {
 			captures.get(0).set(0, capture);
 		}
+	}
+
+	private Stack<Capture> cloneCaptureStack(Stack<Capture> toClone) {
+		Stack<Capture> clone = new Stack<Capture>();
+		clone.setSize(toClone.size());
+		for (int i = 0; i < toClone.size(); ++i) {
+			clone.set(i, toClone.get(i) == null ? null : toClone.get(i).clone());
+		}
+
+		return clone;
+	}
+
+	Vector<Stack<Capture>> cloneCaptures() {
+		Vector<Stack<Capture>> clone = new Vector<Stack<Capture>>(captures.size());
+		clone.setSize(captures.size());
+		for (int i = 0; i < captures.size(); ++i) {
+			clone.set(i, cloneCaptureStack(captures.get(i)));
+		}
+		return clone;
 	}
 }

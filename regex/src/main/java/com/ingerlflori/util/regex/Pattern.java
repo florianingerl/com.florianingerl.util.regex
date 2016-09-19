@@ -5063,6 +5063,12 @@ public final class Pattern implements java.io.Serializable {
 			return r;
 		}
 
+		@Override
+		boolean study(TreeInfo info) {
+			atom.study(info);
+			return getNext().study(info);
+		}
+
 	}
 
 	/**
@@ -5173,6 +5179,23 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			InternalRecursiveGroupCall ircc = new InternalRecursiveGroupCall();
 			return ircc.match(matcher, i, seq);
+		}
+
+		private boolean recursive = false;
+
+		@Override
+		boolean study(TreeInfo info) {
+			if (recursive) {
+				info.maxValid = false;
+				return false; // We can return something arbitrary here
+			}
+			recursive = true;
+			Node save = groupTail.getNext();
+			groupTail.setNext(accept);
+			groupHead.study(info);
+			recursive = false;
+			groupTail.setNext(save);
+			return info.deterministic;
 		}
 
 	}

@@ -596,7 +596,23 @@ public class RegExTest {
 
 		check("1\\<2", "1<2", true);
 		check("1\\>2", "1>2", true);
-		String javaTypePattern = "\\b([A-Za-z]\\w*(\\s*\\<(\\s*(?1)\\s*(,|(?=\\>)))*\\>)?)\\b";
+
+		// recursive stuff in lookbehind and lookahead that has a maximum length
+		check("(h)(?<=(?1))ello", "hello", true);
+		check("(h|(b))(?<!(?2))ello", "hello", true);
+
+		boolean exp = false;
+		try {
+			check("1(a(?1)?z)(?<=(?1))2", "1az2", false);
+		} catch (PatternSyntaxException pse) {
+			exp = true;
+			assertTrue(pse.getMessage().contains("Look-behind group does not have an obvious maximum length"));
+		} finally {
+			assertTrue(exp);
+		}
+
+		// String javaTypePattern =
+		// "\\b([A-Za-z]\\w*(\\s*\\<(\\s*(?1)\\s*(,|(?=\\>)))*\\>)?)\\b";
 
 		// In this pattern, there might still be a mistake somewhere
 		/*
@@ -663,6 +679,54 @@ public class RegExTest {
 			assertEquals("jT", captures.pop().getValue());
 			assertEquals("jT<jT>", captures.pop().getValue());
 			assertEquals("jT", captures.pop().getValue());
+		}
+
+		{
+			Pattern pattern = Pattern.compile("([abc]+?)(b)?+(d)");
+			Matcher matcher = pattern.matcher("abcd");
+
+			assertTrue(matcher.find());
+			assertEquals("abc", matcher.group(1));
+			assertNull(matcher.group(2));
+			assertEquals("d", matcher.group(3));
+		}
+
+		{
+			Pattern pattern = Pattern.compile("1(z(?1)ab|a+)2");
+			Matcher matcher = pattern.matcher("1zaaab2");
+
+			assertTrue(matcher.find());
+			assertEquals(2, matcher.captures(1).size());
+			Capture capture = matcher.captures(1).pop();
+			assertEquals("zaaab", capture.getValue());
+			capture = matcher.captures(1).pop();
+			assertEquals("aa", capture.getValue());
+		}
+
+		{
+			Pattern pattern = Pattern.compile("1(z(?1)|z)2");
+			Matcher matcher = pattern.matcher("1zzz2");
+
+			assertTrue(matcher.find());
+			assertEquals(3, matcher.captures(1).size());
+			Capture capture = matcher.captures(1).pop();
+			assertEquals("zzz", capture.getValue());
+			capture = matcher.captures(1).pop();
+			assertEquals("zz", capture.getValue());
+			capture = matcher.captures(1).pop();
+			assertEquals("z", capture.getValue());
+		}
+
+		{
+			Pattern pattern = Pattern.compile("1(a+)y(?1)ab2");
+			Matcher matcher = pattern.matcher("1ayaaab2");
+
+			assertTrue(matcher.find());
+			assertEquals(2, matcher.captures(1).size());
+			Capture capture = matcher.captures(1).pop();
+			assertEquals("aa", capture.getValue());
+			capture = matcher.captures(1).pop();
+			assertEquals("a", capture.getValue());
 		}
 
 		report("Captures test");

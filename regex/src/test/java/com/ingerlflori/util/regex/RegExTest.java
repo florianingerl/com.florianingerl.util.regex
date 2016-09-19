@@ -592,10 +592,18 @@ public class RegExTest {
 		check(pattern, "1jT<jT<jT>,jT<jT,jT>>2", true);
 
 		// Equal number of brackets
-		check("(\\(([^()]+|(?1))*\\))", "(nixda (oja (hier) isjagut) nachher", new String[] { "(oja (hier) isjagut)" });
+		// This test passes, but its performence is bad!!!
+		// check("(\\(([^()]+|(?1))*\\))", "(nixda (oja (hier) isjagut)
+		// nachher", new String[] { "(oja (hier) isjagut)" });
 
 		check("1\\<2", "1<2", true);
 		check("1\\>2", "1>2", true);
+
+		// Recursion with group names
+		check("(?<mygroupname>a(?mygroupname)?z)", "aazz", true);
+		pattern = "1(?<indianagroup>jT(\\<((?indianagroup)(,|(?=\\>)))+\\>)?)2";
+		check(pattern, "1jT2", true);
+		check(pattern, "1jT<jT>2", true);
 
 		// recursive stuff in lookbehind and lookahead that has a maximum length
 		check("(h)(?<=(?1))ello", "hello", true);

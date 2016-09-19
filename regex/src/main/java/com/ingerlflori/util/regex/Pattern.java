@@ -3391,11 +3391,15 @@ public final class Pattern implements java.io.Serializable {
 			default: // (?xxx:) inlined match flags or (?digit) recursive group
 						// call
 				unread();
+				int groupNumber;
 				if (ASCII.isDigit(ch)) { // recursive group call
-					head = tail = recursiveGroupCall();
+					groupNumber = readNumber();
+					head = tail = recursiveGroupCall(groupNumber);
 					break;
+				} else if ((groupNumber = doesNameOfGroupFollow()) != -1) // name
+				{
+					head = tail = recursiveGroupCall(groupNumber);
 				} else {
-
 					addFlag();
 					ch = read();
 					if (ch == ')') {
@@ -3435,8 +3439,25 @@ public final class Pattern implements java.io.Serializable {
 		return node;
 	}
 
-	private Node recursiveGroupCall() {
-		int groupNumber = readNumber();
+	private int doesNameOfGroupFollow() {
+		int ch = peek();
+		int save = cursor;
+		if (ASCII.isLower(ch) || ASCII.isUpper(ch)) {
+			StringBuilder sb = new StringBuilder();
+			while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch)) {
+				sb.append(Character.toChars(ch));
+			}
+			if (!namedGroups().containsKey(sb.toString())) {
+				cursor = save;
+				return -1;
+			}
+			unread();
+			return namedGroups.get(sb.toString());
+		}
+		return -1;
+	}
+
+	private Node recursiveGroupCall(int groupNumber) {
 		if (groupNumber == 0)
 			throw error("Recursion to group 0 is not yet supported by this regex engine");
 		if (groupNumber >= capturingGroupCount)

@@ -605,6 +605,16 @@ public class RegExTest {
 		check(pattern, "1jT2", true);
 		check(pattern, "1jT<jT>2", true);
 
+		pattern = "\\b(([a-zA-Z])(?1)?(?<-2>\\2)|[a-zA-Z])\\b";
+		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
+				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
+		pattern = "\\b(([a-zA-Z])(?1)?\\2(?<-2>)|[a-zA-Z])\\b";
+		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
+				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
+		pattern = "\\b(?<anagramm>(?<letter>[a-zA-Z])(?anagramm)?\\k<letter>(?<-letter>)|[a-zA-Z])\\b";
+		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
+				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
+
 		// recursive stuff in lookbehind and lookahead that has a maximum length
 		check("(h)(?<=(?1))ello", "hello", true);
 		check("(h|(b))(?<!(?2))ello", "hello", true);

@@ -3363,6 +3363,19 @@ public final class Pattern implements java.io.Serializable {
 					namedGroups().put(name, capturingGroupCount - 1);
 					head.setNext(expr(tail));
 					break;
+				} else if (ch == '-') {
+					ch = peek();
+					int groupNumber;
+					if (ASCII.isDigit(ch)) {
+						groupNumber = readNumber();
+					} else if ((groupNumber = doesNameOfGroupFollow()) == -1) {
+						throw error("Unknown syntax");
+					}
+					accept('>', "Unkown syntax");
+					tail = new PopCapture(groupNumber);
+					head = expr(tail);
+					break;
+
 				}
 				int start = cursor;
 				head = createGroup(true);
@@ -5162,6 +5175,26 @@ public final class Pattern implements java.io.Serializable {
 			this.groupHead = groupHead;
 			this.groupTail = groupTail;
 		}
+	}
+
+	static final class PopCapture extends Node {
+		private int groupIndex;
+
+		PopCapture(int groupIndex) {
+			this.groupIndex = groupIndex;
+		}
+
+		@Override
+		boolean match(Matcher matcher, int i, CharSequence seq) {
+			if (matcher.captures.get(groupIndex).isEmpty())
+				return false;
+			Capture capture = matcher.captures.get(groupIndex).pop();
+			boolean r = getNext().match(matcher, i, seq);
+			if (!r)
+				matcher.captures.get(groupIndex).push(capture);
+			return r;
+		}
+
 	}
 
 	final class RecursiveGroupCall extends Node {

@@ -25,6 +25,8 @@
 
 package com.ingerlflori.util.regex;
 
+import java.util.Stack;
+
 /**
  * The result of a match operation.
  *
@@ -78,6 +80,8 @@ public interface MatchResult {
 	 */
 	public int start(int group);
 
+	public int start(String group);
+
 	/**
 	 * Returns the offset after the last character matched.
 	 *
@@ -116,6 +120,8 @@ public interface MatchResult {
 	 *             index
 	 */
 	public int end(int group);
+
+	public int end(String group);
 
 	/**
 	 * Returns the input subsequence matched by the previous match.
@@ -182,6 +188,12 @@ public interface MatchResult {
 	 *             index
 	 */
 	public String group(int group);
+
+	public String group(String group);
+
+	public Stack<Capture> captures(int group);
+
+	public Stack<Capture> captures(String group);
 
 	/**
 	 * Returns the number of capturing groups in this match result's pattern.

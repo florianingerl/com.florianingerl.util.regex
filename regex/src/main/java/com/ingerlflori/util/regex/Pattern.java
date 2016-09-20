@@ -5672,12 +5672,19 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
+			Vector<Stack<Capture>> savedCaptures = matcher.cloneCaptures();
 			for (int j = i - rmin; !conditionMatched && j >= from; j--) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
-			return conditionMatched && getNext().match(matcher, i, seq);
+			if (conditionMatched) {
+				conditionMatched = getNext().match(matcher, i, seq);
+				if (!conditionMatched) {
+					matcher.captures = savedCaptures;
+				}
+			}
+			return conditionMatched;
 		}
 	}
 
@@ -5703,13 +5710,19 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
-
+			Vector<Stack<Capture>> savedCaptures = matcher.cloneCaptures();
 			for (int j = i - rminChars; !conditionMatched && j >= from; j -= j > from ? countChars(seq, j, -1) : 1) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
-			return conditionMatched && getNext().match(matcher, i, seq);
+			if (conditionMatched) {
+				conditionMatched = getNext().match(matcher, i, seq);
+				if (!conditionMatched) {
+					matcher.captures = savedCaptures;
+				}
+			}
+			return conditionMatched;
 		}
 	}
 
@@ -5736,12 +5749,16 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
+			Vector<Stack<Capture>> savedCaptures = matcher.cloneCaptures();
 			for (int j = i - rmin; !conditionMatched && j >= from; j--) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
 			// Reinstate region boundaries
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
+			if (conditionMatched) {
+				matcher.captures = savedCaptures;
+			}
 			return !conditionMatched && getNext().match(matcher, i, seq);
 		}
 	}
@@ -5767,12 +5784,16 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
+			Vector<Stack<Capture>> savedCaptures = matcher.cloneCaptures();
 			for (int j = i - rminChars; !conditionMatched && j >= from; j -= j > from ? countChars(seq, j, -1) : 1) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
 			// Reinstate region boundaries
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
+			if (conditionMatched) {
+				matcher.captures = savedCaptures;
+			}
 			return !conditionMatched && getNext().match(matcher, i, seq);
 		}
 	}

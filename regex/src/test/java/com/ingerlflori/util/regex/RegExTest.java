@@ -40,6 +40,8 @@ package com.ingerlflori.util.regex;
 
 import java.util.regex.*;
 
+import org.junit.Test;
+
 import com.ingerlflori.util.regex.Matcher;
 import com.ingerlflori.util.regex.Pattern;
 
@@ -63,6 +65,15 @@ public class RegExTest {
 	private static boolean failure = false;
 	private static int failCount = 0;
 	private static String firstFailure = null;
+
+	@Test
+	public void callMain() {
+		try {
+			main(null);
+		} catch (Exception e) {
+			assertTrue(e.getMessage(), false);
+		}
+	}
 
 	/**
 	 * Main to interpret arguments and run several tests.
@@ -822,6 +833,9 @@ public class RegExTest {
 		// Positive reluctant
 		check("(?<=%b{1,4}?)foo", "%bbbbfoo", new String[] { "foo" });
 
+		check("1abcd(?<=([a-d]{1,4}))y\\12", "1abcdyd2", true);
+		check("1a((?<=(a))go away|good)2(?(2)(?!))", "1agood2", true);
+		check("1a((?<!(a))|good)2(?(2)(?!))", "1agood2", true);
 		// supplementary
 		check("(?<=%b{1,4})fo\ud800\udc00o", "%bbbbfo\ud800\udc00o", new String[] { "fo\ud800\udc00o" });
 		check("(?<=%b{1,4}?)fo\ud800\udc00o", "%bbbbfo\ud800\udc00o", new String[] { "fo\ud800\udc00o" });

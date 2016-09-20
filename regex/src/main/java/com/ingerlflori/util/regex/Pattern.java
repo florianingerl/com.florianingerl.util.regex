@@ -3398,6 +3398,25 @@ public final class Pattern implements java.io.Serializable {
 					throw error("Unknown look-behind group");
 				}
 				break;
+			case '(': // (?(groupNumber)yes|no)
+				int group;
+				if (ASCII.isDigit(peek()))
+					group = readNumber();
+				else if ((group = doesNameOfGroupFollow()) == -1) {
+					throw error("Unkown construct");
+				}
+				accept(')', "Unclosed condition");
+				head = createGroup(true);
+				tail = root;
+				head.next = expr(tail);
+				if (head.next instanceof Branch) {
+					Branch branch = (Branch) head.next;
+					head.next = new ConditionalGP(group, branch.atoms[0], branch.atoms[1]);
+				} else {
+					head.next = new ConditionalGP(group, head.next, null);
+					head.next.next = tail;
+				}
+				break;
 			case '$':
 			case '@':
 				throw error("Unknown group type");
@@ -5480,6 +5499,36 @@ public final class Pattern implements java.io.Serializable {
 		}
 	}
 
+	static final class ConditionalGP extends Node {
+		int groupNumber;
+		Node yes;
+		Node not;
+
+		ConditionalGP(int groupNumber, Node yes, Node not) {
+			this.groupNumber = groupNumber;
+			this.yes = yes;
+			this.not = not;
+		}
+
+		@Override
+		boolean match(Matcher matcher, int i, CharSequence seq) {
+			if (!matcher.captures.get(groupNumber).isEmpty()) {
+				return yes.match(matcher, i, seq);
+			} else if (not != null) {
+				return not.match(matcher, i, seq);
+			} else {
+				return getNext().match(matcher, i, seq);
+			}
+		}
+
+		@Override
+		boolean study(TreeInfo info) {
+			info.maxValid = false;
+			return getNext().study(info);
+		}
+
+	}
+
 	static final class Conditional extends Node {
 		Node cond, yes, not;
 
@@ -5532,6 +5581,7 @@ public final class Pattern implements java.io.Serializable {
 			int savedTo = matcher.to;
 			boolean conditionMatched = false;
 
+			Vector<Stack<Capture>> captures = matcher.cloneCaptures();
 			// Relax transparent region boundaries for lookahead
 			if (matcher.transparentBounds)
 				matcher.to = matcher.getTextLength();
@@ -5541,7 +5591,12 @@ public final class Pattern implements java.io.Serializable {
 				// Reinstate region boundaries
 				matcher.to = savedTo;
 			}
-			return conditionMatched && getNext().match(matcher, i, seq);
+			if (conditionMatched) {
+				conditionMatched = conditionMatched & getNext().match(matcher, i, seq);
+				if (!conditionMatched)
+					matcher.captures = captures;
+			}
+			return conditionMatched;
 		}
 	}
 
@@ -5559,6 +5614,7 @@ public final class Pattern implements java.io.Serializable {
 			int savedTo = matcher.to;
 			boolean conditionMatched = false;
 
+			Vector<Stack<Capture>> captures = matcher.cloneCaptures();
 			// Relax transparent region boundaries for lookahead
 			if (matcher.transparentBounds)
 				matcher.to = matcher.getTextLength();
@@ -5574,6 +5630,9 @@ public final class Pattern implements java.io.Serializable {
 			} finally {
 				// Reinstate region boundaries
 				matcher.to = savedTo;
+			}
+			if (!conditionMatched) {
+				matcher.captures = captures;
 			}
 			return conditionMatched && getNext().match(matcher, i, seq);
 		}

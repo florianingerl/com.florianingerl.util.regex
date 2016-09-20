@@ -44,6 +44,7 @@ import com.ingerlflori.util.regex.Matcher;
 import com.ingerlflori.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -103,6 +104,8 @@ public class RegExTest {
 		// Misc
 		recursiveGroupTest();
 		capturesTest();
+		conditionalTest();
+		lookaheadTest();
 		lookbehindTest();
 		nullArgumentTest();
 		backRefTest();
@@ -643,6 +646,31 @@ public class RegExTest {
 
 	}
 
+	private static void conditionalTest() throws Exception {
+		String pattern = "1(a)?bbb(?(1)yy|zz)st2";
+		check(pattern, "1abbbyyst2", true);
+		check(pattern, "1abbbzzst2", false);
+		check(pattern, "1bbbzzst2", true);
+		check(pattern, "1bbbyyst2", false);
+
+		pattern = "1(?<letter>a)?bbb(?(letter)yy|zz)st2";
+		check(pattern, "1abbbyyst2", true);
+		check(pattern, "1abbbzzst2", false);
+		check(pattern, "1bbbzzst2", true);
+		check(pattern, "1bbbyyst2", false);
+
+		pattern = "1(a)?bbb(?(1)yy)st2";
+		check(pattern, "1abbbyyst2", true);
+		check(pattern, "1abbbst2", false);
+		check(pattern, "1bbbst2", true);
+		check(pattern, "1bbbyyst2", false);
+
+		pattern = "1(?<letter>a)?bbb(?(letter)yy)st2";
+		check(pattern, "1abbbyyst2", true);
+
+		report("Conditional");
+	}
+
 	private static void capturesTest() throws Exception {
 		{
 			Pattern p = Pattern.compile("([a-f])+ef");
@@ -747,8 +775,29 @@ public class RegExTest {
 			assertEquals("a", capture.getValue());
 		}
 
+		// backtracking of (?<-groupNumber>) supported?
+		check("1(a)((?<-1>)r)?r\\12", "1ara2", true);
+		// backtracking of (?<-groupNumber>) inside atomar group supported?
+		check("1(amen)((?>(?<-1>r)))?r\\12", "1amenramen2", true);
+
+		String anagramm = "\\b([a-zA-Z])*(?(1)[a-zA-Z]?|[a-zA-Z])(?<-1>\\1)*(?!(?<-1>))\\b";
+
+		check(anagramm, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
+				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
+
 		report("Captures test");
 
+	}
+
+	private static void lookaheadTest() throws Exception {
+		// positive lookahead
+		check("1(?=(a+))\\1{2}2", "1aaaa2", false);
+		check("1((?=([a-d]+))go away|abcd)2(?(2)(?!))", "1abcd2", true);
+
+		// negative lookahead
+		check("1((?!([a-d]+))|abcd)2(?(2)(?!))", "1abcd2", true);
+
+		report("Lookahead");
 	}
 
 	private static void lookbehindTest() throws Exception {

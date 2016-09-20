@@ -5523,8 +5523,36 @@ public final class Pattern implements java.io.Serializable {
 
 		@Override
 		boolean study(TreeInfo info) {
-			info.maxValid = false;
-			return getNext().study(info);
+			int minL = info.minLength;
+			int maxL = info.maxLength;
+			boolean maxV = info.maxValid;
+
+			int minL2 = Integer.MAX_VALUE; // arbitrary large enough num
+			int maxL2 = -1;
+			info.reset();
+			yes.study(info);
+			minL2 = Math.min(minL2, info.minLength);
+			maxL2 = Math.max(maxL2, info.maxLength);
+			maxV = (maxV & info.maxValid);
+			if (not != null) {
+				info.reset();
+				not.study(info);
+				minL2 = Math.min(minL2, info.minLength);
+				maxL2 = Math.max(maxL2, info.maxLength);
+				maxV = (maxV & info.maxValid);
+
+			} else {
+				info.reset();
+				getNext().study(info);
+				minL2 = Math.min(minL2, info.minLength);
+				// Maximum can't get higher as with yes or no
+			}
+
+			info.minLength = minL + minL2;
+			info.maxLength = maxL + maxL2;
+			info.maxValid = maxV;
+			info.deterministic = false;
+			return false;
 		}
 
 	}

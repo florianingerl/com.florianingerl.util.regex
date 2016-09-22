@@ -33,7 +33,6 @@ import sun.security.action.GetPropertyAction;
  *
  * @author unascribed
  * @since 1.4
- * @spec JSR-51
  */
 
 public class PatternSyntaxException extends IllegalArgumentException {

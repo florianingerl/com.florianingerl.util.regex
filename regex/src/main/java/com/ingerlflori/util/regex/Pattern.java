@@ -635,6 +635,50 @@ import java.util.stream.StreamSupport;
  * </tr>
  * <!-- Metachars: !$()*+.<>?[\]^{|} -->
  *
+ *
+ * <tr>
+ * <th>&nbsp;</th>
+ * </tr>
+ * <tr align="left">
+ * <th colspan="2" id="recursive">Recursive expressions</th>
+ * </tr>
+ * <tr>
+ * <td valign="top" headers="construct recursive">
+ * <tt>(?<a href="#groupname">name</a>)</tt></td>
+ * <td headers="matches">Matches the pattern of the
+ * <a href="#groupname">named-capturing group</a> "name" again.</td>
+ * </tr>
+ * <tr>
+ * <td valign="top" headers="construct recursive"><tt>(?</tt><i>n</i><tt>)</tt>
+ * </td>
+ * <td headers="matches">Matches the pattern given by the <i>n</i><sup>th</sup>
+ * group again. <i>n</i> must be greater than 0.</td>
+ * </tr>
+ * <tr>
+ * <th>&nbsp;</th>
+ * </tr>
+ * <tr align="left">
+ * <th colspan="2" id="conditional">Conditional expressions</th>
+ * </tr>
+ * <tr>
+ * <td valign="top" headers="construct conditional">
+ * <tt>(?(<a href="#groupname">name</a>)Y|N)</tt></td>
+ * <td headers="matches">If the capture stack of the
+ * <a href="#groupname">named-capturing group</a> "name" isn't empty, Y is
+ * matched. Otherwise the optional pattern N is matched.</td>
+ * </tr>
+ * <tr>
+ * <td valign="top" headers="construct conditional"><tt>(?(</tt><i>n</i>
+ * <tt>)Y|N)</tt></td>
+ * <td headers="matches">If the capture stack of the <i>n</i><sup>th</sup> group
+ * isn't empty, Y is matched. Otherwise the optional pattern N is matched.</td>
+ * </tr>
+ * <tr>
+ * <td valign="top" headers="construct conditional"><tt>(?(COND)Y|N)</tt></td>
+ * <td headers="matches">If the pattern (?=COND) can be matched, Y is matched.
+ * Otherwise the optional pattern N is matched.</td>
+ * </tr>
+ *
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
@@ -647,6 +691,20 @@ import java.util.stream.StreamSupport;
  * <td valign="top" headers="construct special">
  * <tt>(?&lt;<a href="#groupname">name</a>&gt;</tt><i>X</i><tt>)</tt></td>
  * <td headers="matches"><i>X</i>, as a named-capturing group</td>
+ * </tr>
+ * <tr>
+ * <td valign="top" headers="construct special">
+ * <tt>(?&lt;-<a href="#groupname">name</a>&gt;</tt><i>X</i><tt>)</tt></td>
+ * <td headers="matches">After a successfull match of <i>X</i>, one capture is
+ * popped from the capture stack of the <a href="#groupname">named-capturing
+ * group</a> "name". If the capture stack is empty, the search backtracks.</td>
+ * </tr>
+ * <tr>
+ * <td valign="top" headers="construct special"><tt>(?&lt;-</tt><i>n</i>
+ * <tt>&gt;</tt><i>X</i><tt>)</tt></td>
+ * <td headers="matches">After a successfull match of <i>X</i>, one capture is
+ * popped from the capture stack of the <i>n</i><sup>th</sup> group. If the
+ * capture stack is empty, the search backtracks.</td>
  * </tr>
  * <tr>
  * <td valign="top" headers="construct special"><tt>(?:</tt><i>X</i><tt>)</tt>
@@ -694,9 +752,8 @@ import java.util.stream.StreamSupport;
  * <tr>
  * <td valign="top" headers="construct special"><tt>(?&gt;</tt><i>X</i>
  * <tt>)</tt></td>
- * <td headers="matches"><i>X</i>, as an independent, non-capturing group</td>
+ * <td headers="matches"><i>X</i>, as an atomic, non-capturing group</td>
  * </tr>
- *
  * </table>
  *
  * <hr>
@@ -1217,7 +1274,6 @@ import java.util.stream.StreamSupport;
  * @author Mark Reinhold
  * @author JSR-51 Expert Group
  * @since 1.4
- * @spec JSR-51
  */
 
 public final class Pattern implements java.io.Serializable {

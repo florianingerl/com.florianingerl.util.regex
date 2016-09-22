@@ -121,7 +121,6 @@ import java.util.Vector;
  * @author Mark Reinhold
  * @author JSR-51 Expert Group
  * @since 1.4
- * @spec JSR-51
  */
 
 public final class Matcher implements MatchResult {
@@ -132,11 +131,9 @@ public final class Matcher implements MatchResult {
 	Pattern parentPattern;
 
 	/**
-	 * The storage used by groups. They may contain invalid values if a group
-	 * was skipped during the matching.
+	 * The storage used by groups. Each time a group is matched, one capture is
+	 * added to the stack of captures for that group
 	 */
-	// int[] groups;
-
 	Vector<Stack<Capture>> captures;
 
 	/**
@@ -183,11 +180,10 @@ public final class Matcher implements MatchResult {
 	int lastAppendPosition = 0;
 
 	/**
-	 * Storage used by nodes to tell what repetition they are on in a pattern,
-	 * and where groups begin. The nodes themselves are stateless, so they rely
-	 * on this field to hold state during a match.
+	 * Storage used by GroupHead and GroupTail nodes used to track where groups
+	 * begin. The nodes themselves are stateless, so they rely on this field to
+	 * hold state during a match.
 	 */
-	// int[] locals;
 	Vector<Stack<Integer>> localVector;
 
 	/**
@@ -242,11 +238,9 @@ public final class Matcher implements MatchResult {
 
 		// Allocate state storage
 		int parentGroupCount = Math.max(parent.capturingGroupCount, 10);
-		// groups = new int[parentGroupCount * 2];
 		captures = new Vector<Stack<Capture>>(parentGroupCount);
 		captures.setSize(parentGroupCount);
 
-		// locals = new int[parent.localCount];
 		localVector = new Vector<Stack<Integer>>(parent.localCount);
 		localVector.setSize(parent.localCount);
 
@@ -275,7 +269,6 @@ public final class Matcher implements MatchResult {
 		Matcher result = new Matcher(this.parentPattern, text.toString());
 		result.first = this.first;
 		result.last = this.last;
-		// result.groups = this.groups.clone();
 		result.captures = cloneCaptures();
 		return result;
 	}
@@ -304,15 +297,10 @@ public final class Matcher implements MatchResult {
 
 		// Reallocate state storage
 		int parentGroupCount = Math.max(newPattern.capturingGroupCount, 10);
-		// groups = new int[parentGroupCount * 2];
-		// locals = new int[newPattern.localCount];
 		localVector = new Vector<Stack<Integer>>(newPattern.localCount);
 		localVector.setSize(newPattern.localCount);
-		/*
-		 * for (int i = 0; i < groups.length; i++) groups[i] = -1;
-		 */
+
 		for (int i = 0; i < localVector.size(); i++) {
-			// locals[i] = -1;
 			localVector.set(i, new Stack<Integer>());
 		}
 		return this;
@@ -333,14 +321,10 @@ public final class Matcher implements MatchResult {
 		first = -1;
 		last = 0;
 		oldLast = -1;
-		/*
-		 * for (int i = 0; i < groups.length; i++) { groups[i] = -1; }
-		 */
 		for (int i = 0; i < captures.size(); ++i) {
 			captures.set(i, new Stack<Capture>());
 		}
 		for (int i = 0; i < localVector.size(); i++) {
-			// locals[i] = -1;
 			localVector.set(i, new Stack<Integer>());
 		}
 		lastAppendPosition = 0;
@@ -417,7 +401,6 @@ public final class Matcher implements MatchResult {
 		if (captures.get(group).isEmpty())
 			return -1;
 		return captures.get(group).peek().getStart();
-		// return groups[group * 2];
 	}
 
 	/**
@@ -446,7 +429,6 @@ public final class Matcher implements MatchResult {
 		if (captures.get(group).isEmpty())
 			return -1;
 		return captures.get(group).peek().getStart();
-		// return groups[getMatchedGroupIndex(name) * 2];
 	}
 
 	/**
@@ -498,7 +480,6 @@ public final class Matcher implements MatchResult {
 		if (captures.get(group).isEmpty())
 			return -1;
 		return captures.get(group).peek().getEnd();
-		// return groups[group * 2 + 1];
 	}
 
 	/**
@@ -527,7 +508,6 @@ public final class Matcher implements MatchResult {
 		if (captures.get(group).isEmpty())
 			return -1;
 		return captures.get(group).peek().getEnd();
-		// return groups[getMatchedGroupIndex(name) * 2 + 1];
 	}
 
 	/**
@@ -605,11 +585,6 @@ public final class Matcher implements MatchResult {
 			return null;
 		Capture last = captures.get(group).peek();
 		return last.getValue();
-		/*
-		 * if ((groups[group * 2] == -1) || (groups[group * 2 + 1] == -1))
-		 * return null; return getSubSequence(groups[group * 2], groups[group *
-		 * 2 + 1]).toString();
-		 */
 	}
 
 	/**
@@ -647,19 +622,37 @@ public final class Matcher implements MatchResult {
 			return null;
 		Capture last = captures.get(group).peek();
 		return last.getValue();
-		/*
-		 * if ((groups[group * 2] == -1) || (groups[group * 2 + 1] == -1))
-		 * return null; return getSubSequence(groups[group * 2], groups[group *
-		 * 2 + 1]).toString();
-		 */
 	}
 
+	/**
+	 * Returns the capture stack of the given group during the previous match
+	 * operation.
+	 * 
+	 * <p>
+	 * </p>
+	 * 
+	 * @param group
+	 *            The index of a capturing group in this matcher's pattern
+	 * @return The capture stack of the group. This can be an empty stack.
+	 */
 	public Stack<Capture> captures(int group) {
 		if (group < 0 || group > groupCount())
 			throw new IndexOutOfBoundsException("No group " + group);
 		return captures.get(group);
 	}
 
+	/**
+	 * Returns the capture stack of the given
+	 * <a href="Pattern.html#groupname">named-capturing group</a> during the
+	 * previous match operation.
+	 * 
+	 * <p>
+	 * </p>
+	 * 
+	 * @param name
+	 *            The name of a named-capturing group in this matcher's pattern
+	 * @return The capture stack of the named group. This can be an empty stack.
+	 */
 	public Stack<Capture> captures(String name) {
 		int group = getMatchedGroupIndex(name);
 		return captures(group);
@@ -1389,9 +1382,6 @@ public final class Matcher implements MatchResult {
 		from = from < 0 ? 0 : from;
 		this.first = from;
 		this.oldLast = oldLast < 0 ? from : oldLast;
-		/*
-		 * for (int i = 0; i < groups.length; i++) groups[i] = -1;
-		 */
 		for (int i = 0; i < captures.size(); ++i) {
 			captures.set(i, new Stack<Capture>());
 		}
@@ -1415,9 +1405,6 @@ public final class Matcher implements MatchResult {
 		from = from < 0 ? 0 : from;
 		this.first = from;
 		this.oldLast = oldLast < 0 ? from : oldLast;
-		/*
-		 * for (int i = 0; i < groups.length; i++) groups[i] = -1;
-		 */
 		for (int i = 0; i < captures.size(); ++i) {
 			captures.set(i, new Stack<Capture>());
 		}

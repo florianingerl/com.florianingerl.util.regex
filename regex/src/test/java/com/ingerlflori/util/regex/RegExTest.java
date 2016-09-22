@@ -608,8 +608,8 @@ public class RegExTest {
 
 		// Equal number of brackets
 		// This test passes, but its performence is bad!!!
-		// check("(\\(([^()]+|(?1))*\\))", "(nixda (oja (hier) isjagut)
-		// nachher", new String[] { "(oja (hier) isjagut)" });
+		check("(\\(([^()]+|(?1))*+\\))", "(nixda (oja (hier) isjagut) nachher",
+				new String[] { "(oja (hier) isjagut)" });
 
 		check("1\\<2", "1<2", true);
 		check("1\\>2", "1>2", true);
@@ -712,108 +712,16 @@ public class RegExTest {
 	}
 
 	private static void capturesTest() throws Exception {
-		{
-			Pattern p = Pattern.compile("([a-f])+ef");
-			Matcher matcher = p.matcher("abcdef");
+		check("([a-f])+ef_(?<-1>d)(?<-1>c)(?<-1>b)(?<-1>a)(?(1)(?!))", "abcdef_dcba", true);
+		check("1((r)++)?rrr2(?(1)(?!))(?(2)(?!))", "1rrr2", true);
+		check("1((?>(r)+))?rrr2(?(2)(?!))", "1rrr2", true);
+		check("1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2_(?<-1>\\1)_(?<-1>\\1)_(?<-1>){2}(?<-1>\\1)",
+				"1jT<jT<jT>,jT<jT,jT>>2_jT<jT<jT>,jT<jT,jT>>_jT<jT,jT>_jT<jT>", true);
 
-			assertTrue(matcher.find());
-
-			Stack<Capture> captures = matcher.captures(1);
-			assertEquals(4, captures.size());
-
-			for (int i = 0; i < captures.size(); ++i) {
-				assertEquals(new String(new byte[] { (byte) ('a' + i) }), captures.get(i).getValue());
-			}
-
-		}
-
-		{
-			Pattern pattern = Pattern.compile("1((r)++)?rrr2");
-			Matcher matcher = pattern.matcher("1rrr2");
-
-			assertTrue(matcher.find());
-			assertEquals(-1, matcher.start(1));
-			assertNull(matcher.group(1));
-			assertEquals(0, matcher.captures(1).size());
-			assertNull(matcher.group(2));
-			assertEquals(-1, matcher.start(2));
-			assertEquals(0, matcher.captures(2).size());
-		}
-
-		{
-			Pattern pattern = Pattern.compile("1((?>(r)+))?rrr2");
-			Matcher matcher = pattern.matcher("1rrr2");
-
-			assertTrue(matcher.find());
-			assertEquals(-1, matcher.start(1));
-			assertNull(matcher.group(1));
-			assertEquals(0, matcher.captures(1).size());
-			assertNull(matcher.group(2));
-			assertEquals(-1, matcher.start(2));
-			assertEquals(0, matcher.captures(2).size());
-		}
-
-		{
-			Pattern pattern = Pattern.compile("1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2");
-			Matcher matcher = pattern.matcher("1jT<jT<jT>,jT<jT,jT>>2");
-			assertTrue(matcher.find());
-			assertEquals(6, matcher.captures(1).size());
-			Stack<Capture> captures = matcher.captures(1);
-			assertEquals("jT<jT<jT>,jT<jT,jT>>", captures.pop().getValue());
-			assertEquals("jT<jT,jT>", captures.pop().getValue());
-			assertEquals("jT", captures.pop().getValue());
-			assertEquals("jT", captures.pop().getValue());
-			assertEquals("jT<jT>", captures.pop().getValue());
-			assertEquals("jT", captures.pop().getValue());
-		}
-
-		{
-			Pattern pattern = Pattern.compile("([abc]+?)(b)?+(d)");
-			Matcher matcher = pattern.matcher("abcd");
-
-			assertTrue(matcher.find());
-			assertEquals("abc", matcher.group(1));
-			assertNull(matcher.group(2));
-			assertEquals("d", matcher.group(3));
-		}
-
-		{
-			Pattern pattern = Pattern.compile("1(z(?1)ab|a+)2");
-			Matcher matcher = pattern.matcher("1zaaab2");
-
-			assertTrue(matcher.find());
-			assertEquals(2, matcher.captures(1).size());
-			Capture capture = matcher.captures(1).pop();
-			assertEquals("zaaab", capture.getValue());
-			capture = matcher.captures(1).pop();
-			assertEquals("aa", capture.getValue());
-		}
-
-		{
-			Pattern pattern = Pattern.compile("1(z(?1)|z)2");
-			Matcher matcher = pattern.matcher("1zzz2");
-
-			assertTrue(matcher.find());
-			assertEquals(3, matcher.captures(1).size());
-			Capture capture = matcher.captures(1).pop();
-			assertEquals("zzz", capture.getValue());
-			capture = matcher.captures(1).pop();
-			assertEquals("zz", capture.getValue());
-			capture = matcher.captures(1).pop();
-			assertEquals("z", capture.getValue());
-		}
-
-		{
-			Pattern pattern = Pattern.compile("1(a+)y(?1)ab2");
-			Matcher matcher = pattern.matcher("1ayaaab2");
-
-			assertTrue(matcher.find());
-			assertEquals(2, matcher.captures(1).size());
-			Capture capture = matcher.captures(1).pop();
-			assertEquals("aa", capture.getValue());
-			capture = matcher.captures(1).pop();
-			assertEquals("a", capture.getValue());
-		}
+		check("([abc]+?)(b)?+(d)(?(2)(?!))", "abcd", true);
+		check("1(z(?1)ab|a+)2(?<-1>_\\1){2}(?(1)(?!))", "1zaaab2_zaaab_aa", true);
+		check("1(z(?1)|z)2(?<-1>_\\1){3}(?(1)(?!))", "1zzz2_zzz_zz_z", true);
+		check("1(a+)y(?1)ab2(?<-1>_\\1){2}(?(1)(?!))", "1ayaaab2_aa_a", true);
 
 		// backtracking of (?<-groupNumber>) supported?
 		check("1(a)((?<-1>)r)?r\\12", "1ara2", true);

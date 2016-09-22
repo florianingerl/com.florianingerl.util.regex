@@ -115,7 +115,8 @@ public class RegExTest {
 		// Misc
 		recursiveGroupTest();
 		capturesTest();
-		conditionalTest();
+		conditionalBasedOnValidGroupCaptureTest();
+		lookaheadConditionalTest();
 		lookaheadTest();
 		lookbehindTest();
 		nullArgumentTest();
@@ -643,6 +644,8 @@ public class RegExTest {
 			assertTrue(exp);
 		}
 
+		check("1(abcd|e)_e(?<=(?1))_abcd(?<=(?1))2", "1e_e_abcd2", true);
+
 		// String javaTypePattern =
 		// "\\b([A-Za-z]\\w*(\\s*\\<(\\s*(?1)\\s*(,|(?=\\>)))*\\>)?)\\b";
 
@@ -657,7 +660,7 @@ public class RegExTest {
 
 	}
 
-	private static void conditionalTest() throws Exception {
+	private static void conditionalBasedOnValidGroupCaptureTest() throws Exception {
 		String pattern = "1(a)?bbb(?(1)yy|zz)st2";
 		check(pattern, "1abbbyyst2", true);
 		check(pattern, "1abbbzzst2", false);
@@ -679,7 +682,33 @@ public class RegExTest {
 		pattern = "1(?<letter>a)?bbb(?(letter)yy)st2";
 		check(pattern, "1abbbyyst2", true);
 
-		report("Conditional");
+		report("Conditional based on valid group catpure");
+	}
+
+	private static void lookaheadConditionalTest() {
+		String pattern = "1(?(ab)abba|amen)2";
+		check(pattern, "1abba2", true);
+		check(pattern, "1amen2", true);
+		check(pattern, "1aber2", false);
+		check(pattern, "1aamer2", false);
+
+		pattern = "1(?(ab)abba)2";
+		check(pattern, "1abba2", true);
+		check(pattern, "12", true);
+		check(pattern, "1abst2", false);
+		check(pattern, "1amen2", false);
+
+		// conditionals are uncaptured groups!!!
+		pattern = "1(?(ab)abba|amen)2(?(1)(?!))";
+		check(pattern, "1abba2", true);
+
+		// backtracking
+		pattern = "1(?((?<mygroup>aber))aberr)?aber2(?(mygroup)(?!))";
+		check(pattern, "1aber2", true);
+		pattern = "1(?((aber))aberr)?aber2(?(1)(?!))";
+		check(pattern, "1aber2", true);
+
+		report("Conditional based on lookahead");
 	}
 
 	private static void capturesTest() throws Exception {

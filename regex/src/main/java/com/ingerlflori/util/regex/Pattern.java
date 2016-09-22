@@ -3366,12 +3366,10 @@ public final class Pattern implements java.io.Serializable {
 				} else if (ch == '-') {
 					ch = peek();
 					int groupNumber;
-					if (ASCII.isDigit(ch)) {
-						groupNumber = readNumber();
-					} else if ((groupNumber = doesNameOfGroupFollow()) == -1) {
-						throw error("Unknown syntax");
+					if ((groupNumber = doesGroupNumberFollowBefore('>')) == -1
+							&& (groupNumber = doesGroupNameFollowBefore('>')) == -1) {
+						throw error("Illegal pop group capture syntax");
 					}
-					accept('>', "Unkown syntax");
 					tail = new PopCapture(groupNumber);
 					head = expr(tail);
 					break;
@@ -3400,20 +3398,28 @@ public final class Pattern implements java.io.Serializable {
 				break;
 			case '(': // (?(groupNumber)yes|no)
 				int group;
-				if (ASCII.isDigit(peek()))
-					group = readNumber();
-				else if ((group = doesNameOfGroupFollow()) == -1) {
-					throw error("Unkown construct");
+				Conditional conditional;
+				if ((group = doesGroupNumberFollowBefore(')')) != -1
+						|| (group = doesGroupNameFollowBefore(')')) != -1) {
+					conditional = new ConditionalGP(group);
+				} else {
+					Pos pos = new Pos(expr(accept));
+					accept(')', "Unclosed condition");
+					conditional = new ConditionalLookahead(pos);
 				}
-				accept(')', "Unclosed condition");
-				head = createGroup(true);
+
+				head = createGroup(true);// Conditionals are really uncaptured
+											// groups
 				tail = root;
 				head.next = expr(tail);
 				if (head.next instanceof Branch) {
 					Branch branch = (Branch) head.next;
-					head.next = new ConditionalGP(group, branch.atoms[0], branch.atoms[1]);
+					conditional.yes = branch.atoms[0];
+					conditional.not = branch.atoms[1];
+					head.next = conditional;
 				} else {
-					head.next = new ConditionalGP(group, head.next, null);
+					conditional.yes = head.next;
+					head.next = conditional;
 					head.next.next = tail;
 				}
 				break;
@@ -3424,13 +3430,10 @@ public final class Pattern implements java.io.Serializable {
 						// call
 				unread();
 				int groupNumber;
-				if (ASCII.isDigit(ch)) { // recursive group call
-					groupNumber = readNumber();
-					head = tail = recursiveGroupCall(groupNumber);
-					break;
-				} else if ((groupNumber = doesNameOfGroupFollow()) != -1) // name
-				{
-					head = tail = recursiveGroupCall(groupNumber);
+				if ((groupNumber = doesGroupNumberFollowBefore(')')) != -1
+						|| (groupNumber = doesGroupNameFollowBefore(')')) != -1) {
+					unread();
+					head = tail = new RecursiveGroupCall(groupNumber);
 				} else {
 					addFlag();
 					ch = read();
@@ -3471,7 +3474,7 @@ public final class Pattern implements java.io.Serializable {
 		return node;
 	}
 
-	private int doesNameOfGroupFollow() {
+	private int doesGroupNameFollowBefore(int closing) {
 		int ch = peek();
 		int save = cursor;
 		if (ASCII.isLower(ch) || ASCII.isUpper(ch)) {
@@ -3479,11 +3482,10 @@ public final class Pattern implements java.io.Serializable {
 			while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch)) {
 				sb.append(Character.toChars(ch));
 			}
-			if (!namedGroups().containsKey(sb.toString())) {
+			if (!namedGroups().containsKey(sb.toString()) || ch != closing) {
 				cursor = save;
 				return -1;
 			}
-			unread();
 			return namedGroups.get(sb.toString());
 		}
 		return -1;
@@ -3500,12 +3502,16 @@ public final class Pattern implements java.io.Serializable {
 		return new RecursiveGroupCall(groupNumber);
 	}
 
-	private int readNumber() {
+	private int doesGroupNumberFollowBefore(int closing) {
 		int number = 0;
 		int ch;
-		while (ASCII.isDigit(ch = peek())) {
+		int save = cursor;
+		while (ASCII.isDigit(ch = read())) {
 			number = number * 10 + ch - '0';
-			read();
+		}
+		if (number <= 0 || number >= capturingGroupCount || ch != closing) {
+			cursor = save;
+			return -1;
 		}
 		return number;
 	}
@@ -5499,27 +5505,9 @@ public final class Pattern implements java.io.Serializable {
 		}
 	}
 
-	static final class ConditionalGP extends Node {
-		int groupNumber;
+	static class Conditional extends Node {
 		Node yes;
 		Node not;
-
-		ConditionalGP(int groupNumber, Node yes, Node not) {
-			this.groupNumber = groupNumber;
-			this.yes = yes;
-			this.not = not;
-		}
-
-		@Override
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			if (!matcher.captures.get(groupNumber).isEmpty()) {
-				return yes.match(matcher, i, seq);
-			} else if (not != null) {
-				return not.match(matcher, i, seq);
-			} else {
-				return getNext().match(matcher, i, seq);
-			}
-		}
 
 		@Override
 		boolean study(TreeInfo info) {
@@ -5554,45 +5542,52 @@ public final class Pattern implements java.io.Serializable {
 			info.deterministic = false;
 			return false;
 		}
-
 	}
 
-	static final class Conditional extends Node {
-		Node cond, yes, not;
+	static final class ConditionalGP extends Conditional {
 
-		Conditional(Node cond, Node yes, Node not) {
-			this.cond = cond;
-			this.yes = yes;
-			this.not = not;
+		int groupNumber;
+
+		ConditionalGP(int groupNumber) {
+			this.groupNumber = groupNumber;
 		}
 
+		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			if (cond.match(matcher, i, seq)) {
+			if (!matcher.captures.get(groupNumber).isEmpty()) {
 				return yes.match(matcher, i, seq);
-			} else {
+			} else if (not != null) {
 				return not.match(matcher, i, seq);
+			} else {
+				return getNext().match(matcher, i, seq);
 			}
 		}
 
-		boolean study(TreeInfo info) {
-			int minL = info.minLength;
-			int maxL = info.maxLength;
-			boolean maxV = info.maxValid;
-			info.reset();
-			yes.study(info);
+	}
 
-			int minL2 = info.minLength;
-			int maxL2 = info.maxLength;
-			boolean maxV2 = info.maxValid;
-			info.reset();
-			not.study(info);
+	static final class ConditionalLookahead extends Conditional {
+		Pos cond;
 
-			info.minLength = minL + Math.min(minL2, info.minLength);
-			info.maxLength = maxL + Math.max(maxL2, info.maxLength);
-			info.maxValid = (maxV & maxV2 & info.maxValid);
-			info.deterministic = false;
-			return getNext().study(info);
+		ConditionalLookahead(Pos cond) {
+			this.cond = cond;
 		}
+
+		@Override
+		boolean match(Matcher matcher, int i, CharSequence seq) {
+			Vector<Stack<Capture>> captures = matcher.cloneCaptures();
+			if (cond.match(matcher, i, seq)) {
+				if (!yes.match(matcher, i, seq)) {
+					matcher.captures = captures;
+					return false;
+				}
+				return true;
+			} else if (not != null) {
+				return not.match(matcher, i, seq);
+			} else {
+				return getNext().match(matcher, i, seq);
+			}
+		}
+
 	}
 
 	/**

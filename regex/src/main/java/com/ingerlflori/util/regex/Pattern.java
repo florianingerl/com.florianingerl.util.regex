@@ -3547,17 +3547,6 @@ public final class Pattern implements java.io.Serializable {
 		return -1;
 	}
 
-	private Node recursiveGroupCall(int groupNumber) {
-		if (groupNumber == 0)
-			throw error("Recursion to group 0 is not yet supported by this regex engine");
-		if (groupNumber >= capturingGroupCount)
-			throw error("Can't recurse to unexisting group " + groupNumber);
-		if (peek() != ')') {
-			throw error("Unknown recursive group call syntax");
-		}
-		return new RecursiveGroupCall(groupNumber);
-	}
-
 	private int doesGroupNumberFollowBefore(int closing) {
 		int number = 0;
 		int ch;
@@ -4923,33 +4912,10 @@ public final class Pattern implements java.io.Serializable {
 				Repeater mgr = new Repeater(this.getNext(), cmax - cmin, true);
 				Repeater mr = new Repeater(mgr, cmin, false);
 				return mr.match(matcher, i, seq);
-			} else if (type == LAZY) {
+			} else { // type == LAZY
 				MaxLazyRepeater mlr = new MaxLazyRepeater(cmax - cmin);
 				Repeater mr = new Repeater(mlr, cmin, false);
 				return mr.match(matcher, i, seq);
-			} else // Possessive
-			{
-				// This is problematic
-				Node oldEndNext = endNode.getNext();
-				endNode.setNext(accept);
-				int j;
-				for (j = 0; j < cmin; j++) {
-					if (beginNode.match(matcher, i, seq)) {
-						i = matcher.last;
-						continue;
-					}
-					endNode.setNext(oldEndNext);
-					return false;
-				}
-				for (; j < cmax; j++) {
-					if (!beginNode.match(matcher, i, seq)) {
-						break;
-					}
-					i = matcher.last;
-				}
-				boolean r = getNext().match(matcher, i, seq);
-				endNode.setNext(oldEndNext);
-				return r;
 			}
 
 		}

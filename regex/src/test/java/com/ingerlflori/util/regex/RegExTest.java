@@ -712,10 +712,10 @@ public class RegExTest {
 	}
 
 	private static void capturesTest() throws Exception {
-		check("([a-f])+ef_(?<-1>d)(?<-1>c)(?<-1>b)(?<-1>a)(?(1)(?!))", "abcdef_dcba", true);
+		check("([a-f])+ef(?<-1>_\\1){4}(?(1)(?!))", "abcdef_d_c_b_a", true);
 		check("1((r)++)?rrr2(?(1)(?!))(?(2)(?!))", "1rrr2", true);
 		check("1((?>(r)+))?rrr2(?(2)(?!))", "1rrr2", true);
-		check("1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2_(?<-1>\\1)_(?<-1>\\1)_(?<-1>){2}(?<-1>\\1)",
+		check("1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2(?<-1>_\\1){2}_(?<-1>){2}(?<-1>\\1)",
 				"1jT<jT<jT>,jT<jT,jT>>2_jT<jT<jT>,jT<jT,jT>>_jT<jT,jT>_jT<jT>", true);
 
 		check("([abc]+?)(b)?+(d)(?(2)(?!))", "abcd", true);

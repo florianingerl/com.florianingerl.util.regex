@@ -2,13 +2,38 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.ingerlflori.util</groupId>
+	<groupId>com.github.florianingerl</groupId>
 	<artifactId>regex</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<packaging>jar</packaging>
 
-	<name>regex</name>
-	<url>http://maven.apache.org</url>
+	<name>${project.groupId}:${project.artifactId}</name>
+	<description>This is a Regular Expressions library. Compared to the Regular Expressions library 
+	shipped with the Java JDK, it supports Recursive and Condititional Regular Expressions and adopts the concept of Captures from .Net</description>
+	<url>https://github.com/florianingerl/com.ingerlflori.regex</url>
+	
+	<licenses>
+		<license>
+			<name>GNU General Public License, version 2</name>
+			<url>https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	
+	<scm>
+		<connection>scm:git:git://github.com/florianingerl/com.ingerlflori.regex.git</connection>
+		<developerConnection>scm:git:ssh://github.com/florianingerl/com.ingerlflori.regex.git</developerConnection>
+		<url>http://github.com/florianingerl/com.ingerlflori.regex/tree/master</url>
+	</scm>
+	
+	<developers>
+		<developer>
+			<name>Florian Ingerl</name>
+			<email>imelflorianingerl@gmail.com</email>
+			<organization>Florian Ingerl</organization>
+			<organizationUrl>https://github.com/florianingerl</organizationUrl>
+		</developer>
+	</developers>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

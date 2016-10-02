@@ -15,8 +15,10 @@ The API is exactly the same as in java.util.regex.
 
 ### Maven Dependency
 In order to use this library, add the following dependency to your pom.xml.
+```
 <dependency>
 	<groupId>com.github.florianingerl</groupId>
 	<artifactId>regex</artifactId>
 	<version>1.0.1</version>
 </dependency>
+```

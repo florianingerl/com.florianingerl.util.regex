@@ -10,4 +10,7 @@ This is a Java Regular Expressions library. Compared to the Regular Expression l
 In the following screenshot, all the new features are summarized.
 ![com.github.florianingerl.regex.newfeatures](media/newfeatures.png)
 
+### Usage
+The API is exactly the same as in java.util.regex.
+
 ### Maven Dependency

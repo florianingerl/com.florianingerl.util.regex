@@ -620,6 +620,22 @@ public class RegExTest {
 		// recursive stuff in lookbehind and lookahead that has a maximum length
 		check("(h)(?<=(?1))ello", "hello", true);
 		check("(h|(b))(?<!(?2))ello", "hello", true);
+		
+		pattern = "1(?<first>a\\(((?first)|[a-zA-Z]),((?first)|[a-zA-Z])\\))2";
+		check(pattern, "1a(b,c)2", true);
+		check(pattern, "1a(a(b,c),d)2", true);
+		check(pattern, "1a(a(a(b,c),g),h)2", true);
+		check(pattern, "1a(a(a(b,a(e,f)),g),h)2", true);
+		check(pattern, "1a(a(a(a(b,c),a(e,f)),g),h)2", true);
+		check(pattern, "1a(a(a(a(a(b,c),d),a(e,f)),g),h)2", true);
+		
+		pattern = "1(?<first>a\\((?<second>(?first)|[a-zA-Z]),(?second)\\))2";
+		check(pattern, "1a(b,c)2", true);
+		check(pattern, "1a(a(b,c),d)2", true);
+		check(pattern, "1a(a(a(b,c),g),h)2", true);
+		check(pattern, "1a(a(a(b,a(e,f)),g),h)2", true);
+		check(pattern, "1a(a(a(a(b,c),a(e,f)),g),h)2", true);
+		check(pattern, "1a(a(a(a(a(b,c),d),a(e,f)),g),h)2", true);
 
 		boolean exp = false;
 		try {

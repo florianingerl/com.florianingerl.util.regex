@@ -3378,7 +3378,6 @@ public final class Pattern implements java.io.Serializable {
 	 * returned in root.
 	 */
 	private Node group0() {
-		boolean capturingGroup = false;
 		Node head = null;
 		Node tail = null;
 		int save = flags;
@@ -3413,11 +3412,12 @@ public final class Pattern implements java.io.Serializable {
 					String name = groupname(ch);
 					if (namedGroups().containsKey(name))
 						throw error("Named capturing group <" + name + "> is already defined");
-					capturingGroup = true;
 					head = createGroup(false);
 					tail = root;
 					namedGroups().put(name, capturingGroupCount - 1);
 					head.setNext(expr(tail));
+					head = tail = new RecursiveGroupCall(namedGroups().get(name));
+					tail.setNext(accept);
 					break;
 				} else if (ch == '-') {
 					ch = peek();
@@ -3427,6 +3427,7 @@ public final class Pattern implements java.io.Serializable {
 						throw error("Illegal pop group capture syntax");
 					}
 					tail = new PopCapture(groupNumber);
+					
 					head = expr(tail);
 					break;
 
@@ -3453,15 +3454,18 @@ public final class Pattern implements java.io.Serializable {
 				}
 				break;
 			case '(': // (?(groupNumber)yes|no)
-				int group;
+				
 				Conditional conditional;
-				if ((group = doesGroupNumberFollowBefore(')')) != -1
-						|| (group = doesGroupNameFollowBefore(')')) != -1) {
-					conditional = new ConditionalGP(group);
+				
+				{int groupNumber;
+				if ((groupNumber = doesGroupNumberFollowBefore(')')) != -1
+						|| (groupNumber = doesGroupNameFollowBefore(')')) != -1) {
+					conditional = new ConditionalGP(groupNumber);
 				} else {
 					Pos pos = new Pos(expr(accept));
 					accept(')', "Unclosed condition");
 					conditional = new ConditionalLookahead(pos);
+				}
 				}
 
 				head = createGroup(true);// Conditionals are really uncaptured
@@ -3506,10 +3510,12 @@ public final class Pattern implements java.io.Serializable {
 				}
 			}
 		} else { // (xxx) a regular group
-			capturingGroup = true;
 			head = createGroup(false);
 			tail = root;
+			int groupNumber = capturingGroupCount - 1;
 			head.setNext(expr(tail));
+			head = tail = new RecursiveGroupCall(groupNumber);
+			tail.setNext(accept);
 		}
 
 		accept(')', "Unclosed group");
@@ -4023,6 +4029,26 @@ public final class Pattern implements java.io.Serializable {
 			} else {
 				return info.deterministic;
 			}
+		}
+	}
+	
+	static class Navigator extends Node {
+		private int localIndex;
+		Navigator(int localIndex){
+			this.localIndex = localIndex;
+		}
+		@Override
+		boolean match(Matcher matcher, int i, CharSequence seq){
+			return getNext(matcher).match(matcher,i,seq);
+		}
+		
+		Node getNext(Matcher matcher){
+			if(matcher.nextNodes[localIndex]!=null)
+				return matcher.nextNodes[localIndex];
+			return getNext();
+		}
+		void setNext(Matcher matcher, Node next){
+			matcher.nextNodes[localIndex] = next;
 		}
 	}
 

@@ -185,6 +185,7 @@ public final class Matcher implements MatchResult {
 	 * hold state during a match.
 	 */
 	Vector<Stack<Integer>> localVector;
+	Pattern.Node [] nextNodes;
 
 	/**
 	 * Boolean indicating whether or not more input could change the results of
@@ -243,6 +244,7 @@ public final class Matcher implements MatchResult {
 
 		localVector = new Vector<Stack<Integer>>(parent.localCount);
 		localVector.setSize(parent.localCount);
+		nextNodes = new Pattern.Node[parent.localCount];
 
 		// Put fields into initial states
 		reset();
@@ -303,6 +305,7 @@ public final class Matcher implements MatchResult {
 		for (int i = 0; i < localVector.size(); i++) {
 			localVector.set(i, new Stack<Integer>());
 		}
+		nextNodes = new Pattern.Node[newPattern.localCount];
 		return this;
 	}
 
@@ -326,6 +329,7 @@ public final class Matcher implements MatchResult {
 		}
 		for (int i = 0; i < localVector.size(); i++) {
 			localVector.set(i, new Stack<Integer>());
+			nextNodes[i] = null;
 		}
 		lastAppendPosition = 0;
 		from = 0;

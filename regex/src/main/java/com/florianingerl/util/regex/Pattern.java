@@ -3673,6 +3673,14 @@ public final class Pattern implements java.io.Serializable {
 
 	static final int LAZY = 1;
 
+	Navigator createNavigator(Node endNode)
+	{
+		if(endNode instanceof Navigator) return (Navigator)endNode;
+		Navigator nav = new Navigator( localCount++ );
+		nav.setNext(endNode.getNext());
+		endNode.setNext(nav);
+		return nav;
+	}
 	/**
 	 * Processes repetition. If the next character peeked is a quantifier then
 	 * new nodes must be appended to handle the repetition. Prev could be a
@@ -3686,32 +3694,32 @@ public final class Pattern implements java.io.Serializable {
 			ch = next();
 			if (ch == '?') {
 				next();
-				return new Curly(beginNode, endNode, 0, 1, LAZY);
+				return new Curly(beginNode, createNavigator(endNode), 0, 1, LAZY);
 			} else if (ch == '+') {
 				next();
-				return new AtomicGroup(new Curly(beginNode, endNode, 0, 1, GREEDY));
+				return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), 0, 1, GREEDY));
 			}
-			return new Curly(beginNode, endNode, 0, 1, GREEDY);
+			return new Curly(beginNode, createNavigator(endNode), 0, 1, GREEDY);
 		case '*':
 			ch = next();
 			if (ch == '?') {
 				next();
-				return new Curly(beginNode, endNode, 0, MAX_REPS, LAZY);
+				return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
-				return new AtomicGroup(new Curly(beginNode, endNode, 0, MAX_REPS, GREEDY));
+				return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, GREEDY));
 			}
-			return new Curly(beginNode, endNode, 0, MAX_REPS, GREEDY);
+			return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, GREEDY);
 		case '+':
 			ch = next();
 			if (ch == '?') {
 				next();
-				return new Curly(beginNode, endNode, 1, MAX_REPS, LAZY);
+				return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
-				return new AtomicGroup(new Curly(beginNode, endNode, 1, MAX_REPS, GREEDY));
+				return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, GREEDY));
 			}
-			return new Curly(beginNode, endNode, 1, MAX_REPS, GREEDY);
+			return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, GREEDY);
 		case '{':
 			ch = temp[cursor + 1];
 			if (ASCII.isDigit(ch)) {
@@ -3740,12 +3748,12 @@ public final class Pattern implements java.io.Serializable {
 				ch = peek();
 				if (ch == '?') {
 					next();
-					curly = new Curly(beginNode, endNode, cmin, cmax, LAZY);
+					curly = new Curly(beginNode, createNavigator(endNode), cmin, cmax, LAZY);
 				} else if (ch == '+') {
 					next();
-					curly = new AtomicGroup(new Curly(beginNode, endNode, cmin, cmax, GREEDY));
+					curly = new AtomicGroup(new Curly(beginNode, createNavigator(endNode), cmin, cmax, GREEDY));
 				} else {
-					curly = new Curly(beginNode, endNode, cmin, cmax, GREEDY);
+					curly = new Curly(beginNode, createNavigator(endNode), cmin, cmax, GREEDY);
 				}
 				return curly;
 			} else {
@@ -4033,7 +4041,7 @@ public final class Pattern implements java.io.Serializable {
 	}
 	
 	static class Navigator extends Node {
-		private int localIndex;
+		protected int localIndex;
 		Navigator(int localIndex){
 			this.localIndex = localIndex;
 		}
@@ -4855,12 +4863,12 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	static final class Curly extends Node {
 		Node beginNode;
-		Node endNode;
+		Navigator endNode;
 		int type;
 		int cmin;
 		int cmax;
 
-		Curly(Node beginNode, Node endNode, int cmin, int cmax, int type) {
+		Curly(Node beginNode, Navigator endNode, int cmin, int cmax, int type) {
 			this.beginNode = beginNode;
 			this.endNode = endNode;
 			this.type = type;
@@ -4870,7 +4878,7 @@ public final class Pattern implements java.io.Serializable {
 
 		private class MaxLazyRepeater extends Node {
 			private int counter;
-			private Node initialEndNext = endNode.getNext();
+			private Node initialEndNext;
 
 			MaxLazyRepeater(int cmax) {
 				this.counter = cmax;
@@ -4878,10 +4886,11 @@ public final class Pattern implements java.io.Serializable {
 
 			@Override
 			boolean match(Matcher matcher, int i, CharSequence seq) {
-				Node oldEndNodeNext = endNode.getNext();
-				endNode.setNext(initialEndNext);
+				if(initialEndNext == null) initialEndNext = endNode.getNext(matcher);
+				Node oldEndNodeNext = endNode.getNext(matcher);
+				endNode.setNext(matcher, initialEndNext);
 				boolean r = Curly.this.getNext().match(matcher, i, seq);
-				endNode.setNext(oldEndNodeNext);
+				endNode.setNext(matcher, oldEndNodeNext);
 				if (r)
 					return true;
 
@@ -4889,11 +4898,11 @@ public final class Pattern implements java.io.Serializable {
 					return false;
 				}
 				--counter;
-				oldEndNodeNext = endNode.getNext();
-				endNode.setNext(this);
+				oldEndNodeNext = endNode.getNext(matcher);
+				endNode.setNext(matcher, this);
 				r = beginNode.match(matcher, i, seq);
 				++counter;
-				endNode.setNext(oldEndNodeNext);
+				endNode.setNext(matcher, oldEndNodeNext);
 				return r;
 			}
 
@@ -4901,7 +4910,7 @@ public final class Pattern implements java.io.Serializable {
 
 		private class Repeater extends Node {
 			private int counter;
-			private Node initialEndNext = endNode.getNext();
+			private Node initialEndNext;
 			private boolean isMax;
 
 			Repeater(Node next, int counter, boolean isMax) {
@@ -4912,19 +4921,20 @@ public final class Pattern implements java.io.Serializable {
 
 			@Override
 			public boolean match(Matcher matcher, int i, CharSequence seq) {
+				if(initialEndNext == null) initialEndNext = endNode.getNext(matcher);
 				if (counter == 0) {
-					Node oldEndNext = endNode.getNext();
-					endNode.setNext(initialEndNext);
+					Node oldEndNext = endNode.getNext(matcher);
+					endNode.setNext(matcher, initialEndNext);
 					boolean r = getNext().match(matcher, i, seq);
-					endNode.setNext(oldEndNext);
+					endNode.setNext(matcher, oldEndNext);
 					return r;
 				}
 				--counter;
-				Node oldEndNext = endNode.getNext();
-				endNode.setNext(this);
+				Node oldEndNext = endNode.getNext(matcher);
+				endNode.setNext(matcher, this);
 				boolean r = beginNode.match(matcher, i, seq);
 				++counter;
-				endNode.setNext(oldEndNext);
+				endNode.setNext(matcher, oldEndNext);
 				if (isMax)
 					r = r || getNext().match(matcher, i, seq);
 				return r;
@@ -5210,12 +5220,11 @@ public final class Pattern implements java.io.Serializable {
 	 * The GroupTail node is also used when a previous group is referenced, and
 	 * in that case no group information needs to be set.
 	 */
-	static final class GroupTail extends Node {
-		int localIndex;
+	static final class GroupTail extends Navigator {
 		int groupIndex;
 
 		GroupTail(int localCount, int groupCount) {
-			localIndex = localCount;
+			super(localCount);
 			// if groupCount <= 0, this is an anonymous group
 			groupIndex = groupCount;
 		}
@@ -5231,7 +5240,7 @@ public final class Pattern implements java.io.Serializable {
 
 			if (groupIndex > 0)
 				matcher.captures.get(groupIndex).push(new Capture(seq, tmp, i));
-			boolean r = getNext().match(matcher, i, seq);
+			boolean r = getNext(matcher).match(matcher, i, seq);
 			if (!r && groupIndex > 0)
 				matcher.captures.get(groupIndex).pop();
 			matcher.localVector.get(localIndex).push(tmp);
@@ -5282,20 +5291,21 @@ public final class Pattern implements java.io.Serializable {
 
 		private class InternalRecursiveGroupCall extends Node {
 			boolean first = true;
-			Node groupTailsNext = groupTail.getNext();
+			Node groupTailsNext;
 
 			@Override
 			boolean match(Matcher matcher, int i, CharSequence seq) {
 				if (first) {
 					first = false;
-					groupTail.setNext(this);
+					groupTailsNext = groupTail.getNext(matcher);
+					groupTail.setNext(matcher, this);
 					boolean r = groupHead.match(matcher, i, seq);
-					groupTail.setNext(groupTailsNext);
+					groupTail.setNext(matcher, groupTailsNext);
 					return r;
 				} else {
-					groupTail.setNext(groupTailsNext);
+					groupTail.setNext(matcher, groupTailsNext);
 					boolean r = RecursiveGroupCall.this.getNext().match(matcher, i, seq);
-					groupTail.setNext(this);
+					groupTail.setNext(matcher, this);
 					return r;
 				}
 			}

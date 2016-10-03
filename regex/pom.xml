@@ -2,7 +2,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.github.florianingerl</groupId>
+	<groupId>com.github.florianingerl.util</groupId>
 	<artifactId>regex</artifactId>
 	<version>1.0.0</version>
 	<packaging>jar</packaging>
@@ -10,7 +10,7 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>This is a Regular Expressions library. Compared to the Regular Expressions library 
 	shipped with the Java JDK, it supports Recursive and Condititional Regular Expressions and adopts the concept of Captures from .Net</description>
-	<url>https://github.com/florianingerl/com.ingerlflori.regex</url>
+	<url>https://github.com/florianingerl/com.florianingerl.util.regex</url>
 	
 	<licenses>
 		<license>
@@ -21,9 +21,9 @@
 	</licenses>
 	
 	<scm>
-		<connection>scm:git:git://github.com/florianingerl/com.ingerlflori.regex.git</connection>
-		<developerConnection>scm:git:ssh://github.com/florianingerl/com.ingerlflori.regex.git</developerConnection>
-		<url>http://github.com/florianingerl/com.ingerlflori.regex/tree/master</url>
+		<connection>scm:git:git://github.com/florianingerl/com.florianingerl.util.regex.git</connection>
+		<developerConnection>scm:git:ssh://github.com/florianingerl/com.florianingerl.util.regex.git</developerConnection>
+		<url>http://github.com/florianingerl/com.florianingerl.util.regex/tree/master</url>
 	</scm>
 	
 	<developers>

@@ -1,4 +1,4 @@
-package com.ingerlflori.util.regex;
+package com.florianingerl.util.regex;
 
 /**
  * The result of a successfull group capture.

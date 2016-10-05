@@ -101,6 +101,7 @@ public class RegExTest {
 
 		// Misc
 		recursiveGroupTest();
+		patternStatelessTest();
 		capturesTest();
 		conditionalBasedOnValidGroupCaptureTest();
 		lookaheadConditionalTest();
@@ -565,6 +566,31 @@ public class RegExTest {
 		}
 		if (!Arrays.asList(expected).equals(result))
 			failCount++;
+	}
+	
+	private static void patternStatelessTest() throws Exception {
+		final Pattern pattern = Pattern.compile("1(?<first>a\\((?<second>(?first)|[a-zA-Z]),(?second)\\))2");
+		final String input = "1a(a(a(a(a(b,c),d),a(e,f)),g),h)2";
+		Thread [] threads = new Thread[20];
+		Runnable runnable = new Runnable(){
+			@Override
+			public void run()
+			{
+				check(pattern, input, true);
+			}
+		};
+		for(int i = 0; i < threads.length; ++i)
+		{
+			threads[i] = new Thread(runnable);
+			threads[i].start();
+		}
+		for(int i = 0; i < threads.length; ++i)
+		{
+			threads[i].join();
+		}
+		
+		report("Pattern stateless test");
+	
 	}
 
 	private static void recursiveGroupTest() throws Exception {

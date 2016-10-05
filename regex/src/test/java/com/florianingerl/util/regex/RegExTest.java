@@ -192,7 +192,36 @@ public class RegExTest {
 		if (m.group().equals(result) != expected)
 			failCount++;
 	}
-
+	
+	private static void check(String p, String s, String[][] expected ){
+		check(Pattern.compile(p), s, expected);
+	}
+	
+	private static void check(Pattern p, String s, String[][] expected )
+	{
+		Matcher matcher = p.matcher(s);
+		if(!matcher.find() ){
+			++failCount;
+			return;
+		}
+		if( expected.length != matcher.groupCount() + 1 ){
+			++failCount;
+			return;
+		}
+		
+		for(int i=0; i < expected.length; ++i){
+			if(expected[i].length != matcher.captures(i).size() ){
+				++failCount;
+				return;
+			}
+			for(int j=0; j < expected[i].length; ++j){
+				if(!expected[i][j].equals( matcher.captures(i).get(j).getValue() ) ){
+					++failCount;
+					return;
+				}
+			}
+		}
+	}
 	private static void check(Pattern p, String s, boolean expected) {
 		if (p.matcher(s).find() != expected)
 			failCount++;
@@ -761,6 +790,53 @@ public class RegExTest {
 
 		check(anagramm, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
 				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
+				
+		String[][] e1 = {
+      { "aBBcccDDDDDeeeeeeee" },
+      { "a", "BB", "ccc", "DDDDD", "eeeeeeee" },
+      { "a", "ccc", "eeeeeeee" },
+      { "BB", "DDDDD" }
+   };
+check("(([a-z]+)|([A-Z]+))+","aBBcccDDDDDeeeeeeee",e1);
+   String[][] e3 = {
+      { "abcbar" },
+      { "abc" },
+	  {}
+   };
+check("(.*)bar|(.*)bah","abcbar",e3);
+   String[][] e4 = {
+      { "abcbah" },
+      { },
+      { "abc" }
+   };
+check("(.*)bar|(.*)bah","abcbah",e4);
+   String[][] e5 = {
+      { "now is the time for all good men to come to the aid of the party" },
+      { "now", "is", "the", "time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the", "party" }
+   };
+check("^(?:(\\w+)|(?>\\W+))*$","now is the time for all good men to come to the aid of the party",e5);
+   String[][] e6 = {
+      { "now is the time for all good men to come to the aid of the party" },
+      { "now", "is", "the", "time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the", "party" }
+   };
+check("^(?>(\\w+)\\W*)*$","now is the time for all good men to come to the aid of the party",e6);
+   String[][] e7 = {
+      { "now is the time for all good men to come to the aid of the party" },
+      { "now" },
+      { "is", "the", "time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the" },
+      { "party" }
+   };
+check("^(\\w+)\\W+(?>(\\w+)\\W+)*(\\w+)$","now is the time for all good men to come to the aid of the party",e7);
+   String[][] e8 = {
+      { "now is the time for all good men to come to the aid of the party" } ,
+      { "now" },
+      { "is", "for", "men", "to", "of" },
+      { "the", "time", "all", "good", "to", "come", "the", "aid", "the" },
+      { "party" }
+   };
+check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$","now is the time for all good men to come to the aid of the party",e8);
+
+		
 
 		report("Captures test");
 

@@ -2351,6 +2351,7 @@ public final class Pattern implements java.io.Serializable {
 		int maxLength;
 		boolean maxValid;
 		boolean deterministic;
+		Map<Integer, Boolean> recursive = new HashMap<Integer, Boolean>();
 
 		TreeInfo() {
 			reset();
@@ -5318,21 +5319,18 @@ public final class Pattern implements java.io.Serializable {
 			return ircc.match(matcher, i, seq);
 		}
 
-		private boolean recursive = false;
-
 		@Override
 		boolean study(TreeInfo info) {
-			if (recursive) {
+			if(info.recursive.containsKey(groupTail.groupIndex) && info.recursive.get(groupTail.groupIndex) == true )
+			{
 				info.maxValid = false;
-				return false; // We can return something arbitrary here
+				info.minLength = 0xFFFFFFF; // arbitrary large number
+				return false;
 			}
-			recursive = true;
-			Node save = groupTail.getNext();
-			groupTail.setNext(accept);
+			info.recursive.put(groupTail.groupIndex, true);
 			groupHead.study(info);
-			recursive = false;
-			groupTail.setNext(save);
-			return info.deterministic;
+			info.recursive.put(groupTail.groupIndex, false);
+			return getNext().study(info);
 		}
 
 	}

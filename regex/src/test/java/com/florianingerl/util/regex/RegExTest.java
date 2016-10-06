@@ -100,6 +100,7 @@ public class RegExTest {
 		patternMatchesTest();
 
 		// Misc
+		minMaxLengthTest();
 		recursiveGroupTest();
 		patternStatelessTest();
 		capturesTest();
@@ -250,6 +251,24 @@ public class RegExTest {
 		Matcher matcher = pattern.matcher(new String(ca));
 		if (!matcher.find())
 			failCount++;
+	}
+	
+	private static void check(String regex, int minLength, boolean maxValid, int maxLength ){
+		Pattern p = Pattern.compile(regex);
+		Pattern.TreeInfo info = new Pattern.TreeInfo();
+		p.matchRoot.study(info);
+		if(minLength != info.minLength ){
+			++failCount;
+			return;
+		}
+		if(maxValid != info.maxValid ){
+			++failCount;
+			return;
+		}
+		if(maxValid && maxLength != info.maxLength){
+			++failCount;
+			return;
+		}
 	}
 
 	private static void check(String p, int flag, String input, String s, boolean expected) {
@@ -620,6 +639,12 @@ public class RegExTest {
 		
 		report("Pattern stateless test");
 	
+	}
+	
+	private static void minMaxLengthTest() throws Exception {
+		check("(a(?1)?z)", 2, false, -1);
+		
+		report("minMaxLength");
 	}
 
 	private static void recursiveGroupTest() throws Exception {

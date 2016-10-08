@@ -223,6 +223,29 @@ public class RegExTest {
 			}
 		}
 	}
+	 
+	private static void check(String regex, int flags, String s, int [] data ){
+		Pattern p = Pattern.compile(regex, flags );
+		Matcher m = p.matcher(s);
+		int i = 0;
+		while(data[i] != -2 ){
+			if(!m.find() ){
+				++failCount;
+				return;
+			}
+			int j = 0;
+			while( data[i] != -2 ){
+				if(m.start(j) != data[i++] || m.end(j) != data[i++] ){
+					++failCount;
+					return;
+				}
+				++j;
+			}
+			++i;
+		}
+		if( m.find() )++failCount;
+	}
+	
 	private static void check(Pattern p, String s, boolean expected) {
 		if (p.matcher(s).find() != expected)
 			failCount++;
@@ -727,28 +750,24 @@ public class RegExTest {
 		check(pattern, "1a(a(a(a(b,c),a(e,f)),g),h)2", true);
 		check(pattern, "1a(a(a(a(a(b,c),d),a(e,f)),g),h)2", true);
 
-		boolean exp = false;
-		try {
-			check("1(a(?1)?z)(?<=(?1))2", "1az2", false);
-		} catch (PatternSyntaxException pse) {
-			exp = true;
-			assertTrue(pse.getMessage().contains("Look-behind group does not have an obvious maximum length"));
-		} finally {
-			assertTrue(exp);
-		}
+		checkExpectedFail("1(a(?1)?z)(?<=(?1))2", "Look-behind group does not have an obvious maximum length" );
 
 		check("1(abcd|e)_e(?<=(?1))_abcd(?<=(?1))2", "1e_e_abcd2", true);
-
-		// String javaTypePattern =
-		// "\\b([A-Za-z]\\w*(\\s*\\<(\\s*(?1)\\s*(,|(?=\\>)))*\\>)?)\\b";
-
-		// In this pattern, there might still be a mistake somewhere
-		/*
-		 * check(javaTypePattern,
-		 * "Map <String, Tuple<Integer, Integer> >  List<Tuple<String,Boolean> > Integer"
-		 * , new String[] { "Map <String, Tuple<Integer, Integer> >",
-		 * "List<Tuple<String,Boolean> >", "Integer" });
-		 */
+		
+		check("a+", 0, "aaa", new int[]{0,3,-2,-2} );
+		check("(a)(b)(c)", 0, "abc", new int[]{0,3,0,1,1,2,2,3,-2,-2} );
+		check("(a)?bc", 0, "bc", new int[]{0,2,-1,-1,-2,-2} );
+		
+		check("(a(?1)b)",0|Pattern.DOTALL,"abc", new int[]{-2, -2});
+		check("(a(?1)+b)",0|Pattern.DOTALL,"abc", new int[]{-2, -2});
+		check("^([^()]|\\((?1)*\\))*$",0|Pattern.DOTALL,"abc", new int[]{0, 3, 2, 3, -2, -2});
+		check("^([^()]|\\((?1)*\\))*$",0|Pattern.DOTALL,"a(b)c", new int[]{0, 5, 4, 5, -2, -2});
+		check("^([^()]|\\((?1)*\\))*$",0|Pattern.DOTALL,"a(b(c))d", new int[]{0, 8, 7, 8, -2, -2});
+		check("^([^()]|\\((?1)*\\))*$",0|Pattern.DOTALL,"a(b(c)d", new int[]{-2, -2});
+		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.DOTALL,">abc>123<xyz<", new int[]{0, 13, 7, 8, -2, -2});
+		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.DOTALL,">abc>1(2)3<xyz<", new int[]{0, 15, 9, 10, -2, -2});
+		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.DOTALL,">abc>(1(2)3)<xyz<", new int[]{0, 17, 5, 12, -2, -2});
+		
 		report("Recursive group test");
 
 	}
@@ -3776,10 +3795,19 @@ check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$","now is the time fo
 		try {
 			Pattern.compile(p);
 		} catch (PatternSyntaxException pse) {
-			// pse.printStackTrace();
 			return;
 		}
 		failCount++;
+	}
+	
+	private static void checkExpectedFail(String p, String message){
+		try {
+			Pattern.compile(p);
+		} catch(PatternSyntaxException pse) {
+			if(!pse.getMessage().contains(message) ) ++failCount;
+			return;
+		}
+		++failCount;
 	}
 
 	private static void checkExpectedIAE(Matcher m, String g) {

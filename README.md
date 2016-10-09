@@ -5,7 +5,7 @@ This is a Java Regular Expressions library. Compared to the Regular Expression l
 
 ### What's new :star:
 
-### Version 1.0.0
+### Version 1.0.1
 
 In the following screenshot, all the new features are summarized.
 ![com.github.florianingerl.util.regex.newfeatures](media/newfeatures.png)

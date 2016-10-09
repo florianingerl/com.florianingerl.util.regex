@@ -674,7 +674,7 @@ import java.util.stream.StreamSupport;
  * isn't empty, Y is matched. Otherwise the optional pattern N is matched.</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct conditional"><tt>(?(COND)Y|N)</tt></td>
+ * <td valign="top" headers="construct conditional"><tt>(?(?=COND)Y|N)</tt></td>
  * <td headers="matches">If the pattern (?=COND) can be matched, Y is matched.
  * Otherwise the optional pattern N is matched.</td>
  * </tr>
@@ -3463,6 +3463,8 @@ public final class Pattern implements java.io.Serializable {
 						|| (groupNumber = doesGroupNameFollowBefore(')')) != -1) {
 					conditional = new ConditionalGP(groupNumber);
 				} else {
+					accept('?', "Unkown condition");
+					accept('=', "Unkown condition");
 					Pos pos = new Pos(expr(accept));
 					accept(')', "Unclosed condition");
 					conditional = new ConditionalLookahead(pos);

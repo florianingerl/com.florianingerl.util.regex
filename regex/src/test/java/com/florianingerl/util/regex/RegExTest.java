@@ -813,26 +813,25 @@ public class RegExTest {
 	}
 
 	private static void lookaheadConditionalTest() {
-		String pattern = "1(?(ab)abba|amen)2";
+		String pattern = "1(?(?=ab)abba|amen)2";
 		check(pattern, "1abba2", true);
 		check(pattern, "1amen2", true);
 		check(pattern, "1aber2", false);
 		check(pattern, "1aamer2", false);
 
-		pattern = "1(?(ab)abba)2";
+		pattern = "1(?(?=ab)abba)2";
 		check(pattern, "1abba2", true);
 		check(pattern, "12", true);
 		check(pattern, "1abst2", false);
 		check(pattern, "1amen2", false);
 
 		// conditionals are uncaptured groups!!!
-		pattern = "1(?(ab)abba|amen)2(?(1)(?!))";
-		check(pattern, "1abba2", true);
+		checkExpectedFail("1(?(?=ab)abba|amen)2(?(1)(?!))");
 
 		// backtracking
-		pattern = "1(?((?<mygroup>aber))aberr)?aber2(?(mygroup)(?!))";
+		pattern = "1(?(?=(?<mygroup>aber))aberr)?aber2(?(mygroup)(?!))";
 		check(pattern, "1aber2", true);
-		pattern = "1(?((aber))aberr)?aber2(?(1)(?!))";
+		pattern = "1(?(?=(aber))aberr)?aber2(?(1)(?!))";
 		check(pattern, "1aber2", true);
 
 		report("Conditional based on lookahead");

@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
+import java.util.function.Function;
 
 import org.junit.Test;
 
@@ -163,6 +164,7 @@ public class RegExTest {
 		groupCurlyNotFoundSuppTest();
 		groupCurlyBackoffTest();
 		patternAsPredicate();
+		replaceAllWithMatchEvaluators();
 
 		if (failure) {
 			throw new RuntimeException("RegExTest failed, 1st failure: " + firstFailure);
@@ -244,6 +246,14 @@ public class RegExTest {
 			++i;
 		}
 		if( m.find() )++failCount;
+	}
+	
+	private static void check(String regex, String s, Function<Matcher, String> evaluator, String expected){
+		Pattern p = Pattern.compile(regex);
+		Matcher m = p.matcher(s);
+		
+		if(! m.replaceAll(evaluator).equals(expected) )
+			++failCount;
 	}
 	
 	private static void check(Pattern p, String s, boolean expected) {
@@ -409,17 +419,22 @@ public class RegExTest {
 		});
 		check(new Runnable() {
 			public void run() {
-				m.replaceAll(null);
+				m.replaceAll((String)null);
 			}
 		});
 		check(new Runnable() {
 			public void run() {
-				m.replaceFirst(null);
+				m.replaceAll((Function<Matcher,String>) null );
 			}
 		});
 		check(new Runnable() {
 			public void run() {
-				m.appendReplacement(null, null);
+				m.replaceFirst( (String)null);
+			}
+		});
+		check(new Runnable() {
+			public void run() {
+				m.appendReplacement(null, (String) null);
 			}
 		});
 		check(new Runnable() {
@@ -1796,6 +1811,11 @@ check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$","now is the time fo
 		matcher = pattern.matcher(toSupplementaries("zzzaaaaaaaaaa"));
 		if (!matcher.replaceFirst(toSupplementaries("test")).equals(toSupplementaries("zzztest")))
 			failCount++;
+			
+		pattern = Pattern.compile("(?<!\\d)\\d+(?!\\d)");
+		matcher = pattern.matcher("Florian is 23 years old. His sister is 2 years older. She is 25 years old.");
+		if(!matcher.replaceFirst( (Matcher m) -> { int i = Integer.parseInt( m.group() ); return "" + (i+1); } ).equals("Florian is 24 years old. His sister is 2 years older. She is 25 years old.") )
+			++failCount;
 
 		report("Replace First");
 	}
@@ -4330,5 +4350,14 @@ check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$","now is the time fo
 			failCount++;
 		}
 		report("Pattern.asPredicate");
+	}
+	
+	private static void replaceAllWithMatchEvaluators() throws Exception {
+		check("(?<!\\d)\\d{2,}(?!\\d)", 
+			  "Florian is 23 years old. His sister is 2 years older. She is 25 years old.",
+			  (Matcher m) -> { int i = Integer.parseInt( m.group() ); return "" + (i+1); },
+			  "Florian is 24 years old. His sister is 2 years older. She is 26 years old." );
+	
+		report("replaceAllWithMatchEvaluators");
 	}
 }

@@ -28,6 +28,7 @@ package com.florianingerl.util.regex;
 import java.util.Objects;
 import java.util.Stack;
 import java.util.Vector;
+import java.util.function.Function;
 
 /**
  * An engine that performs match operations on a
@@ -1007,6 +1008,19 @@ public final class Matcher implements MatchResult {
 		lastAppendPosition = last;
 		return this;
 	}
+	
+	public Matcher appendReplacement(StringBuffer sb, Function<Matcher,String> evaluator ) {
+
+		// If no match, return error
+		if (first < 0)
+			throw new IllegalStateException("No match available");
+			
+		sb.append(text, lastAppendPosition, first );
+		sb.append( evaluator.apply(this) );
+		
+		lastAppendPosition = last;
+		return this;
+	}
 
 	/**
 	 * Implements a terminal append-and-replace step.
@@ -1081,6 +1095,21 @@ public final class Matcher implements MatchResult {
 		}
 		return text.toString();
 	}
+	
+	public String replaceAll(Function<Matcher,String> evaluator) {
+		reset();
+		boolean result = find();
+		if (result) {
+			StringBuffer sb = new StringBuffer();
+			do {
+				appendReplacement(sb, evaluator);
+				result = find();
+			} while (result);
+			appendTail(sb);
+			return sb.toString();
+		}
+		return text.toString();
+	}
 
 	/**
 	 * Replaces the first subsequence of the input sequence that matches the
@@ -1128,6 +1157,18 @@ public final class Matcher implements MatchResult {
 			return text.toString();
 		StringBuffer sb = new StringBuffer();
 		appendReplacement(sb, replacement);
+		appendTail(sb);
+		return sb.toString();
+	}
+	
+	public String replaceFirst(Function<Matcher,String> evaluator ) {
+		if (evaluator == null)
+			throw new NullPointerException("evaluator");
+		reset();
+		if (!find())
+			return text.toString();
+		StringBuffer sb = new StringBuffer();
+		appendReplacement(sb, evaluator);
 		appendTail(sb);
 		return sb.toString();
 	}

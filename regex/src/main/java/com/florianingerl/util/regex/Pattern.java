@@ -3684,6 +3684,12 @@ public final class Pattern implements java.io.Serializable {
 		endNode.setNext(nav);
 		return nav;
 	}
+	
+	private boolean isDeterministic(Node node){
+		TreeInfo info = new TreeInfo();
+		node.study(info);
+		return info.deterministic;
+	}
 	/**
 	 * Processes repetition. If the next character peeked is a quantifier then
 	 * new nodes must be appended to handle the repetition. Prev could be a
@@ -3692,36 +3698,46 @@ public final class Pattern implements java.io.Serializable {
 	private Node closure(Node beginNode, Node endNode) {
 		Node atom;
 		int ch = peek();
+		boolean deterministic = isDeterministic(beginNode);
 		switch (ch) {
 		case '?':
 			ch = next();
 			if (ch == '?') {
 				next();
+				if(deterministic) return new DeterministicCurly(beginNode, 0,1,LAZY);
 				return new Curly(beginNode, createNavigator(endNode), 0, 1, LAZY);
 			} else if (ch == '+') {
 				next();
+				if(deterministic) return new AtomicGroup( new DeterministicCurly(beginNode, 0,1, GREEDY) );
 				return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), 0, 1, GREEDY));
 			}
+			if(deterministic) return new DeterministicCurly(beginNode, 0,1, GREEDY);
 			return new Curly(beginNode, createNavigator(endNode), 0, 1, GREEDY);
 		case '*':
 			ch = next();
 			if (ch == '?') {
 				next();
+				if(deterministic) return new DeterministicCurly(beginNode, 0, MAX_REPS, LAZY );
 				return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
+				if(deterministic) return new AtomicGroup(new DeterministicCurly(beginNode, 0, MAX_REPS, GREEDY) );
 				return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, GREEDY));
 			}
+			if(deterministic) return new DeterministicCurly(beginNode, 0, MAX_REPS, GREEDY);
 			return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, GREEDY);
 		case '+':
 			ch = next();
 			if (ch == '?') {
 				next();
+				if(deterministic) return new DeterministicCurly(beginNode,  1, MAX_REPS, LAZY);
 				return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
+				if(deterministic) return new AtomicGroup(new DeterministicCurly(beginNode, 1, MAX_REPS, GREEDY));
 				return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, GREEDY));
 			}
+			if(deterministic) return new DeterministicCurly(beginNode,  1, MAX_REPS, GREEDY);
 			return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, GREEDY);
 		case '{':
 			ch = temp[cursor + 1];
@@ -3747,18 +3763,19 @@ public final class Pattern implements java.io.Serializable {
 					throw error("Unclosed counted closure");
 				if (((cmin) | (cmax) | (cmax - cmin)) < 0)
 					throw error("Illegal repetition range");
-				Node curly;
 				ch = peek();
 				if (ch == '?') {
 					next();
-					curly = new Curly(beginNode, createNavigator(endNode), cmin, cmax, LAZY);
+					if(deterministic) return new DeterministicCurly(beginNode,  cmin, cmax, LAZY);
+					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, LAZY);
 				} else if (ch == '+') {
 					next();
-					curly = new AtomicGroup(new Curly(beginNode, createNavigator(endNode), cmin, cmax, GREEDY));
+					if(deterministic) return new AtomicGroup(new DeterministicCurly(beginNode, cmin, cmax, GREEDY) );
+					return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), cmin, cmax, GREEDY));
 				} else {
-					curly = new Curly(beginNode, createNavigator(endNode), cmin, cmax, GREEDY);
+					if(deterministic) return new DeterministicCurly(beginNode,  cmin, cmax, GREEDY);
+					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, GREEDY);
 				}
-				return curly;
 			} else {
 				throw error("Illegal repetition");
 			}
@@ -4858,25 +4875,110 @@ public final class Pattern implements java.io.Serializable {
 	 * info.deterministic = false; return getNext().study(info); } else {
 	 * atom.study(info); return getNext().study(info); } } }
 	 */
+	 
+	 static abstract class CurlyBase extends Node {
+		Node beginNode;
+		int type;
+		int cmin;
+		int cmax;
+		
+		CurlyBase(Node beginNode, int cmin, int cmax, int type) {
+			this.beginNode = beginNode;
+			this.cmin = cmin;
+			this.cmax = cmax;
+			this.type = type;
+		}
+		
+		boolean study(TreeInfo info) {
+			// Save original info
+			int minL = info.minLength;
+			int maxL = info.maxLength;
+			boolean maxV = info.maxValid;
+			boolean detm = info.deterministic;
+			info.reset();
 
+			beginNode.study(info);
+
+			int temp = info.minLength * cmin + minL;
+			if (temp < minL) {
+				temp = 0xFFFFFFF; // arbitrary large number
+			}
+			info.minLength = temp;
+
+			if (maxV & info.maxValid) {
+				temp = info.maxLength * cmax + maxL;
+				info.maxLength = temp;
+				if (temp < maxL) {
+					info.maxValid = false;
+				}
+			} else {
+				info.maxValid = false;
+			}
+
+			if (info.deterministic && cmin == cmax)
+				info.deterministic = detm;
+			else
+				info.deterministic = false;
+			return getNext().study(info);
+		}
+	 }
+
+	 static final class DeterministicCurly extends CurlyBase {
+		
+		DeterministicCurly(Node beginNode, int cmin, int cmax, int type) {
+			super(beginNode, cmin, cmax, type);
+		}
+		
+		@Override
+		public boolean match(Matcher matcher, int i, CharSequence seq) {
+			int j = 0;
+			for(; j < cmin; ++j){
+				if(! beginNode.match(matcher, i, seq) ) return false;
+				i = matcher.last;
+			}
+		
+			if(type == GREEDY){
+				Stack<Integer> backtrack = new Stack<Integer>();
+				backtrack.push(i);
+				for(; j < cmax; ++j){
+					if(! beginNode.match(matcher, i, seq) ) break;
+					if( i == matcher.last) break;
+					i = matcher.last;
+					backtrack.push(i);
+				}
+				
+				while(! backtrack.isEmpty() ){
+					i = backtrack.pop();
+					if( getNext().match(matcher, i, seq ) ) return true;
+				}
+				return false;
+			}
+			else { //type == LAZY
+				while(true){
+					if(getNext().match(matcher, i, seq) ) return true;
+					if( j >= cmax) return false;
+					if(! beginNode.match(matcher, i, seq) ) return false;
+					if( i == matcher.last ) return false;
+					i = matcher.last;
+					++j;
+				}
+			}
+		}
+		
+	 
+	 }
+	 
 	/**
 	 * Handles the curly-brace style repetition with a specified minimum and
 	 * maximum occurrences. The * quantifier is handled as a special case. This
 	 * class handles the three types.
 	 */
-	static final class Curly extends Node {
-		Node beginNode;
+	static final class Curly extends CurlyBase {
 		Navigator endNode;
-		int type;
-		int cmin;
-		int cmax;
 
 		Curly(Node beginNode, Navigator endNode, int cmin, int cmax, int type) {
-			this.beginNode = beginNode;
+			super(beginNode, cmin, cmax, type);
 			this.endNode = endNode;
-			this.type = type;
-			this.cmin = cmin;
-			this.cmax = cmax;
 		}
 
 		private class MaxLazyRepeater extends Node {
@@ -4959,38 +5061,7 @@ public final class Pattern implements java.io.Serializable {
 
 		}
 
-		boolean study(TreeInfo info) {
-			// Save original info
-			int minL = info.minLength;
-			int maxL = info.maxLength;
-			boolean maxV = info.maxValid;
-			boolean detm = info.deterministic;
-			info.reset();
-
-			beginNode.study(info);
-
-			int temp = info.minLength * cmin + minL;
-			if (temp < minL) {
-				temp = 0xFFFFFFF; // arbitrary large number
-			}
-			info.minLength = temp;
-
-			if (maxV & info.maxValid) {
-				temp = info.maxLength * cmax + maxL;
-				info.maxLength = temp;
-				if (temp < maxL) {
-					info.maxValid = false;
-				}
-			} else {
-				info.maxValid = false;
-			}
-
-			if (info.deterministic && cmin == cmax)
-				info.deterministic = detm;
-			else
-				info.deterministic = false;
-			return getNext().study(info);
-		}
+		
 	}
 
 	/**
@@ -5250,6 +5321,12 @@ public final class Pattern implements java.io.Serializable {
 			return r;
 
 		}
+		
+		@Override
+		boolean study(TreeInfo info){
+			info.deterministic = false;
+			return getNext().study(info);
+		}
 	}
 
 	static class GroupHeadAndTail {
@@ -5278,6 +5355,14 @@ public final class Pattern implements java.io.Serializable {
 			if (!r)
 				matcher.captures.get(groupIndex).push(capture);
 			return r;
+		}
+		
+		@Override
+		boolean study(TreeInfo info){
+			info.deterministic = false;
+			if(getNext() != null)
+				return getNext().study(info);
+			return false;
 		}
 
 	}
@@ -5332,6 +5417,7 @@ public final class Pattern implements java.io.Serializable {
 			info.recursive.put(groupTail.groupIndex, true);
 			groupHead.study(info);
 			info.recursive.put(groupTail.groupIndex, false);
+			info.deterministic = false;
 			return getNext().study(info);
 		}
 

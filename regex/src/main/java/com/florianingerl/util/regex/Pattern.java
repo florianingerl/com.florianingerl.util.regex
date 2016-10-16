@@ -4984,6 +4984,7 @@ public final class Pattern implements java.io.Serializable {
 		private class MaxLazyRepeater extends Node {
 			private int counter;
 			private Node initialEndNext;
+			private int beginIndex = -1;
 
 			MaxLazyRepeater(int cmax) {
 				this.counter = cmax;
@@ -4991,6 +4992,7 @@ public final class Pattern implements java.io.Serializable {
 
 			@Override
 			boolean match(Matcher matcher, int i, CharSequence seq) {
+				if( beginIndex >= i ) return false;
 				if(initialEndNext == null) initialEndNext = endNode.getNext(matcher);
 				Node oldEndNodeNext = endNode.getNext(matcher);
 				endNode.setNext(matcher, initialEndNext);
@@ -5005,9 +5007,12 @@ public final class Pattern implements java.io.Serializable {
 				--counter;
 				oldEndNodeNext = endNode.getNext(matcher);
 				endNode.setNext(matcher, this);
+				int oldBeginIndex = beginIndex;
+				beginIndex = i;
 				r = beginNode.match(matcher, i, seq);
 				++counter;
 				endNode.setNext(matcher, oldEndNodeNext);
+				beginIndex = oldBeginIndex;
 				return r;
 			}
 
@@ -5017,6 +5022,7 @@ public final class Pattern implements java.io.Serializable {
 			private int counter;
 			private Node initialEndNext;
 			private boolean isMax;
+			private int beginIndex = -1;
 
 			Repeater(Node next, int counter, boolean isMax) {
 				this.setNext(next);
@@ -5027,7 +5033,7 @@ public final class Pattern implements java.io.Serializable {
 			@Override
 			public boolean match(Matcher matcher, int i, CharSequence seq) {
 				if(initialEndNext == null) initialEndNext = endNode.getNext(matcher);
-				if (counter == 0) {
+				if (counter == 0 || beginIndex >= i) {
 					Node oldEndNext = endNode.getNext(matcher);
 					endNode.setNext(matcher, initialEndNext);
 					boolean r = getNext().match(matcher, i, seq);
@@ -5037,9 +5043,12 @@ public final class Pattern implements java.io.Serializable {
 				--counter;
 				Node oldEndNext = endNode.getNext(matcher);
 				endNode.setNext(matcher, this);
+				int oldBeginIndex = beginIndex;
+				beginIndex = i;
 				boolean r = beginNode.match(matcher, i, seq);
 				++counter;
 				endNode.setNext(matcher, oldEndNext);
+				beginIndex = oldBeginIndex;
 				if (isMax)
 					r = r || getNext().match(matcher, i, seq);
 				return r;

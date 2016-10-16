@@ -38,6 +38,10 @@ true a 1
 aabbaa
 true aabbaa 2 aa bb
 
+^(a|b*)*?$
+abbb
+true abbb 1 bbb
+
 ((a|b)?b)+
 b
 true b 2 b

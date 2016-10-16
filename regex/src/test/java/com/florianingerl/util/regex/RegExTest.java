@@ -53,7 +53,7 @@ public class RegExTest {
 	private static boolean failure = false;
 	private static int failCount = 0;
 	private static String firstFailure = null;
-
+	
 	@Test
 	public void callMain() {
 		try {
@@ -696,6 +696,8 @@ public class RegExTest {
 	}
 
 	private static void recursiveGroupTest() throws Exception {
+		check("^(a|b*)*$","abbb", true);
+	
 		check("(a(?1)?z)", "---az---aazz---aaazzz---aaaazzzz---aaaazzz",
 				new String[] { "az", "aazz", "aaazzz", "aaaazzzz", "aaazzz" });
 		check("(a(?1)??z)", "---az---aazz---aaazzz---aaaazzzz---aaaazzz",

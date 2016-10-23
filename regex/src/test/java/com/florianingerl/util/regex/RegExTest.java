@@ -62,7 +62,7 @@ public class RegExTest {
 			assertTrue(e.getMessage(), false);
 		}
 	}
-
+	
 	/**
 	 * Main to interpret arguments and run several tests.
 	 *

@@ -75,3 +75,16 @@ In order to use this library, add the following dependency to your pom.xml.
 	<version>1.0.1</version>
 </dependency>
 ```
+
+### Known Issues
+Unfortunately this library needs more stacks than java.util.regex which can lead to a StackOverflowException more quickly in rare cases.
+E.g. suppose you wanted to match Java strings with the regex 
+```
+"(\\.|[^"])*"
+```
+then this would only work for string lengths up to 3890, whereas with java.util.regex it would work with string lengths up to 6930. The problem is the
+*-repetition that has to keep track of group captures and backtracking options of the alternation. However a simple character class can be repeated nearly an unlimited number of times,
+so the regex above could be improved to
+```
+"(?:\\.|[^"\\]+)*"
+```

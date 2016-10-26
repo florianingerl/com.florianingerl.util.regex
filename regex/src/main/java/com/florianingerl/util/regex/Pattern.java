@@ -3675,6 +3675,8 @@ public final class Pattern implements java.io.Serializable {
 	static final int GREEDY = 0;
 
 	static final int LAZY = 1;
+	
+	static final int POSSESSIVE = 2;
 
 	Navigator createNavigator(Node endNode)
 	{
@@ -3708,8 +3710,8 @@ public final class Pattern implements java.io.Serializable {
 				return new Curly(beginNode, createNavigator(endNode), 0, 1, LAZY);
 			} else if (ch == '+') {
 				next();
-				if(deterministic) return new AtomicGroup( new DeterministicCurly(beginNode, 0,1, GREEDY) );
-				return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), 0, 1, GREEDY));
+				if(deterministic) return new DeterministicCurly(beginNode, 0,1, POSSESSIVE );
+				return new Curly(beginNode, createNavigator(endNode), 0, 1, POSSESSIVE);
 			}
 			if(deterministic) return new DeterministicCurly(beginNode, 0,1, GREEDY);
 			return new Curly(beginNode, createNavigator(endNode), 0, 1, GREEDY);
@@ -3721,8 +3723,8 @@ public final class Pattern implements java.io.Serializable {
 				return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
-				if(deterministic) return new AtomicGroup(new DeterministicCurly(beginNode, 0, MAX_REPS, GREEDY) );
-				return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, GREEDY));
+				if(deterministic) return new DeterministicCurly(beginNode, 0, MAX_REPS, POSSESSIVE );
+				return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, POSSESSIVE);
 			}
 			if(deterministic) return new DeterministicCurly(beginNode, 0, MAX_REPS, GREEDY);
 			return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, GREEDY);
@@ -3734,8 +3736,8 @@ public final class Pattern implements java.io.Serializable {
 				return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
-				if(deterministic) return new AtomicGroup(new DeterministicCurly(beginNode, 1, MAX_REPS, GREEDY));
-				return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, GREEDY));
+				if(deterministic) return new DeterministicCurly(beginNode, 1, MAX_REPS, POSSESSIVE);
+				return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, POSSESSIVE);
 			}
 			if(deterministic) return new DeterministicCurly(beginNode,  1, MAX_REPS, GREEDY);
 			return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, GREEDY);
@@ -3770,8 +3772,8 @@ public final class Pattern implements java.io.Serializable {
 					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, LAZY);
 				} else if (ch == '+') {
 					next();
-					if(deterministic) return new AtomicGroup(new DeterministicCurly(beginNode, cmin, cmax, GREEDY) );
-					return new AtomicGroup(new Curly(beginNode, createNavigator(endNode), cmin, cmax, GREEDY));
+					if(deterministic) return new DeterministicCurly(beginNode, cmin, cmax, POSSESSIVE );
+					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, POSSESSIVE);
 				} else {
 					if(deterministic) return new DeterministicCurly(beginNode,  cmin, cmax, GREEDY);
 					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, GREEDY);
@@ -4953,7 +4955,7 @@ public final class Pattern implements java.io.Serializable {
 				}
 				return false;
 			}
-			else { //type == LAZY
+			else if(type == LAZY) { 
 				while(true){
 					if(getNext().match(matcher, i, seq) ) return true;
 					if( j >= cmax) return false;
@@ -4962,6 +4964,13 @@ public final class Pattern implements java.io.Serializable {
 					i = matcher.last;
 					++j;
 				}
+			}
+			else { //type == POSSESSIVE
+				for(; j < cmax; ++j){
+					if(! beginNode.match(matcher, i, seq) ) break;
+					i = matcher.last;
+				}
+				return getNext().match(matcher, i, seq);
 			}
 		}
 		
@@ -5062,12 +5071,28 @@ public final class Pattern implements java.io.Serializable {
 				Repeater mgr = new Repeater(this.getNext(), cmax - cmin, true);
 				Repeater mr = new Repeater(mgr, cmin, false);
 				return mr.match(matcher, i, seq);
-			} else { // type == LAZY
+			} else if(type == LAZY){ 
 				MaxLazyRepeater mlr = new MaxLazyRepeater(cmax - cmin);
 				Repeater mr = new Repeater(mlr, cmin, false);
 				return mr.match(matcher, i, seq);
+			} else { //type == POSSESSIVE
+				Repeater mr = new Repeater(accept, cmin, false);
+				Vector< Stack<Capture> > captures = matcher.cloneCaptures();
+				if(! mr.match(matcher, i, seq) ) 
+					return false;
+				i = matcher.last;
+				int j = cmin;
+				for(; j < cmax; ++j){
+					if(! beginNode.match(matcher, i, seq) )
+						break;
+					i = matcher.last;
+				}
+				if( getNext().match(matcher, i, seq) )
+					return true;
+				matcher.captures = captures;
+				return false;
 			}
-
+			
 		}
 
 		

@@ -24,7 +24,7 @@
 
 package com.florianingerl.util.regex;
 
-import static org.junit.Assert.assertTrue;
+
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -41,6 +41,7 @@ import java.util.Random;
 import java.util.function.Predicate;
 import java.util.function.Function;
 
+import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 /**

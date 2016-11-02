@@ -697,6 +697,11 @@ public class RegExTest {
 	}
 
 	private static void recursiveGroupTest() throws Exception {
+		String pattern = "^(?<javaType>[a-zA-Z]\\w*(\\s*\\<(?<rep>\\s*(?javaType)\\s*)(,(?rep))*\\>)?)$";
+		check(pattern, "List<Integer>", true);
+		check(pattern, "HashMap<Integer,String>", true);
+		check(pattern, "Map<Integer, List<String> >", true);
+	
 		check("^(a|b*)*$","abbb", true);
 	
 		check("(a(?1)?z)", "---az---aazz---aaazzz---aaaazzzz---aaaazzz",
@@ -707,7 +712,7 @@ public class RegExTest {
 		check("1(a(?1)z|q)2", "1aaqzz2", true);
 		check("1(a(?1){1}z|q)2", "1aaqzz2", true);
 
-		String pattern = "1(a(?1){3}z|q)2";
+		pattern = "1(a(?1){3}z|q)2";
 		check(pattern, "1q2", true);
 		check(pattern, "1aqqqz2", true);
 		check(pattern, "1aqqaqqqzz2", true);
@@ -791,6 +796,11 @@ public class RegExTest {
 	}
 
 	private static void conditionalBasedOnValidGroupCaptureTest() throws Exception {
+		check("(a)?(?(1)|A)B", "aB", true);
+		check("(a)?(?(1)|A)B", "AB", true);
+		check("(a)?(?(1)A|)B", "aAB", true);
+		check("(a)?(?(1)A|)B", "B", true);
+	
 		String pattern = "1(a)?bbb(?(1)yy|zz)st2";
 		check(pattern, "1abbbyyst2", true);
 		check(pattern, "1abbbzzst2", false);

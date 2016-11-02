@@ -2605,6 +2605,17 @@ public final class Pattern implements java.io.Serializable {
 			next();
 		}
 	}
+	
+	private Node expr2(Node end){
+		Node node = sequence(end);
+		if(peek() != '|'){
+			root = null;
+			return node;
+		}
+		next();
+		root= sequence(end);
+		return node;
+	}
 
 	@SuppressWarnings("fallthrough")
 	/**
@@ -3474,17 +3485,10 @@ public final class Pattern implements java.io.Serializable {
 				head = createGroup(true);// Conditionals are really uncaptured
 											// groups
 				tail = root;
-				head.next = expr(tail);
-				if (head.next instanceof Branch) {
-					Branch branch = (Branch) head.next;
-					conditional.yes = branch.atoms[0];
-					conditional.not = branch.atoms[1];
-					head.next = conditional;
-				} else {
-					conditional.yes = head.next;
-					head.next = conditional;
-					head.next.next = tail;
-				}
+				conditional.yes = expr2(tail);
+				conditional.not = root;
+				head.next = conditional;
+				head.next.next = tail;
 				break;
 			case '$':
 			case '@':

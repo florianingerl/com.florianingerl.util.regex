@@ -839,7 +839,7 @@ public class RegExTest {
 		check(pattern, "1amen2", false);
 
 		// conditionals are uncaptured groups!!!
-		checkExpectedFail("1(?(?=ab)abba|amen)2(?(1)(?!))");
+		check("1(?(?=ab)abba|amen)2(?(1)(?!))","1abba2", true);
 
 		// backtracking
 		pattern = "1(?(?=(?<mygroup>aber))aberr)?aber2(?(mygroup)(?!))";

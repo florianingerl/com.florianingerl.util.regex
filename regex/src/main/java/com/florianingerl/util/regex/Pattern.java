@@ -3434,7 +3434,7 @@ public final class Pattern implements java.io.Serializable {
 				} else if (ch == '-') {
 					ch = peek();
 					int groupNumber;
-					if ((groupNumber = doesGroupNumberFollowBefore('>')) == -1
+					if ((groupNumber = doesGroupNumberFollowBefore('>', true)) == -1
 							&& (groupNumber = doesGroupNameFollowBefore('>')) == -1) {
 						throw error("Illegal pop group capture syntax");
 					}
@@ -3470,8 +3470,8 @@ public final class Pattern implements java.io.Serializable {
 				Conditional conditional;
 				
 				{int groupNumber;
-				if ((groupNumber = doesGroupNumberFollowBefore(')')) != -1
-						|| (groupNumber = doesGroupNameFollowBefore(')')) != -1) {
+				if ((groupNumber = doesGroupNumberFollowBefore(')', false)) != -1
+						|| (groupNumber = doesGroupNameFollowBefore(')' )) != -1) {
 					conditional = new ConditionalGP(groupNumber);
 				} else {
 					accept('?', "Unkown condition");
@@ -3497,7 +3497,7 @@ public final class Pattern implements java.io.Serializable {
 						// call
 				unread();
 				int groupNumber;
-				if ((groupNumber = doesGroupNumberFollowBefore(')')) != -1
+				if ((groupNumber = doesGroupNumberFollowBefore(')', true)) != -1
 						|| (groupNumber = doesGroupNameFollowBefore(')')) != -1) {
 					unread();
 					head = tail = new RecursiveGroupCall(groupNumber);
@@ -3551,7 +3551,7 @@ public final class Pattern implements java.io.Serializable {
 			while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch)) {
 				sb.append(Character.toChars(ch));
 			}
-			if (!namedGroups().containsKey(sb.toString()) || ch != closing) {
+			if ( !namedGroups().containsKey(sb.toString()) || ch != closing) {
 				cursor = save;
 				return -1;
 			}
@@ -3560,14 +3560,14 @@ public final class Pattern implements java.io.Serializable {
 		return -1;
 	}
 
-	private int doesGroupNumberFollowBefore(int closing) {
+	private int doesGroupNumberFollowBefore(int closing, boolean declared) {
 		int number = 0;
 		int ch;
 		int save = cursor;
 		while (ASCII.isDigit(ch = read())) {
 			number = number * 10 + ch - '0';
 		}
-		if (number <= 0 || number >= capturingGroupCount || ch != closing) {
+		if (number <= 0 || (declared && number >= capturingGroupCount) || ch != closing) {
 			cursor = save;
 			return -1;
 		}
@@ -5736,7 +5736,7 @@ public final class Pattern implements java.io.Serializable {
 
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			if (!matcher.captures.get(groupNumber).isEmpty()) {
+			if (matcher.captures.size() > groupNumber && !matcher.captures.get(groupNumber).isEmpty()) {
 				return yes.match(matcher, i, seq);
 			} else if (not != null) {
 				return not.match(matcher, i, seq);

@@ -57,7 +57,7 @@ public class BoostRegExTest {
 		}
 		failCount = 0;
 	}
-	private static void check(String regex, int flags, String s, int [] data ){
+private static void check(String regex, int flags, String s, int [] data ){
 		int save = failCount;
 		try {
 		innerCheck(regex, flags, s, data);
@@ -435,9 +435,6 @@ public class BoostRegExTest {
 		check("a{2,4}",0|Pattern.MULTILINE|Pattern.DOTALL,"aaa", new int[]{0, 3, -2, -2});
 		check("a{2,4}",0|Pattern.MULTILINE|Pattern.DOTALL,"aaaa", new int[]{0, 4, -2, -2});
 		check("a{2,4}",0|Pattern.MULTILINE|Pattern.DOTALL,"aaaaa", new int[]{0, 4, -2, -2});
-		//check("a{ 2 , 4 }",0|Pattern.MULTILINE|Pattern.DOTALL,"aaaaa", new int[]{0, 4, -2, -2});
-		//check("a{ 2 , }",0|Pattern.MULTILINE|Pattern.DOTALL,"aaaaa", new int[]{0, 5, -2, -2});
-		//check("a{ 2 }",0|Pattern.MULTILINE|Pattern.DOTALL,"aaa", new int[]{0, 2, -2, -2});
 		check("a\\{\\}",0|Pattern.MULTILINE|Pattern.DOTALL,"a{}", new int[]{0, 3, -2, -2});
 		check("a{2,4}?",0|Pattern.MULTILINE|Pattern.DOTALL,"a", new int[]{-2, -2});
 		check("a{2,4}?",0|Pattern.MULTILINE|Pattern.DOTALL,"aa", new int[]{0, 2, -2, -2});
@@ -451,7 +448,6 @@ public class BoostRegExTest {
 		check("^a{0,1}?$",0|Pattern.MULTILINE|Pattern.DOTALL,"aaaaa", new int[]{-2, -2});
 		check("^(?:a){0,1}?$",0|Pattern.MULTILINE|Pattern.DOTALL,"aaaaa", new int[]{-2, -2});
 		check("a}",0|Pattern.MULTILINE|Pattern.DOTALL,"a}", new int[]{0, 2, -2, -2});
-		//check("a{12b",0|Pattern.MULTILINE|Pattern.DOTALL,"a{12bc", new int[]{0, 5, -2, -2});
 
 		report("test_simple_repeats");
 	}
@@ -686,10 +682,6 @@ public class BoostRegExTest {
 		check("(\\()?[^()]+(?(1)\\))",0|Pattern.MULTILINE|Pattern.DOTALL,"(abcd)", new int[]{0, 6, 0, 1, -2, -2});
 		check("(\\()?[^()]+(?(1)\\))",0|Pattern.MULTILINE|Pattern.DOTALL,"the quick (abcd) fox", new int[]{0, 10, -1, -1, -2, 10, 16, 10, 11, -2, 16, 20, -1, -1, -2, -2});
 		check("(\\()?[^()]+(?(1)\\))",0|Pattern.MULTILINE|Pattern.DOTALL,"(abcd", new int[]{1, 5, -1, -1, -2, -2});
-		check("^(?(2)a|(1)(2))+$",0|Pattern.MULTILINE|Pattern.DOTALL,"12", new int[]{0, 2, 0, 1, 1, 2, -2, -2});
-		check("^(?(2)a|(1)(2))+$",0|Pattern.MULTILINE|Pattern.DOTALL,"12a", new int[]{0, 3, 0, 1, 1, 2, -2, -2});
-		check("^(?(2)a|(1)(2))+$",0|Pattern.MULTILINE|Pattern.DOTALL,"12aa", new int[]{0, 4, 0, 1, 1, 2, -2, -2});
-		check("^(?(2)a|(1)(2))+$",0|Pattern.MULTILINE|Pattern.DOTALL,"1234", new int[]{-2, -2});
 		check("\\b(?:(?:(one)|(two)|(three))(?:,|\\b)){3,}(?(1)|(?!))(?(2)|(?!))(?(3)|(?!))",0|Pattern.MULTILINE|Pattern.DOTALL,"one,two,two, one", new int[]{-2, -2});
 		check("\\b(?:(?:(one)|(two)|(three))(?:,|\\b)){3,}(?(1)|(?!))(?(2)|(?!))(?(3)|(?!))",0|Pattern.MULTILINE|Pattern.DOTALL,"one,three,two", new int[]{0, 13, 0, 3, 10, 13, 4, 9, -2, -2});
 		check("\\b(?:(?:(one)|(two)|(three))(?:,|\\b)){3,}(?(1)|(?!))(?(2)|(?!))(?(3)|(?!))",0|Pattern.MULTILINE|Pattern.DOTALL,"one,two,two,one,three,four", new int[]{0, 22, 12, 15, 8, 11, 16, 21, -2, -2});
@@ -707,7 +699,7 @@ public class BoostRegExTest {
 		check("^   a\\ b[c ]d       $",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"a b d", new int[]{0, 5, -2, -2});
 		check("^   a\\ b[c ]d       $",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"abcd", new int[]{-2, -2});
 		check("^   a\\ b[c ]d       $",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"ab d", new int[]{-2, -2});
-		check("^1234(?x:# test newlines\n  inside\n)",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"1234", new int[]{0, 4, -2, -2});
+		check("^1234(?x:# test newlines  inside\n)",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"1234", new int[]{0, 4, -2, -2});
 		check("^1234 #comment in boost::regex::extended re\n",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"1234", new int[]{0, 4, -2, -2});
 		check("#rhubarb\n  abcd",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"abcd", new int[]{0, 4, -2, -2});
 		check("^1234 #comment in boost::regex::extended re\r\n",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"1234", new int[]{0, 4, -2, -2});
@@ -824,57 +816,40 @@ public class BoostRegExTest {
 	}
 
 	private static void test_recursion(){
-		check("=", 0, "=", new int[]{0,1,-2,-2});
 		check("(a(?1)b)",0|Pattern.MULTILINE|Pattern.DOTALL,"abc", new int[]{-2, -2});
 		check("(a(?1)+b)",0|Pattern.MULTILINE|Pattern.DOTALL,"abc", new int[]{-2, -2});
-		check("^([^()]|\\((?1)*\\))*$",0|Pattern.MULTILINE|Pattern.DOTALL,"abc", new int[]{0, 3, 2, 3, -2, -2});
-		check("^([^()]|\\((?1)*\\))*$",0|Pattern.MULTILINE|Pattern.DOTALL,"a(b)c", new int[]{0, 5, 4, 5, -2, -2});
-		check("^([^()]|\\((?1)*\\))*$",0|Pattern.MULTILINE|Pattern.DOTALL,"a(b(c))d", new int[]{0, 8, 7, 8, -2, -2});
+		check("^([^()]|\\((?1)*\\))*$",0|Pattern.MULTILINE|Pattern.DOTALL,"abc", new int[]{0, 3,-2, -2});
+		check("^([^()]|\\((?1)*\\))*$",0|Pattern.MULTILINE|Pattern.DOTALL,"a(b)c", new int[]{0, 5,-2, -2});
+		check("^([^()]|\\((?1)*\\))*$",0|Pattern.MULTILINE|Pattern.DOTALL,"a(b(c))d", new int[]{0, 8,-2, -2});
 		check("^([^()]|\\((?1)*\\))*$",0|Pattern.MULTILINE|Pattern.DOTALL,"a(b(c)d", new int[]{-2, -2});
-		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.MULTILINE|Pattern.DOTALL,">abc>123<xyz<", new int[]{0, 13, 7, 8, -2, -2});
-		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.MULTILINE|Pattern.DOTALL,">abc>1(2)3<xyz<", new int[]{0, 15, 9, 10, -2, -2});
-		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.MULTILINE|Pattern.DOTALL,">abc>(1(2)3)<xyz<", new int[]{0, 17, 5, 12, -2, -2});
-		check("^\\W*(?:((.)\\W*(?1)\\W*\\2|)|((.)\\W*(?3)\\W*\\4|\\W*.\\W*))\\W*$",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"Satan, oscillate my metallic sonatas!", new int[]{0, 37, -1, -1, -1, -1, 0, 36, 0, 1, -2, -2});
+		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.MULTILINE|Pattern.DOTALL,">abc>123<xyz<", new int[]{0, 13,-2, -2});
+		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.MULTILINE|Pattern.DOTALL,">abc>1(2)3<xyz<", new int[]{0, 15,-2, -2});
+		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.MULTILINE|Pattern.DOTALL,">abc>(1(2)3)<xyz<", new int[]{0, 17,-2, -2});
+		check("^\\W*(?:((.)\\W*(?1)\\W*\\2|)|((.)\\W*(?3)\\W*\\4|\\W*.\\W*))\\W*$",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"Satan, oscillate my metallic sonatas!", new int[]{0, 37,-2, -2});
 		check("^\\W*(?:((.)\\W*(?1)\\W*\\2|)|((.)\\W*(?3)\\W*\\4|\\W*.\\W*))\\W*$",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"The quick brown fox", new int[]{-2, -2});
-		check("^(\\d+|\\((?1)([+*-])(?1)\\)|-(?1))$",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"12", new int[]{0, 2, 0, 2, -1, -1, -2, -2});
-		check("^(\\d+|\\((?1)([+*-])(?1)\\)|-(?1))$",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"-12", new int[]{0, 3, 0, 3, -1, -1, -2, -2});
+		check("^(\\d+|\\((?1)([+*-])(?1)\\)|-(?1))$",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"12", new int[]{0, 2,-2, -2});
+		check("^(\\d+|\\((?1)([+*-])(?1)\\)|-(?1))$",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"-12", new int[]{0, 3,-2, -2});
 		check("^(\\d+|\\((?1)([+*-])(?1)\\)|-(?1))$",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"((2+2)*-3)-7)", new int[]{-2, -2});
-		check("^(x(y|(?1){2})z)",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"xyz", new int[]{0, 3, 0, 3, 1, 2, -2, -2});
-		check("^(x(y|(?1){2})z)",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"xxyzxyzz", new int[]{0, 8, 0, 8, 1, 7, -2, -2});
+		check("^(x(y|(?1){2})z)",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"xyz", new int[]{0, 3,-2, -2});
+		check("^(x(y|(?1){2})z)",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"xxyzxyzz", new int[]{0, 8,-2, -2});
 		check("^(x(y|(?1){2})z)",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"xxyzz", new int[]{-2, -2});
 		check("^(x(y|(?1){2})z)",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"xxyzxyzxyzz", new int[]{-2, -2});
-		check("^(a|b|c)=(?1)+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=a", new int[]{0, 3, 0, 1, -2, -2});
-		check("^(a|b|c)=(?1)+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=b", new int[]{0, 3, 0, 1, -2, -2});
-		check("^(a|b|c)=(?1)+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=bc", new int[]{0, 4, 0, 1, -2, -2});
-		check("^(a|b|c)=((?1))+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=a", new int[]{0, 3, 0, 1, 2, 3, -2, -2});
-		check("^(a|b|c)=((?1))+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=b", new int[]{0, 3, 0, 1, 2, 3, -2, -2});
-		check("^(a|b|c)=((?1))+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=bc", new int[]{0, 4, 0, 1, 3, 4, -2, -2});
-		check("(abc)(?i:(?1))",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"defabcabcxyz", new int[]{3, 9, 3, 6, -2, -2});
-		check("(abc)(?i:(?1))",0|Pattern.MULTILINE|Pattern.DOTALL,"DEFabcABCXYZ", new int[]{-2, -2});
-		check("(abc)(?i:(?1)abc)",0|Pattern.MULTILINE|Pattern.DOTALL,"DEFabcABCABCXYZ", new int[]{-2, -2});
-		check("(?<abc>a|b)(?<doe>d|e)(?abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bdaa", new int[]{0, 4, 0, 1, 1, 2, -2, -2});
-		check("(?<abc>a|b)(?<doe>d|e)(?abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bdab", new int[]{0, 4, 0, 1, 1, 2, -2, -2});
+		check("^(a|b|c)=(?1)+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=a", new int[]{0, 3,-2, -2});
+		check("^(a|b|c)=(?1)+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=b", new int[]{0, 3,-2, -2});
+		check("^(a|b|c)=(?1)+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=bc", new int[]{0, 4,-2, -2});
+		check("^(a|b|c)=((?1))+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=a", new int[]{0, 3,-2, -2});
+		check("^(a|b|c)=((?1))+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=b", new int[]{0, 3,-2, -2});
+		check("^(a|b|c)=((?1))+",0|Pattern.CASE_INSENSITIVE|Pattern.MULTILINE|Pattern.DOTALL,"a=bc", new int[]{0, 4,-2, -2});
+		check("(?<abc>a|b)(?<doe>d|e)(?abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bdaa", new int[]{0, 4,-2, -2});
+		check("(?<abc>a|b)(?<doe>d|e)(?abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bdab", new int[]{0, 4,-2, -2});
 		check("(?<abc>a|b)(?<doe>d|e)(?abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bddd", new int[]{-2, -2});
-		check("(?<abc>a|b)(?<doe>d|e)(?P\\>abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bdaa", new int[]{0, 4, 0, 1, 1, 2, -2, -2});
-		check("(?<abc>a|b)(?<doe>d|e)(?P\\>abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bdab", new int[]{0, 4, 0, 1, 1, 2, -2, -2});
-		check("(?<abc>a|b)(?<doe>d|e)(?P\\>abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bddd", new int[]{-2, -2});
-		check("(?P\\>abc)X(?<abc>P)",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"abcPXP123", new int[]{3, 6, 5, 6, -2, -2});
-		check("(?:a(?P\\>abc)b)*(?<abc>x)",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"123axbaxbaxbx456", new int[]{3, 13, 12, 13 , -2, -2});
-		check("(?:a(?P\\>abc)b){1,5}(?<abc>x)",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"123axbaxbaxbx456", new int[]{3, 13, 12, 13 , -2, -2});
-		check("(?:a(?P\\>abc)b){2,5}(?<abc>x)",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"123axbaxbaxbx456", new int[]{3, 13, 12, 13 , -2, -2});
-		check("(?:a(?P\\>abc)b){2,}(?<abc>x)",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"123axbaxbaxbx456", new int[]{3, 13, 12, 13 , -2, -2});
+		check("(?<abc>a|b)(?<doe>d|e)(?abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bdaa", new int[]{0, 4,-2, -2});
+		check("(?<abc>a|b)(?<doe>d|e)(?abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bdab", new int[]{0, 4,-2, -2});
+		check("(?<abc>a|b)(?<doe>d|e)(?abc){2}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"bddd", new int[]{-2, -2});
 		check("^(?<ab>a)? (?(ab)b|c) (?(ab)d|e)",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"abd", new int[]{0, 3, 0, 1, -2, -2});
 		check("^(?<ab>a)? (?(ab)b|c) (?(ab)d|e)",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"ce", new int[]{0, 2, -1, -1, -2, -2});
-		check("namespace\\s+(\\w+)\\s+(\\{(?:[^{}]*(?:(?2)[^{}]*)*)?\\})",0|Pattern.MULTILINE|Pattern.DOTALL,"namespace one { namespace two { int foo(); } }", new int[]{0, 46, 10, 13, 14, 46, -2, -2});
-		check("namespace\\s+(\\w+)\\s+(\\{(?:[^{}]*(?:(?2)[^{}]*)*)?\\})",0|Pattern.MULTILINE|Pattern.DOTALL,"namespace one { namespace two { int foo(){} } { {{{ }  } } } {}}", new int[]{0, 64, 10, 13, 14, 64, -2, -2});
-		check("(?:(?<A>a+)|(?<A>b+))\\.(?A)",0|Pattern.MULTILINE|Pattern.DOTALL,"aaaa.aa", new int[]{0, 7, 0, 4, -1, -1, -2, -2});
-		check("(?:(?<A>a+)|(?<A>b+))\\.(?A)",0|Pattern.MULTILINE|Pattern.DOTALL,"bbbb.aa", new int[]{0, 7, -1, -1, 0, 4, -2, -2});
-		check("(?:(?<A>a+)|(?<A>b+))\\.(?A)",0|Pattern.MULTILINE|Pattern.DOTALL,"bbbb.bb", new int[]{-2, -2});
-		check("(?:(?<A>a+)|(?<A>b+))\\.\\k<A>",0|Pattern.MULTILINE|Pattern.DOTALL,"aaaa.aaaa", new int[]{0, 9, 0, 4, -1, -1, -2, -2});
-		check("(?:(?<A>a+)|(?<A>b+))\\.\\k<A>",0|Pattern.MULTILINE|Pattern.DOTALL,"bbbb.aaaa", new int[]{-2, -2});
-		check("(?:(?<A>a+)|(?<A>b+))\\.\\k<A>",0|Pattern.MULTILINE|Pattern.DOTALL,"aaaa.bbbb", new int[]{-2, -2});
-		check("(?:(?<A>a+)|(?<A>b+))\\.\\k<A>",0|Pattern.MULTILINE|Pattern.DOTALL,"bbbb.bbbb", new int[]{0, 9, -1, -1, 0, 4, -2, -2});
-		check("(?:(?<A>a+)|(?<A>b+)|c+)\\.\\k<A>",0|Pattern.MULTILINE|Pattern.DOTALL,"cccc.cccc", new int[]{-2, -2});
+		check("namespace\\s+(\\w+)\\s+(\\{(?:[^{}]*(?:(?2)[^{}]*)*)?\\})",0|Pattern.MULTILINE|Pattern.DOTALL,"namespace one { namespace two { int foo(); } }", new int[]{0, 46,-2, -2});
+		check("namespace\\s+(\\w+)\\s+(\\{(?:[^{}]*(?:(?2)[^{}]*)*)?\\})",0|Pattern.MULTILINE|Pattern.DOTALL,"namespace one { namespace two { int foo(){} } { {{{ }  } } } {}}", new int[]{0, 64,-2, -2});
 
 		report("test_recursion");
 	}

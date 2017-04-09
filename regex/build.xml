@@ -35,7 +35,7 @@
 	<target name="test" depends="compile-test">
 		<echo>Running the tests</echo>
 
-		<java classname="com.ingerlflori.util.regex.RegExTest" fork="true" resultproperty="return.code">
+		<java classname="com.florianingerl.util.regex.RegExTest" fork="true" resultproperty="return.code">
 			<classpath>
 				<pathelement location="${output-main}" />
 				<pathelement location="${output-test}" />

@@ -7,6 +7,7 @@
 	<property name="src-test-resources" location="src/test/resources" />
 	<property name="output-main" location="target/classes" />
 	<property name="output-test" location="target/test-classes" />
+	<property name="reports" location="reports" />
 
 	<target name="compile-main">
 		<delete dir="${output-main}" />
@@ -34,8 +35,24 @@
 
 	<target name="test" depends="compile-test">
 		<echo>Running the tests</echo>
-
-		<java classname="com.florianingerl.util.regex.RegExTest" fork="true" resultproperty="return.code">
+		
+		<junit
+			printsummary="yes"
+			errorProperty="test.failed"
+			failureProperty="test.failed"
+			haltonfailure="yes">
+			<formatter type="plain"/>
+			<classpath>
+				<pathelement location="${output-main}" />
+				<pathelement location="${output-test}" />
+				<pathelement location="lib/junit-4.12.jar" />
+				<pathelement location="lib/hamcrest-core-1.3.jar" />
+			</classpath>
+			<test name="com.florianingerl.util.regex.RegExTest"/>
+			<test name="com.florianingerl.util.regex.BoostRegExTest" />
+		</junit>	
+		<fail message="Tests failed!" if="test.failed" />
+		<!-- <java classname="com.florianingerl.util.regex.RegExTest" fork="true" resultproperty="return.code">
 			<classpath>
 				<pathelement location="${output-main}" />
 				<pathelement location="${output-test}" />
@@ -49,7 +66,7 @@
 			</not>
 		</condition>
 		<fail if="problem" message="RegExTest.class exited with return code ${return.code}" />
-
+		-->
 
 	</target>
 

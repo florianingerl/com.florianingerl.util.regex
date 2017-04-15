@@ -842,6 +842,14 @@ public class BoostRegExTest {
 		check("namespace\\s+(\\w+)\\s+(\\{(?:[^{}]*(?:(?2)[^{}]*)*)?\\})",0|Pattern.MULTILINE|Pattern.DOTALL,"namespace one { namespace two { int foo(); } }", new int[]{0, 46,-2, -2});
 		check("namespace\\s+(\\w+)\\s+(\\{(?:[^{}]*(?:(?2)[^{}]*)*)?\\})",0|Pattern.MULTILINE|Pattern.DOTALL,"namespace one { namespace two { int foo(){} } { {{{ }  } } } {}}", new int[]{0, 64,-2, -2});
 
+		check("^(?(DEFINE) (?<A> a) (?<B> b) )  (?A) (?B) ",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"abcd", new int[]{0, 2,-2, -2});
+		check("(?(DEFINE)(?<byte>2[0-4]\\d|25[0-5]|1\\d\\d|[1-9]?\\d))\\b(?byte)(\\.(?byte)){3}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"1.2.3.4", new int[]{0, 7,-2, -2});
+		check("(?(DEFINE)(?<byte>2[0-4]\\d|25[0-5]|1\\d\\d|[1-9]?\\d))\\b(?byte)(\\.(?byte)){3}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"131.111.10.206", new int[]{0, 14,-2, -2});
+		check("(?(DEFINE)(?<byte>2[0-4]\\d|25[0-5]|1\\d\\d|[1-9]?\\d))\\b(?byte)(\\.(?byte)){3}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"10.0.0.0", new int[]{0, 8,-2, -2});
+		check("(?(DEFINE)(?<byte>2[0-4]\\d|25[0-5]|1\\d\\d|[1-9]?\\d))\\b(?byte)(\\.(?byte)){3}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"10.6", new int[]{-2, -2});
+		check("(?(DEFINE)(?<byte>2[0-4]\\d|25[0-5]|1\\d\\d|[1-9]?\\d))\\b(?byte)(\\.(?byte)){3}",0|Pattern.MULTILINE|Pattern.DOTALL|Pattern.COMMENTS,"455.3.4.5", new int[]{-2, -2});
+
+		
 		report("test_recursion");
 	}
 

@@ -70,6 +70,7 @@ public class RegExTest {
 	 */
 	public static void main(String[] args) throws Exception {
 		// Most of the tests are in a file
+		defineTest();
 		processFile("TestCases.txt");
 		// processFile("PerlCases.txt");
 		processFile("BMPTestCases.txt");
@@ -104,6 +105,8 @@ public class RegExTest {
 		// Misc
 		minMaxLengthTest();
 		recursiveGroupTest();
+		
+		
 		patternStatelessTest();
 		capturesTest();
 		conditionalBasedOnValidGroupCaptureTest();
@@ -696,6 +699,13 @@ public class RegExTest {
 		report("minMaxLength");
 	}
 
+	
+	private static void defineTest() throws Exception {
+	
+		check("^(?(DEFINE)(?<A>a)(?<B>b))(?A)(?B)$","ab",true);
+		report("Define test");
+	}
+	
 	private static void recursiveGroupTest() throws Exception {
 		String pattern = "^(?<javaType>[a-zA-Z]\\w*(\\s*\\<(?<rep>\\s*(?javaType)\\s*)(,(?rep))*\\>)?)$";
 		check(pattern, "List<Integer>", true);

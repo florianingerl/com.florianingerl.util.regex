@@ -707,6 +707,11 @@ import java.util.stream.StreamSupport;
  * capture stack is empty, the search backtracks.</td>
  * </tr>
  * <tr>
+ * <td valign="top" headers="construct special"><tt>(?(DEFINE)</tt><i>X</i><tt>)</tt></td>
+ * <td headers="matches">Defines the pattern <i>X</i> that is never executed and matches no characters.
+ * This is usually used to define one or more named groups which are referred to from elsewhere in the pattern.</td>
+ * </tr>
+ * <tr>
  * <td valign="top" headers="construct special"><tt>(?:</tt><i>X</i><tt>)</tt>
  * </td>
  * <td headers="matches"><i>X</i>, as a non-capturing group</td>
@@ -3465,7 +3470,12 @@ public final class Pattern implements java.io.Serializable {
 					throw error("Unknown look-behind group");
 				}
 				break;
-			case '(': // (?(groupNumber)yes|no)
+			case '(': // (?(groupNumber)yes|no) or (?(DEFINE)regex that's not executed)
+				if( doesDEFINEFollow() ) {
+					expr(accept);
+					head = tail = new Forwarder();
+					break;
+				}
 				
 				Conditional conditional;
 				
@@ -3560,6 +3570,21 @@ public final class Pattern implements java.io.Serializable {
 		return -1;
 	}
 
+	private boolean doesDEFINEFollow()
+	{
+		int save = cursor;
+		peek();
+		int [] define = new int[]{'D','E','F','I','N','E'};
+		for(int i=0; i < define.length; ++i){
+			if( cursor >= temp.length || temp[cursor++] != define[i] ){
+				cursor = save;
+				return false;
+			}
+		}
+		accept(')', "Expected ) after DEFINE!");
+		return true;
+	}
+	
 	private int doesGroupNumberFollowBefore(int closing, boolean declared) {
 		int number = 0;
 		int ch;
@@ -4065,6 +4090,19 @@ public final class Pattern implements java.io.Serializable {
 			}
 		}
 	}
+	
+	static class Forwarder extends Node {
+		@Override
+		boolean match(Matcher matcher, int i, CharSequence seq) {
+			if( getNext() != null ) {
+				return getNext().match(matcher, i, seq );
+			}
+			else {
+				return super.match(matcher, i, seq);
+			}
+		}
+	}
+	
 	
 	static class Navigator extends Node {
 		protected int localIndex;

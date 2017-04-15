@@ -21,7 +21,7 @@
  * questions.
  */
 
-package com.florianingerl.util.regex;
+package com.florianingerl.util.regex.tests;
 
 final class POSIX_ASCII {
 

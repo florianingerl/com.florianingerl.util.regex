@@ -25,6 +25,8 @@
 
 package com.florianingerl.util.regex;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Stack;
 import java.util.Vector;
@@ -136,6 +138,8 @@ public final class Matcher implements MatchResult {
 	 * added to the stack of captures for that group
 	 */
 	Vector<Stack<Capture>> captures;
+	
+	Map<Class<? extends Pattern.CustomNode>, Object> data;
 
 	/**
 	 * The range within the sequence that is to be matched. Anchors will match
@@ -246,9 +250,14 @@ public final class Matcher implements MatchResult {
 		localVector = new Vector<Stack<Integer>>(parent.localCount);
 		localVector.setSize(parent.localCount);
 		nextNodes = new Pattern.Node[parent.localCount];
-
+		
+		genData();
 		// Put fields into initial states
 		reset();
+	}
+
+	private void genData() {
+		data = new HashMap<Class<? extends Pattern.CustomNode>, Object>();
 	}
 
 	/**
@@ -332,6 +341,7 @@ public final class Matcher implements MatchResult {
 			localVector.set(i, new Stack<Integer>());
 			nextNodes[i] = null;
 		}
+		genData();
 		lastAppendPosition = 0;
 		from = 0;
 		to = getTextLength();
@@ -731,6 +741,7 @@ public final class Matcher implements MatchResult {
 			for (int i = 0; i < captures.size(); ++i) {
 				captures.set(i, new Stack<Capture>());
 			}
+			genData();
 			return false;
 		}
 		return search(nextSearchIndex);
@@ -1430,6 +1441,7 @@ public final class Matcher implements MatchResult {
 		for (int i = 0; i < captures.size(); ++i) {
 			captures.set(i, new Stack<Capture>());
 		}
+		genData();
 		acceptMode = NOANCHOR;
 		boolean result = parentPattern.root.match(this, from, text);
 		if (!result)
@@ -1453,6 +1465,7 @@ public final class Matcher implements MatchResult {
 		for (int i = 0; i < captures.size(); ++i) {
 			captures.set(i, new Stack<Capture>());
 		}
+		genData();
 		acceptMode = anchor;
 		boolean result = parentPattern.matchRoot.match(this, from, text);
 		if (!result)

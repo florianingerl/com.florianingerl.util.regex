@@ -21,7 +21,7 @@
  * questions.
  */
 
-package com.florianingerl.util.regex;
+package com.florianingerl.util.regex.tests;
 
 final public class POSIX_Unicode {
 

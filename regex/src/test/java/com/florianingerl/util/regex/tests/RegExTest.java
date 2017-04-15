@@ -22,7 +22,7 @@
  * questions.
  */
 
-package com.florianingerl.util.regex;
+package com.florianingerl.util.regex.tests;
 
 
 
@@ -43,6 +43,11 @@ import java.util.function.Function;
 
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
+
+import com.florianingerl.util.regex.MatchResult;
+import com.florianingerl.util.regex.Matcher;
+import com.florianingerl.util.regex.Pattern;
+import com.florianingerl.util.regex.PatternSyntaxException;
 
 /**
  * This is a test class created to check the operation of the Pattern and
@@ -103,7 +108,6 @@ public class RegExTest {
 		patternMatchesTest();
 
 		// Misc
-		minMaxLengthTest();
 		recursiveGroupTest();
 		
 		
@@ -290,23 +294,7 @@ public class RegExTest {
 			failCount++;
 	}
 	
-	private static void check(String regex, int minLength, boolean maxValid, int maxLength ){
-		Pattern p = Pattern.compile(regex);
-		Pattern.TreeInfo info = new Pattern.TreeInfo();
-		p.matchRoot.study(info);
-		if(minLength != info.minLength ){
-			++failCount;
-			return;
-		}
-		if(maxValid != info.maxValid ){
-			++failCount;
-			return;
-		}
-		if(maxValid && maxLength != info.maxLength){
-			++failCount;
-			return;
-		}
-	}
+	
 
 	private static void check(String p, int flag, String input, String s, boolean expected) {
 		Pattern pattern = Pattern.compile(p, flag);
@@ -683,21 +671,7 @@ public class RegExTest {
 	
 	}
 	
-	private static void minMaxLengthTest() throws Exception {
-		check("(a(?1)?z)", 2, false, -1);
-		check("(a(?1)??z)", 2, false, -1);
-		check("(a(?1)z|q)", 1, false, -1);
-		check("1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2", 4, false, -1 );
-		
-		check("(\\(([^()]+|(?1))*+\\))", 2, false, -1 );
-		check("\\b(([a-zA-Z])(?1)?(?<-2>\\2)|[a-zA-Z])\\b", 1, false, -1 );
-		
-		check("1(?<first>a\\((?<second>(?first)|[a-zA-Z]),(?second)\\))2", 8, false, -1 );
-		
-		check("(?:(a)|bc)(?(1)A|BBBBBB)", 2, true, 8 );
-		
-		report("minMaxLength");
-	}
+	
 
 	
 	private static void defineTest() throws Exception {

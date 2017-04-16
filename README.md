@@ -77,7 +77,7 @@ check(anagram, "anna is an anagram, so is lagerregal and otto and otito and ever
 Since version 1.0.3, you can install plugins into the regex engine. The method of the Pattern class seen in the screenshot below is used for that purpose.
 ![com.florianingerl.util.regex.plugins](media/plugins.png)
 
-Good examples of what possibilites plugins offer you, are given in the PluginTest class, see [link to PluginTest.java](regex/src/test/java/com/florianingerl/util/regex/tests/PluginTest.java)
+Good examples of what possibilites plugins offer you, are given in the PluginTest class, see [PluginTest.java](regex/src/test/java/com/florianingerl/util/regex/tests/PluginTest.java)
 
 
 ### Maven Dependency

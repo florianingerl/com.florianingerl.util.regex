@@ -1,14 +1,22 @@
 ![com.github.florianingerl.util.regex](media/logo.png)
 
 ### Introduction
-This is a Java Regular Expressions library. Compared to the Regular Expression library shipped with the Java JDK, it provides support for Recursive and Conditional Regular Expressions and adopts the concept of Captures from .Net .
-
-### What's new :star:
-
-### Version 1.0.2
+This is a Java Regular Expressions library. Compared to the Regular Expression library shipped with the Java JDK, it provides support for Recursive and Conditional Regular Expressions, adopts the concept of Captures from .Net and allows the user to install plugins into the regex engine.
 
 In the following screenshot, all the new features are summarized.
 ![com.github.florianingerl.util.regex.newfeatures](media/newfeatures.png)
+
+
+### What's new :star:
+
+### Version 1.0.3
+- (?(DEFINE)never-executed-pattern)
+- Plugins into the regex engine
+
+### Version 1.0.2
+- Recursive Regular Expressions
+- Conditional Regular Expressions
+- Captures
 
 ### Usage
 The API is exactly the same as in java.util.regex. The only difference is that the required import statement is import com.florianingerl.util.regex.\*; instead of import java.util.regex.\*;
@@ -50,18 +58,18 @@ check("(\\(([^()]+|(?1))*+\\))", "(go away (here (everything) is fine) afterward
 The following tests illustrate the concept of Captures. The basic idea is that for every group, a stack of captures is maintained. With \n where n is a valid group number or \k\<groupName\>, you always match the last capture of the respective group. With the syntax (?<-n>X) or (?<-groupName>X) you pop one capture from the capture stack of the respective group if X is matched. 
 
 ```
-String pattern = "\\b(?<anagramm>(?<letter>[a-zA-Z])(?anagramm)?(?<-letter>\\k<letter>)|[a-zA-Z])\\b";
-check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
+String pattern = "\\b(?<anagram>(?<letter>[a-zA-Z])(?anagram)?(?<-letter>\\k<letter>)|[a-zA-Z])\\b";
+check(pattern, "anna is an anagram, so is lagerregal and otto and otito and every single letter like z",
 			new String[] { "anna", "lagerregal", "otto", "otito", "z" });
 ```
 The MatchResult interface also adds two methods providing access to the stack of captures for a group.
 ![com.florianingerl.util.regex.captures](media/captures.png)
 
 
-Finally, there is another way to match anagramms that only uses Conditional Regular Expressions. Note that the construct (?(1)(?!)) consisting of a condition and a negative look-ahead fails if and only if the capture stack of group 1 isn't empty!
+Finally, there is another way to match anagrams that only uses Conditional Regular Expressions. Note that the construct (?(1)(?!)) consisting of a condition and a negative look-ahead fails if and only if the capture stack of group 1 isn't empty!
 ```
-String anagramm = "\\b([a-zA-Z])*(?(1)[a-zA-Z]?|[a-zA-Z])(?<-1>\\1)*(?(1)(?!))\\b";
-check(anagramm, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
+String anagram = "\\b([a-zA-Z])*(?(1)[a-zA-Z]?|[a-zA-Z])(?<-1>\\1)*(?(1)(?!))\\b";
+check(anagram, "anna is an anagram, so is lagerregal and otto and otito and every single letter like z",
 		new String[] { "anna", "lagerregal", "otto", "otito", "z" });
 ```
 
@@ -72,7 +80,7 @@ In order to use this library, add the following dependency to your pom.xml.
 <dependency>
 	<groupId>com.github.florianingerl.util</groupId>
 	<artifactId>regex</artifactId>
-	<version>1.0.3</version>
+	<version>1.0.2</version>
 </dependency>
 ```
 

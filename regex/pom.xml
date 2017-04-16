@@ -7,11 +7,12 @@
 	<version>1.0.3</version>
 	<packaging>jar</packaging>
 
+
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>This is a Regular Expressions library. Compared to the Regular Expressions library 
 	shipped with the Java JDK, it supports Recursive and Condititional Regular Expressions, adopts the concept of Captures from .Net and allows the user to install plugins into the regex engine.</description>
 	<url>https://github.com/florianingerl/com.florianingerl.util.regex</url>
-	
+
 	<licenses>
 		<license>
 			<name>GNU General Public License, version 2</name>
@@ -19,13 +20,13 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
-	
+
 	<scm>
 		<connection>scm:git:git://github.com/florianingerl/com.florianingerl.util.regex.git</connection>
 		<developerConnection>scm:git:ssh://github.com/florianingerl/com.florianingerl.util.regex.git</developerConnection>
 		<url>http://github.com/florianingerl/com.florianingerl.util.regex/tree/master</url>
 	</scm>
-	
+
 	<developers>
 		<developer>
 			<name>Florian Ingerl</name>
@@ -34,20 +35,17 @@
 			<organizationUrl>https://github.com/florianingerl</organizationUrl>
 		</developer>
 	</developers>
-	
+
 	<distributionManagement>
 		<snapshotRepository>
 			<id>ossrh</id>
 			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
 		</snapshotRepository>
-		<repository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
-		</repository>
 	</distributionManagement>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<gpg.keyname>6919F5E8</gpg.keyname>
 	</properties>
 
 	<dependencies>
@@ -101,7 +99,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-gpg-plugin</artifactId>
@@ -113,13 +111,29 @@
 						<goals>
 							<goal>sign</goal>
 						</goals>
+						<configuration>
+							<keyname>${gpg.keyname}</keyname>
+							<passphraseServerId>${gpg.keyname}</passphraseServerId>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
 
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.7</version>
+				<extensions>true</extensions>
+				<configuration>
+					<serverId>ossrh</serverId>
+					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
+				</configuration>
+			</plugin>
+
 		</plugins>
 
-		
+
 
 	</build>
 

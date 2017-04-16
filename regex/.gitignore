@@ -1,0 +1,5 @@
+/target/
+/doc/
+/TEST-com.florianingerl.util.regex.BoostRegExTest.txt
+/TEST-com.florianingerl.util.regex.RegExTest.txt
+/TEST-com.florianingerl.util.regex.txt

@@ -5,7 +5,7 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-public class PluginTests {
+public class PluginTest {
 
 	
 	@Test
@@ -47,6 +47,24 @@ public class PluginTests {
 		
 		Pattern.uninstallPlugin("english");
 		
+	}
+	
+	@Test
+	public void testBackReferenceNode() {
+		Pattern.installPlugin("backReference", BackReferenceNode.class );
+		
+		Pattern pattern = Pattern.compile("(?<open>['\"])[a-zA-Z]+\\c{backReference,open}");
+		
+		Matcher matcher = pattern.matcher("\"hello\"");
+		assertTrue( matcher.matches() );
+		
+		matcher = pattern.matcher("'hello'");
+		assertTrue( matcher.matches() );
+		
+		matcher = pattern.matcher("'hello\"");
+		assertFalse( matcher.matches() );
+		
+		Pattern.uninstallPlugin("backReference");
 	}
 
 }

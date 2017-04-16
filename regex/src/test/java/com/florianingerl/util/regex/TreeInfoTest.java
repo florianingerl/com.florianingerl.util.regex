@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-public class TreeInfoTests {
+public class TreeInfoTest {
 
 	private static void check(String regex, int minLength, boolean maxValid, int maxLength ){
 		Pattern p = Pattern.compile(regex);

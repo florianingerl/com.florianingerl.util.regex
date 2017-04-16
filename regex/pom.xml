@@ -9,7 +9,7 @@
 
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>This is a Regular Expressions library. Compared to the Regular Expressions library 
-	shipped with the Java JDK, it supports Recursive and Condititional Regular Expressions and adopts the concept of Captures from .Net</description>
+	shipped with the Java JDK, it supports Recursive and Condititional Regular Expressions, adopts the concept of Captures from .Net and allows the user to install plugins into the regex engine.</description>
 	<url>https://github.com/florianingerl/com.florianingerl.util.regex</url>
 	
 	<licenses>

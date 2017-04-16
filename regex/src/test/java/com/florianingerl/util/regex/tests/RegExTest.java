@@ -75,7 +75,7 @@ public class RegExTest {
 	 */
 	public static void main(String[] args) throws Exception {
 		// Most of the tests are in a file
-		defineTest();
+		
 		processFile("TestCases.txt");
 		// processFile("PerlCases.txt");
 		processFile("BMPTestCases.txt");
@@ -109,7 +109,7 @@ public class RegExTest {
 
 		// Misc
 		recursiveGroupTest();
-		
+		defineTest();
 		
 		patternStatelessTest();
 		capturesTest();

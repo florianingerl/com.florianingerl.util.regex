@@ -77,7 +77,7 @@ import java.util.stream.StreamSupport;
  * <blockquote>
  * 
  * <pre>
- * boolean b = Pattern.matches("a*b", "aaaaab");
+ * boolean b = Pattern.{@link #matches matches}("a*b", "aaaaab");
  * </pre>
  * 
  * </blockquote>
@@ -1595,8 +1595,22 @@ public final class Pattern implements java.io.Serializable {
 		return new Pattern(regex, flags);
 	}
 
-	public static void installPlugin(String name, Class<? extends Pattern.CustomNode> plugin) {
-		plugins.put(name, plugin);
+	/**
+	 * Installs a plugin into this regex engine.
+	 * 
+	 * Refer to this plugin with \c{name} in your regular expression pattern. In order for this
+	 * to work, the class clazz needs to have a no-argument constructor.
+	 * You can also pass parameters to your plugin by e.g. writing \c[name,param1,param2} in your regular
+	 * expression pattern and providing a constructor with two String parameters in the class clazz.
+	 * 
+	 * @param name The name of the plugin.
+	 * @param clazz The class of the plugin
+	 * 
+	 * @see Pattern#uninstallPlugin(String)
+	 * @see Pattern.CustomNode
+	 */
+	public static void installPlugin(String name, Class<? extends Pattern.CustomNode> clazz) {
+		plugins.put(name, clazz);
 	}
 	
 	public static void uninstallPlugin(String name) {
@@ -4151,8 +4165,34 @@ public final class Pattern implements java.io.Serializable {
 		}
 	}
 
+	/**
+	 * Base class for plugins into the regex engine.
+	 * 
+	 * A Regular Expression is compiled into a chained sequence of nodes, each
+	 * node matching the input character sequence against
+	 * its pattern and then asking its next node to do the same. By extending this class
+	 * and overriding the {@link CustomNode#match(Matcher, int, CharSequence) match} method,
+	 * you thus provide a plugin into the regex engine that you can install via {@link Pattern#installPlugin(String, Class)}. 
+	 * 
+	 * 
+	 */
 	public static abstract class CustomNode extends Node {
 		
+		/**
+		 * Matches the input character sequence against this node's pattern.
+		 * 
+		 * The character sequence seq is matched against this node's pattern,
+		 * where the characters 0 to i-1 in seq have already been matched by previous nodes. If this node matches
+		 * say n characters, you have to call {@link #matchNext(Matcher, int, CharSequence) matchNext}(matcher, i+n, seq).
+		 * In case {@link #matchNext(Matcher, int, CharSequence) matchNext} returns true, this method usually should also 
+		 * return true.
+		 * In case {@link #matchNext(Matcher, int, CharSequence) matchNext} returns false, this node might try to match
+		 * something different with possibly either more or less characters and then call {@link #matchNext(Matcher, int, CharSequence) matchNext} again.
+		 * Then this node would be a backtracking crossroad.
+		 * Or this node might restore the state of matcher and return false.
+		 * 
+		 * @see CustomNode#matchNext(Matcher, int, CharSequence)
+		 */
 		@Override
 		abstract protected boolean match(Matcher matcher, int i, CharSequence seq);
 		
@@ -4161,20 +4201,53 @@ public final class Pattern implements java.io.Serializable {
 			return getNext().match(matcher, i,  seq);
 		}
 		
+		/**
+		 * Retrieves the data stored in matcher.
+		 *
+		 * @see CustomNode#storeData(Matcher, Object)
+		 */
 		protected Object retrieveData(Matcher matcher)
 		{
 			return matcher.data.get(this.getClass() );
 		}
 		
+		/**
+		 * Stores some search data in matcher.
+		 * 
+		 * Instances of the {@link Pattern} class and all its nodes are completely stateless allowing
+		 * concurrent use. All state of the regex engine is therefore stored in matcher, which is what this method allows subclasses to do.
+		 * 
+		 * @param matcher The {@link Matcher} in which to store the data.
+		 * @param data The data to store in matcher.
+		 * 
+		 * @see CustomNode#retrieveData(Matcher)
+		 */
 		protected void storeData(Matcher matcher, Object data)
 		{
 			matcher.data.put(this.getClass(), data);
 		}
 		
+		/**
+		 * Returns the minimum number of characters that this node matches.
+		 * 
+		 * @return The minimum number of characters that this node matches.
+		 */
 		protected abstract int minLength();
 		
+		/**
+		 * Returns the maximum number of characters that this node matches.
+		 * 
+		 * @return The maximum number of characters that this node matches.
+		 */
 		protected abstract int maxLength();
 		
+		/**
+		 * Says whether this node can match arbitrary many characters
+		 * 
+		 * This is used by Lookbehinds. Only Lookbehinds with a valid maximum length are 
+		 * allowed.
+		 * @return false, if this node can match arbitrary many characters.
+		 */
 		protected abstract boolean isMaxValid();
 		
 		@Override

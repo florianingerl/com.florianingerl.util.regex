@@ -12,15 +12,15 @@ public class PluginTest {
 	public void testPopCaptureNode() {
 		Pattern.installPlugin("popCapture", PopCaptureNode.class );
 		
-		Pattern pentagram = Pattern.compile("\\b((?<gut>[a-zA-Z])(?1)?\\k<gut>\\c{popCapture,gut}|[a-zA-Z])\\b");
+		Pattern anagram = Pattern.compile("\\b((?<gut>[a-zA-Z])(?1)?\\k<gut>\\c{popCapture,gut}|[a-zA-Z])\\b");
 		
-		Matcher matcher = pentagram.matcher("anna");
+		Matcher matcher = anagram.matcher("anna");
 		assertTrue( matcher.matches() );
 		
-		matcher = pentagram.matcher("lagerregal");
+		matcher = anagram.matcher("lagerregal");
 		assertTrue( matcher.matches() );
 		
-		matcher = pentagram.matcher("otito");
+		matcher = anagram.matcher("otito");
 		assertTrue( matcher.matches() );
 		
 		

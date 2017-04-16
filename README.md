@@ -66,12 +66,18 @@ The MatchResult interface also adds two methods providing access to the stack of
 ![com.florianingerl.util.regex.captures](media/captures.png)
 
 
-Finally, there is another way to match anagrams that only uses Conditional Regular Expressions. Note that the construct (?(1)(?!)) consisting of a condition and a negative look-ahead fails if and only if the capture stack of group 1 isn't empty!
+Now, an example for the usage of Conditional Regular Expressions is given. The following code snippet matches anagrams. Note that the construct (?(1)(?!)) consisting of a condition and a negative look-ahead fails if and only if the capture stack of group 1 isn't empty!
 ```
 String anagram = "\\b([a-zA-Z])*(?(1)[a-zA-Z]?|[a-zA-Z])(?<-1>\\1)*(?(1)(?!))\\b";
 check(anagram, "anna is an anagram, so is lagerregal and otto and otito and every single letter like z",
 		new String[] { "anna", "lagerregal", "otto", "otito", "z" });
 ```
+
+
+Since version 1.0.3, you can install plugins into the regex engine. The method of the Pattern class seen in the screenshot below is used for that purpose.
+![com.florianingerl.util.regex.plugins](media/plugins.png)
+
+Good examples of what possibilites plugins offer you, are given in the PluginTest class, see [link to PluginTest.java](regex/src/test/java/com/florianingerl/util/regex/tests/PluginTest.java)
 
 
 ### Maven Dependency

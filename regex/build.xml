@@ -1,13 +1,12 @@
 <?xml version="1.0" ?>
 
-<project default="test" basedir=".">
+<project default="jar" basedir=".">
 
 	<property name="src-main-java" location="src/main/java" />
 	<property name="src-test-java" location="src/test/java" />
 	<property name="src-test-resources" location="src/test/resources" />
-	<property name="output-main" location="target/classes" />
-	<property name="output-test" location="target/test-classes" />
-	<property name="reports" location="reports" />
+	<property name="output-main" location="ant-target/classes" />
+	<property name="output-test" location="ant-target/test-classes" />
 
 	<target name="compile-main">
 		<delete dir="${output-main}" />
@@ -35,39 +34,30 @@
 
 	<target name="test" depends="compile-test">
 		<echo>Running the tests</echo>
-		
-		<junit
-			printsummary="yes"
-			errorProperty="test.failed"
-			failureProperty="test.failed"
-			haltonfailure="yes">
-			<formatter type="plain"/>
+		<junit printsummary="yes" haltonfailure="yes">
+			<formatter type="brief" usefile="false" />
 			<classpath>
 				<pathelement location="${output-main}" />
 				<pathelement location="${output-test}" />
 				<pathelement location="lib/junit-4.12.jar" />
 				<pathelement location="lib/hamcrest-core-1.3.jar" />
 			</classpath>
-			<test name="com.florianingerl.util.regex.RegExTest"/>
-			<test name="com.florianingerl.util.regex.BoostRegExTest" />
-		</junit>	
-		<fail message="Tests failed!" if="test.failed" />
-		<!-- <java classname="com.florianingerl.util.regex.RegExTest" fork="true" resultproperty="return.code">
-			<classpath>
-				<pathelement location="${output-main}" />
-				<pathelement location="${output-test}" />
-				<pathelement location="lib/junit-4.12.jar" />
-				<pathelement location="lib/hamcrest-core-1.3.jar" />
-			</classpath>
-		</java>
-		<condition property="problem">
-			<not>
-				<equals arg1="${return.code}" arg2="0" />
-			</not>
-		</condition>
-		<fail if="problem" message="RegExTest.class exited with return code ${return.code}" />
-		-->
+			<batchtest>
+				<fileset dir="${output-test}">
+					<include name="**/*Test.class" />
+				</fileset>
+			</batchtest>
+		</junit>
 
+
+	</target>
+
+	<target name="jar" depends="test"  >
+		<jar destfile="ant-target/regex-1.0.3.jar" basedir="${output-main}" includes="**/*.class">
+			<manifest>
+				<attribute name="Author" value="Florian Ingerl" />
+			</manifest>
+		</jar>
 	</target>
 
 </project>

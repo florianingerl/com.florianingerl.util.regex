@@ -4264,17 +4264,6 @@ public final class Pattern implements java.io.Serializable {
 		
 	}
 
-	static class Forwarder extends Node {
-		@Override
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			if (getNext() != null) {
-				return getNext().match(matcher, i, seq);
-			} else {
-				return super.match(matcher, i, seq);
-			}
-		}
-	}
-
 	static class Navigator extends Node {
 		protected int localIndex;
 

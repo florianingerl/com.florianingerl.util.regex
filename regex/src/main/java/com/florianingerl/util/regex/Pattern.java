@@ -3461,7 +3461,8 @@ public final class Pattern implements java.io.Serializable {
 		root = null;
 		int ch = next();
 		if (ch == '?') {
-			ch = skip();
+			ch = next();
+			read();
 			switch (ch) {
 			case ':': // (?:xxx) pure group
 				head = createGroup(true);
@@ -3534,8 +3535,8 @@ public final class Pattern implements java.io.Serializable {
 						// executed)
 				if (doesDEFINEFollow()) {
 					expr(accept);
-					head = tail = new Forwarder();
-					break;
+					accept(')', "Unclosed DEFINE construct");
+					return null;
 				}
 
 				Conditional conditional;

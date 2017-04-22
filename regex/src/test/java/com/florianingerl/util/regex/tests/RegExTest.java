@@ -677,6 +677,7 @@ public class RegExTest {
 	private static void defineTest() throws Exception {
 	
 		check("^(?(DEFINE)(?<A>a)(?<B>b))(?A)(?B)$","ab",true);
+		check("(?x:( #comment\n? #comment \n ( #Hier is some comment\n DEFINE #Here is another comment\n )(?<A>a))  ( #comment\n ? #comment\n A #another comment\n ))", "a", true);
 		report("Define test");
 	}
 	
@@ -705,7 +706,12 @@ public class RegExTest {
 		check(pattern, "1aqqaqqqzz2", true);
 		check("(a(?1){3}z|q)", "---q---aqqqz---aaqqqzqqz---aqaqqqzqz---aqqaqqqzz",
 				new String[] { "q", "aqqqz", "aaqqqzqqz", "aqaqqqzqz", "aqqaqqqzz" });
-
+		pattern = "(?x: 1 ( a ( ? 1 ) {3}z|q)2)";
+		check(pattern, "1aqqqz2", true);
+		
+		check("(?x:1(a ( #comment\n ? #comment\n 1 #comment\n ){3}z|q)2)", "1aqqqz2", true);
+		check("(?x:1(?<rep> a ( #comment\n ? #comment\n rep #comment\n ){3}z|q)2)", "1aqqqz2", true);
+		
 		pattern = "1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2";
 		check(pattern, "1jT2", true);
 		check(pattern, "1jT<jT>2", true);
@@ -736,7 +742,9 @@ public class RegExTest {
 		pattern = "\\b(?<anagramm>(?<letter>[a-zA-Z])(?anagramm)?\\k<letter>(?<-letter>)|[a-zA-Z])\\b";
 		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
 				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
-
+		
+		check("(?x:\\b(([a-zA-Z])(?1)?( #comment\n ? #comment\n < #comment\n - #comment\n 2 #comment\n > #comment\n \\2  )|[a-zA-Z])\\b)", "lagerregal", true );
+		check("(?x:\\b(?<rep>(?<letter>[a-zA-Z])(?rep)?( #comment\n ? #comment\n < #comment\n - #comment\n letter #comment\n > #comment\n \\k<letter>  )|[a-zA-Z])\\b)", "lagerregal", true );
 		// recursive stuff in lookbehind and lookahead that has a maximum length
 		check("(h)(?<=(?1))ello", "hello", true);
 		check("(h|(b))(?<!(?2))ello", "hello", true);
@@ -781,6 +789,8 @@ public class RegExTest {
 
 	private static void conditionalBasedOnValidGroupCaptureTest() throws Exception {
 		check("(a)?(?(1)|A)B", "aB", true);
+		check("(?x: (a)?( #comment\n ? #comment\n ( #comment\n 1 #comment\n ) | A ) B )", "aB", true );
+		check("(?x: (?<GROUPNAME>a)?( #comment\n ? #comment\n ( #comment\n GROUPNAME #comment\n ) | A ) B )", "aB", true);
 		check("(a)?(?(1)|A)B", "AB", true);
 		check("(a)?(?(1)A|)B", "aAB", true);
 		check("(a)?(?(1)A|)B", "B", true);
@@ -815,6 +825,7 @@ public class RegExTest {
 		check(pattern, "1amen2", true);
 		check(pattern, "1aber2", false);
 		check(pattern, "1aamer2", false);
+		check("(?x:1( ? ( #comment\n ? = #comment\n ab ) abba | amen ) 2 )", "1abba2", true);
 
 		pattern = "1(?(?=ab)abba)2";
 		check(pattern, "1abba2", true);

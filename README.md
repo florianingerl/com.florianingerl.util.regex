@@ -86,7 +86,7 @@ In order to use this library, add the following dependency to your pom.xml.
 <dependency>
 	<groupId>com.github.florianingerl.util</groupId>
 	<artifactId>regex</artifactId>
-	<version>1.0.2</version>
+	<version>1.0.3</version>
 </dependency>
 ```
 

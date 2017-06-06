@@ -25,16 +25,15 @@
 
 package com.florianingerl.util.regex;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.text.Normalizer;
-import java.util.Locale;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -1516,7 +1515,8 @@ public final class Pattern implements java.io.Serializable {
 	/**
 	 * Map the "name" of the "named capturing group" to its group id node.
 	 */
-	transient volatile Map<String, Integer> namedGroups;
+	transient volatile Map<String, Integer> groupIndices;
+	transient volatile Map<Integer, String> groupNames;
 
 	private transient ArrayList<GroupHeadAndTail> groupHeadAndTailNodes;
 
@@ -1598,13 +1598,16 @@ public final class Pattern implements java.io.Serializable {
 	/**
 	 * Installs a plugin into this regex engine.
 	 * 
-	 * Refer to this plugin with \c{name} in your regular expression pattern. In order for this
-	 * to work, the class clazz needs to have a no-argument constructor.
-	 * You can also pass parameters to your plugin by e.g. writing \c[name,param1,param2} in your regular
-	 * expression pattern and providing a constructor with two String parameters in the class clazz.
+	 * Refer to this plugin with \c{name} in your regular expression pattern. In
+	 * order for this to work, the class clazz needs to have a no-argument
+	 * constructor. You can also pass parameters to your plugin by e.g. writing
+	 * \c[name,param1,param2} in your regular expression pattern and providing a
+	 * constructor with two String parameters in the class clazz.
 	 * 
-	 * @param name The name of the plugin.
-	 * @param clazz The class of the plugin
+	 * @param name
+	 *            The name of the plugin.
+	 * @param clazz
+	 *            The class of the plugin
 	 * 
 	 * @see Pattern#uninstallPlugin(String)
 	 * @see Pattern.CustomNode
@@ -1612,7 +1615,7 @@ public final class Pattern implements java.io.Serializable {
 	public static void installPlugin(String name, Class<? extends Pattern.CustomNode> clazz) {
 		plugins.put(name, clazz);
 	}
-	
+
 	public static void uninstallPlugin(String name) {
 		plugins.remove(name);
 	}
@@ -2291,7 +2294,8 @@ public final class Pattern implements java.io.Serializable {
 		buffer = new int[32];
 		groupHeadAndTailNodes = new ArrayList<GroupHeadAndTail>(10);
 		groupHeadAndTailNodes.add(null);
-		namedGroups = null;
+		groupIndices = null;
+		groupNames = null;
 
 		if (has(LITERAL)) {
 			// Literal pattern handling
@@ -2329,10 +2333,16 @@ public final class Pattern implements java.io.Serializable {
 		compiled = true;
 	}
 
-	Map<String, Integer> namedGroups() {
-		if (namedGroups == null)
-			namedGroups = new HashMap<String, Integer>(2);
-		return namedGroups;
+	Map<String, Integer> groupIndices() {
+		if (groupIndices == null)
+			groupIndices = new HashMap<String, Integer>(2);
+		return groupIndices;
+	}
+
+	Map<Integer, String> groupNames() {
+		if (groupNames == null)
+			groupNames = new HashMap<Integer, String>();
+		return groupNames;
 	}
 
 	/**
@@ -2689,8 +2699,7 @@ public final class Pattern implements java.io.Serializable {
 						oneLetter = false;
 					}
 					node = family(oneLetter, comp);
-				}
-				else if(ch=='c' || ch == 'C') {
+				} else if (ch == 'c' || ch == 'C') {
 					next();
 					accept('{', "Exptected {pluginName}"); // Consume {
 					node = custom();
@@ -3042,13 +3051,13 @@ public final class Pattern implements java.io.Serializable {
 			if (read() != '<')
 				throw error("\\k is not followed by '<' for named capturing group");
 			String name = groupname(read());
-			if (!namedGroups().containsKey(name))
+			if (!groupIndices().containsKey(name))
 				throw error("(named capturing group <" + name + "> does not exit");
 			if (create) {
 				if (has(CASE_INSENSITIVE))
-					root = new CIBackRef(namedGroups().get(name), has(UNICODE_CASE));
+					root = new CIBackRef(groupIndices().get(name), has(UNICODE_CASE));
 				else
-					root = new BackRef(namedGroups().get(name));
+					root = new BackRef(groupIndices().get(name));
 			}
 			return -1;
 		case 'l':
@@ -3291,7 +3300,7 @@ public final class Pattern implements java.io.Serializable {
 		}
 		throw error("Unexpected character '" + ((char) ch) + "'");
 	}
-	
+
 	private CustomNode custom() {
 		int i = cursor;
 		mark('}');
@@ -3303,21 +3312,25 @@ public final class Pattern implements java.io.Serializable {
 			throw error("Unclosed custom plugin");
 		if (i + 1 >= j)
 			throw error("Empty character family");
-		String [] name = new String(temp, i, j - i - 1).split(",");
-		
+		String[] name = new String(temp, i, j - i - 1).split(",");
+
 		Class<? extends CustomNode> clazz = plugins.get(name[0]);
-		if(clazz == null) throw error("Plugin " + name[0] + " hasn't been installed!");
+		if (clazz == null)
+			throw error("Plugin " + name[0] + " hasn't been installed!");
 		try {
-			Class [] parameterTypes = new Class[name.length - 1];
-			String [] parameters = new String[name.length - 1];
-			for(int k = 0; k < parameterTypes.length; ++k) { parameterTypes[k] = String.class; parameters[k] = name[k+1]; }
+			Class[] parameterTypes = new Class[name.length - 1];
+			String[] parameters = new String[name.length - 1];
+			for (int k = 0; k < parameterTypes.length; ++k) {
+				parameterTypes[k] = String.class;
+				parameters[k] = name[k + 1];
+			}
 			Constructor<? extends CustomNode> constructor = clazz.getConstructor(parameterTypes);
 			return constructor.newInstance(parameters);
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException | NoSuchMethodException | SecurityException e) {
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e) {
 			throw error("Plugin " + name + " can't be used!");
 		}
-		
+
 	}
 
 	/**
@@ -3488,13 +3501,14 @@ public final class Pattern implements java.io.Serializable {
 				if (ASCII.isLower(ch) || ASCII.isUpper(ch)) {
 					// named captured group
 					String name = groupname(ch);
-					if (namedGroups().containsKey(name))
+					if (groupIndices().containsKey(name))
 						throw error("Named capturing group <" + name + "> is already defined");
 					head = createGroup(false);
 					tail = root;
-					namedGroups().put(name, capturingGroupCount - 1);
+					groupIndices().put(name, capturingGroupCount - 1);
+					groupNames().put(capturingGroupCount - 1, name);
 					head.setNext(expr(tail));
-					head = tail = new RecursiveGroupCall(namedGroups().get(name));
+					head = tail = new RecursiveGroupCall(groupIndices().get(name));
 					tail.setNext(accept);
 					break;
 				} else if (ch == '-') {
@@ -3624,11 +3638,11 @@ public final class Pattern implements java.io.Serializable {
 			while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch)) {
 				sb.append(Character.toChars(ch));
 			}
-			if (!namedGroups().containsKey(sb.toString()) || ch != closing) {
+			if (!groupIndices().containsKey(sb.toString()) || ch != closing) {
 				cursor = save;
 				return -1;
 			}
-			return namedGroups.get(sb.toString());
+			return groupIndices.get(sb.toString());
 		}
 		return -1;
 	}
@@ -3671,7 +3685,7 @@ public final class Pattern implements java.io.Serializable {
 		int groupIndex = 0;
 		if (!anonymous)
 			groupIndex = capturingGroupCount++;
-		GroupHead head = new GroupHead(localIndex);
+		GroupHead head = new GroupHead(localIndex, groupIndex);
 		GroupTail tail = new GroupTail(localIndex, groupIndex);
 		root = tail;
 		if (!anonymous) {
@@ -4170,98 +4184,103 @@ public final class Pattern implements java.io.Serializable {
 	 * Base class for plugins into the regex engine.
 	 * 
 	 * A Regular Expression is compiled into a chained sequence of nodes, each
-	 * node matching the input character sequence against
-	 * its pattern and then asking its next node to do the same. By extending this class
-	 * and overriding the {@link CustomNode#match(Matcher, int, CharSequence) match} method,
-	 * you thus provide a plugin into the regex engine that you can install via {@link Pattern#installPlugin(String, Class)}. 
+	 * node matching the input character sequence against its pattern and then
+	 * asking its next node to do the same. By extending this class and
+	 * overriding the {@link CustomNode#match(Matcher, int, CharSequence) match}
+	 * method, you thus provide a plugin into the regex engine that you can
+	 * install via {@link Pattern#installPlugin(String, Class)}.
 	 * 
 	 * 
 	 */
 	public static abstract class CustomNode extends Node {
-		
+
 		/**
 		 * Matches the input character sequence against this node's pattern.
 		 * 
 		 * The character sequence seq is matched against this node's pattern,
-		 * where the characters 0 to i-1 in seq have already been matched by previous nodes. If this node matches
-		 * say n characters, you have to call {@link #matchNext(Matcher, int, CharSequence) matchNext}(matcher, i+n, seq).
-		 * In case {@link #matchNext(Matcher, int, CharSequence) matchNext} returns true, this method usually should also 
-		 * return true.
-		 * In case {@link #matchNext(Matcher, int, CharSequence) matchNext} returns false, this node might try to match
-		 * something different with possibly either more or less characters and then call {@link #matchNext(Matcher, int, CharSequence) matchNext} again.
-		 * Then this node would be a backtracking crossroad.
-		 * Or this node might restore the state of matcher and return false.
+		 * where the characters 0 to i-1 in seq have already been matched by
+		 * previous nodes. If this node matches say n characters, you have to
+		 * call {@link #matchNext(Matcher, int, CharSequence)
+		 * matchNext}(matcher, i+n, seq). In case
+		 * {@link #matchNext(Matcher, int, CharSequence) matchNext} returns
+		 * true, this method usually should also return true. In case
+		 * {@link #matchNext(Matcher, int, CharSequence) matchNext} returns
+		 * false, this node might try to match something different with possibly
+		 * either more or less characters and then call
+		 * {@link #matchNext(Matcher, int, CharSequence) matchNext} again. Then
+		 * this node would be a backtracking crossroad. Or this node might
+		 * restore the state of matcher and return false.
 		 * 
 		 * @see CustomNode#matchNext(Matcher, int, CharSequence)
 		 */
 		@Override
 		abstract protected boolean match(Matcher matcher, int i, CharSequence seq);
-		
-		protected boolean matchNext(Matcher matcher, int i, CharSequence seq)
-		{
-			return getNext().match(matcher, i,  seq);
+
+		protected boolean matchNext(Matcher matcher, int i, CharSequence seq) {
+			return getNext().match(matcher, i, seq);
 		}
-		
+
 		/**
 		 * Retrieves the data stored in matcher.
 		 *
 		 * @see CustomNode#storeData(Matcher, Object)
 		 */
-		protected Object retrieveData(Matcher matcher)
-		{
-			return matcher.data.get(this.getClass() );
+		protected Object retrieveData(Matcher matcher) {
+			return matcher.data.get(this.getClass());
 		}
-		
+
 		/**
 		 * Stores some search data in matcher.
 		 * 
-		 * Instances of the {@link Pattern} class and all its nodes are completely stateless allowing
-		 * concurrent use. All state of the regex engine is therefore stored in matcher, which is what this method allows subclasses to do.
+		 * Instances of the {@link Pattern} class and all its nodes are
+		 * completely stateless allowing concurrent use. All state of the regex
+		 * engine is therefore stored in matcher, which is what this method
+		 * allows subclasses to do.
 		 * 
-		 * @param matcher The {@link Matcher} in which to store the data.
-		 * @param data The data to store in matcher.
+		 * @param matcher
+		 *            The {@link Matcher} in which to store the data.
+		 * @param data
+		 *            The data to store in matcher.
 		 * 
 		 * @see CustomNode#retrieveData(Matcher)
 		 */
-		protected void storeData(Matcher matcher, Object data)
-		{
+		protected void storeData(Matcher matcher, Object data) {
 			matcher.data.put(this.getClass(), data);
 		}
-		
+
 		/**
 		 * Returns the minimum number of characters that this node matches.
 		 * 
 		 * @return The minimum number of characters that this node matches.
 		 */
 		protected abstract int minLength();
-		
+
 		/**
 		 * Returns the maximum number of characters that this node matches.
 		 * 
 		 * @return The maximum number of characters that this node matches.
 		 */
 		protected abstract int maxLength();
-		
+
 		/**
 		 * Says whether this node can match arbitrary many characters
 		 * 
-		 * This is used by Lookbehinds. Only Lookbehinds with a valid maximum length are 
-		 * allowed.
+		 * This is used by Lookbehinds. Only Lookbehinds with a valid maximum
+		 * length are allowed.
+		 * 
 		 * @return false, if this node can match arbitrary many characters.
 		 */
 		protected abstract boolean isMaxValid();
-		
+
 		@Override
-		boolean study(TreeInfo info)
-		{
+		boolean study(TreeInfo info) {
 			info.minLength += minLength();
 			info.maxLength += maxLength();
-			if(!isMaxValid()) info.maxValid = false;
+			if (!isMaxValid())
+				info.maxValid = false;
 			return getNext().study(info);
 		}
-		
-		
-		
+
 	}
 
 	static class Navigator extends Node {
@@ -5519,15 +5538,31 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	static final class GroupHead extends Node {
 		int localIndex;
+		int groupIndex;
 
-		GroupHead(int localCount) {
+		GroupHead(int localCount, int groupCount) {
 			localIndex = localCount;
+			groupIndex = groupCount;
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
+			GroupTree t = null;
+			if (groupIndex > 0) {
+				t = new GroupTree();
+				t.groupIndex = groupIndex;
+				t.parent = matcher.groupTree;
+				matcher.groupTree.children.add(t);
+				matcher.groupTree = t;
+			}
 			matcher.localVector.get(localIndex).push(i);
 			boolean ret = getNext().match(matcher, i, seq);
 			matcher.localVector.get(localIndex).pop();
+			if (t != null) {
+				matcher.groupTree = t.parent;
+				if (!ret)
+					matcher.groupTree.children.remove(t);
+			}
+
 			return ret;
 		}
 
@@ -5558,12 +5593,23 @@ public final class Pattern implements java.io.Serializable {
 			 * int groupStart = matcher.groups[groupIndex]; int groupEnd =
 			 * matcher.groups[groupIndex + 1];
 			 */
+			GroupTree t = null;
+			if (groupIndex > 0) {
+				Capture c = new Capture(seq, tmp, i);
+				matcher.captures.get(groupIndex).push(c);
+				matcher.groupTree.capture = c;
+				t = matcher.groupTree;
+				matcher.groupTree = t.parent;
 
-			if (groupIndex > 0)
-				matcher.captures.get(groupIndex).push(new Capture(seq, tmp, i));
+			}
 			boolean r = getNext(matcher).match(matcher, i, seq);
-			if (!r && groupIndex > 0)
-				matcher.captures.get(groupIndex).pop();
+			if (groupIndex > 0) {
+				matcher.groupTree = t;
+				if (!r) {
+					matcher.captures.get(groupIndex).pop();
+					t.capture = null;
+				}
+			}
 			matcher.localVector.get(localIndex).push(tmp);
 			return r;
 

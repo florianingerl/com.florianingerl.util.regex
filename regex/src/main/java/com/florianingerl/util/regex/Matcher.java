@@ -138,7 +138,7 @@ public final class Matcher implements MatchResult {
 	 * added to the stack of captures for that group
 	 */
 	Vector<Stack<Capture>> captures;
-	
+
 	Map<Class<? extends Pattern.CustomNode>, Object> data;
 
 	/**
@@ -190,7 +190,8 @@ public final class Matcher implements MatchResult {
 	 * hold state during a match.
 	 */
 	Vector<Stack<Integer>> localVector;
-	Pattern.Node [] nextNodes;
+	GroupTree groupTree;
+	Pattern.Node[] nextNodes;
 
 	/**
 	 * Boolean indicating whether or not more input could change the results of
@@ -241,7 +242,7 @@ public final class Matcher implements MatchResult {
 	Matcher(Pattern parent, CharSequence text) {
 		this.parentPattern = parent;
 		this.text = text;
-
+		groupTree = new GroupTree();
 		// Allocate state storage
 		int parentGroupCount = Math.max(parent.capturingGroupCount, 10);
 		captures = new Vector<Stack<Capture>>(parentGroupCount);
@@ -250,7 +251,7 @@ public final class Matcher implements MatchResult {
 		localVector = new Vector<Stack<Integer>>(parent.localCount);
 		localVector.setSize(parent.localCount);
 		nextNodes = new Pattern.Node[parent.localCount];
-		
+
 		genData();
 		// Put fields into initial states
 		reset();
@@ -307,6 +308,7 @@ public final class Matcher implements MatchResult {
 			throw new IllegalArgumentException("Pattern cannot be null");
 		parentPattern = newPattern;
 
+		groupTree = new GroupTree();
 		// Reallocate state storage
 		int parentGroupCount = Math.max(newPattern.capturingGroupCount, 10);
 		localVector = new Vector<Stack<Integer>>(newPattern.localCount);
@@ -334,6 +336,7 @@ public final class Matcher implements MatchResult {
 		first = -1;
 		last = 0;
 		oldLast = -1;
+		groupTree = new GroupTree();
 		for (int i = 0; i < captures.size(); ++i) {
 			captures.set(i, new Stack<Capture>());
 		}
@@ -673,6 +676,11 @@ public final class Matcher implements MatchResult {
 		return captures(group);
 	}
 
+	public GroupTree groupTree() {
+		groupTree.setGroupName(parentPattern.groupNames());
+		return groupTree;
+	}
+
 	/**
 	 * Returns the number of capturing groups in this matcher's pattern.
 	 *
@@ -973,9 +981,9 @@ public final class Matcher implements MatchResult {
 					if (ASCII.isDigit(gname.charAt(0)))
 						throw new IllegalArgumentException(
 								"capturing group name {" + gname + "} starts with digit character");
-					if (!parentPattern.namedGroups().containsKey(gname))
+					if (!parentPattern.groupIndices().containsKey(gname))
 						throw new IllegalArgumentException("No group with name {" + gname + "}");
-					refNum = parentPattern.namedGroups().get(gname);
+					refNum = parentPattern.groupIndices().get(gname);
 					cursor++;
 				} else {
 					// The first number is always a group
@@ -1019,16 +1027,16 @@ public final class Matcher implements MatchResult {
 		lastAppendPosition = last;
 		return this;
 	}
-	
-	public Matcher appendReplacement(StringBuffer sb, Function<Matcher,String> evaluator ) {
+
+	public Matcher appendReplacement(StringBuffer sb, Function<Matcher, String> evaluator) {
 
 		// If no match, return error
 		if (first < 0)
 			throw new IllegalStateException("No match available");
-			
-		sb.append(text, lastAppendPosition, first );
-		sb.append( evaluator.apply(this) );
-		
+
+		sb.append(text, lastAppendPosition, first);
+		sb.append(evaluator.apply(this));
+
 		lastAppendPosition = last;
 		return this;
 	}
@@ -1106,8 +1114,8 @@ public final class Matcher implements MatchResult {
 		}
 		return text.toString();
 	}
-	
-	public String replaceAll(Function<Matcher,String> evaluator) {
+
+	public String replaceAll(Function<Matcher, String> evaluator) {
 		reset();
 		boolean result = find();
 		if (result) {
@@ -1171,8 +1179,8 @@ public final class Matcher implements MatchResult {
 		appendTail(sb);
 		return sb.toString();
 	}
-	
-	public String replaceFirst(Function<Matcher,String> evaluator ) {
+
+	public String replaceFirst(Function<Matcher, String> evaluator) {
 		if (evaluator == null)
 			throw new NullPointerException("evaluator");
 		reset();
@@ -1514,9 +1522,9 @@ public final class Matcher implements MatchResult {
 		Objects.requireNonNull(name, "Group name");
 		if (first < 0)
 			throw new IllegalStateException("No match found");
-		if (!parentPattern.namedGroups().containsKey(name))
+		if (!parentPattern.groupIndices().containsKey(name))
 			throw new IllegalArgumentException("No group with name <" + name + ">");
-		return parentPattern.namedGroups().get(name);
+		return parentPattern.groupIndices().get(name);
 	}
 
 	void setGroup0(CharSequence seq, int start, int end) {

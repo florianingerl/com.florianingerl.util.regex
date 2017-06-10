@@ -70,6 +70,7 @@ Different Regular Expression libraries handle Recursion, Group Capturing and Bac
 
 com.florianingerl.util.regex, as Perl 5.10 did, isolates capturing groups between each level of recursion. When the regex engine enters recursion, all capturing groups appear as they have not participated in the match yet. Initially, all backreferences will fail. During the recursion, capturing groups capture as normal. Backreferences match text captured during the same recursion as normal. When the regex engine exits from the recursion, all capturing groups revert to the state they were in prior to the recursion.
 These tests will illustrate:
+
 '''
 String pattern = "(?<first>[a-z])(?<second>\\k<first>)";
 check(pattern, "bb", true);
@@ -114,6 +115,7 @@ This concept is best illustrated by an example. The following regex (which is st
 After having parsed a term, you can inspect the so-called Group Tree of the match, which reflects the hierarchical nature of the groups. E.g. in this case, the term (6*[6+7+8]+9)*78*[4*(6+5)+4] is a product which consists of three factors. The first one of these factor is a sum and so on...
 
 The following code
+
 '''
 String regex = IOUtils.toString(
 				new FileInputStream(getClass().getClassLoader().getResource("term.regex").getFile()), "UTF-8");

@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -1519,6 +1521,7 @@ public final class Pattern implements java.io.Serializable {
 	transient volatile Map<Integer, String> groupNames;
 
 	private transient ArrayList<GroupHeadAndTail> groupHeadAndTailNodes;
+	private transient List<Runnable> validityChecks = new LinkedList<Runnable>();
 
 	/**
 	 * Temporary null terminated code point array used by pattern compiling.
@@ -2304,6 +2307,9 @@ public final class Pattern implements java.io.Serializable {
 		} else {
 			// Start recursive descent parsing
 			matchRoot = expr(lastAccept);
+			for (Runnable r : validityChecks) {
+				r.run();
+			}
 			// Check extra pattern characters
 			if (patternLength != cursor) {
 				if (peek() == ')') {
@@ -2567,7 +2573,11 @@ public final class Pattern implements java.io.Serializable {
 	 * displayed with a pointer to aid in locating the syntax error.
 	 */
 	private PatternSyntaxException error(String s) {
-		return new PatternSyntaxException(s, normalizedPattern, cursor - 1);
+		return error(s, cursor - 1);
+	}
+
+	private PatternSyntaxException error(String s, int index) {
+		return new PatternSyntaxException(s, normalizedPattern, index);
 	}
 
 	/**
@@ -3514,10 +3524,35 @@ public final class Pattern implements java.io.Serializable {
 				} else if (ch == '-') {
 					ch = peek();
 					int groupNumber;
-					if ((groupNumber = doesGroupNumberFollowBefore('>', true)) == -1
-							&& (groupNumber = doesGroupNameFollowBefore('>')) == -1) {
+					String groupName = null;
+					if ((groupNumber = doesGroupNumberFollowBefore('>')) != -1) {
+						tail = new PopCapture(groupNumber);
+						if (!isGroupDefined(groupNumber)) {
+							int index = cursor - 1;
+							validityChecks.add(0, () -> {
+								if (!isGroupDefined(groupNumber))
+									throw error("Undeclared group " + groupNumber
+											+ " used in pop group capture expression!", index);
+							});
+						}
+					} else if ((groupName = doesGroupNameFollowBefore('>')) != null) {
+						if (isGroupDefined(groupName)) {
+							tail = new PopCapture(groupIndices.get(groupName));
+						} else {
+							PopCapture pc = new PopCapture();
+							int index = cursor - 1;
+							final String gn = groupName;
+							validityChecks.add(0, () -> {
+								if (!isGroupDefined(gn))
+									throw error("Undeclared group " + gn + " used in pop group capture expression!",
+											index);
+								pc.groupIndex = groupIndices.get(gn);
+
+							});
+							tail = pc;
+						}
+					} else
 						throw error("Illegal pop group capture syntax");
-					}
 					tail = new PopCapture(groupNumber);
 
 					head = expr(tail);
@@ -3529,21 +3564,26 @@ public final class Pattern implements java.io.Serializable {
 				tail = root;
 				head.setNext(expr(tail));
 				tail.setNext(lookbehindEnd);
-				TreeInfo info = new TreeInfo();
-				head.study(info);
-				if (info.maxValid == false) {
-					throw error("Look-behind group does not have " + "an obvious maximum length");
-				}
+
 				boolean hasSupplementary = findSupplementary(start, patternLength);
+				final BehindBase bb;
+				final Node cond = head;
 				if (ch == '=') {
-					head = tail = (hasSupplementary ? new BehindS(head, info.maxLength, info.minLength)
-							: new Behind(head, info.maxLength, info.minLength));
+					bb = (hasSupplementary ? new BehindS(cond) : new Behind(cond));
 				} else if (ch == '!') {
-					head = tail = (hasSupplementary ? new NotBehindS(head, info.maxLength, info.minLength)
-							: new NotBehind(head, info.maxLength, info.minLength));
+					bb = (hasSupplementary ? new NotBehindS(cond) : new NotBehind(cond));
 				} else {
 					throw error("Unknown look-behind group");
 				}
+				validityChecks.add(() -> {
+					TreeInfo info = new TreeInfo();
+					cond.study(info);
+					if (info.maxValid == false) {
+						throw error("Look-behind group does not have an obvious maximum length");
+					}
+					bb.setMinMaxLength(info.maxLength, info.minLength);
+				});
+				head = tail = bb;
 				break;
 			case '(': // (?(groupNumber)yes|no) or (?(DEFINE)regex that's not
 						// executed)
@@ -3557,9 +3597,33 @@ public final class Pattern implements java.io.Serializable {
 
 			{
 				int groupNumber;
-				if ((groupNumber = doesGroupNumberFollowBefore(')', false)) != -1
-						|| (groupNumber = doesGroupNameFollowBefore(')')) != -1) {
+				String groupName = null;
+
+				if ((groupNumber = doesGroupNumberFollowBefore(')')) != -1) {
 					conditional = new ConditionalGP(groupNumber);
+					if (!isGroupDefined(groupNumber)) {
+						int index = cursor - 1;
+						validityChecks.add(() -> {
+							if (!isGroupDefined(groupNumber))
+								throw error("Undeclared group " + groupNumber + " used in conditional expression!",
+										index);
+
+						});
+					}
+				} else if ((groupName = doesGroupNameFollowBefore(')')) != null) {
+					if (isGroupDefined(groupName)) {
+						conditional = new ConditionalGP(groupIndices.get(groupName));
+					} else {
+						ConditionalGP cgp = new ConditionalGP();
+						int index = cursor - 1;
+						final String gn = groupName;
+						validityChecks.add(() -> {
+							if (!isGroupDefined(gn))
+								throw error("Undeclared group " + gn + " in conditional expression!", index);
+							cgp.groupNumber = groupIndices.get(gn);
+						});
+						conditional = cgp;
+					}
 				} else {
 					accept('?', "Unkown condition");
 					accept('=', "Unkown condition");
@@ -3584,10 +3648,37 @@ public final class Pattern implements java.io.Serializable {
 						// call
 				unread();
 				int groupNumber;
-				if ((groupNumber = doesGroupNumberFollowBefore(')', true)) != -1
-						|| (groupNumber = doesGroupNameFollowBefore(')')) != -1) {
+				if (peek() == '\'') {
+					read();
+					final String groupName;
+					if ((groupName = doesGroupNameFollowBefore('\'')) == null || peek() != ')')
+						throw error("Unknown recursion syntax");
+					if (isGroupDefined(groupName)) {
+						head = tail = new RecursiveGroupCall(groupIndices.get(groupName));
+					} else {
+						RecursiveGroupCall rcg = new RecursiveGroupCall();
+						int index = cursor - 1;
+						validityChecks.add(0, () -> {
+							if (!isGroupDefined(groupName))
+								throw error("Undeclared group " + groupName + " used in recursive expression!", index);
+							rcg.setGroupNumber(groupIndices.get(groupName));
+						});
+						head = tail = rcg;
+
+					}
+
+				} else if ((groupNumber = doesGroupNumberFollowBefore(')')) != -1) {
 					unread();
 					head = tail = new RecursiveGroupCall(groupNumber);
+					if (!isGroupDefined(groupNumber)) {
+						int index = cursor - 1;
+						validityChecks.add(0, () -> {
+							if (!isGroupDefined(groupNumber))
+								throw error("Undeclared group " + groupNumber + " used in recursive expression!",
+										index);
+
+						});
+					}
 				} else {
 					addFlag();
 					ch = read();
@@ -3630,7 +3721,7 @@ public final class Pattern implements java.io.Serializable {
 		return node;
 	}
 
-	private int doesGroupNameFollowBefore(int closing) {
+	private String doesGroupNameFollowBefore(int closing) {
 		int ch = peek();
 		int save = cursor;
 		if (ASCII.isLower(ch) || ASCII.isUpper(ch)) {
@@ -3638,13 +3729,17 @@ public final class Pattern implements java.io.Serializable {
 			while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch)) {
 				sb.append(Character.toChars(ch));
 			}
-			if (!groupIndices().containsKey(sb.toString()) || ch != closing) {
+			if (ch != closing) {
 				cursor = save;
-				return -1;
+				return null;
 			}
-			return groupIndices.get(sb.toString());
+			return sb.toString();
 		}
-		return -1;
+		return null;
+	}
+
+	private boolean isGroupDefined(String groupName) {
+		return groupIndices().containsKey(groupName);
 	}
 
 	private boolean doesDEFINEFollow() {
@@ -3661,18 +3756,22 @@ public final class Pattern implements java.io.Serializable {
 		return true;
 	}
 
-	private int doesGroupNumberFollowBefore(int closing, boolean declared) {
+	private int doesGroupNumberFollowBefore(int closing) {
 		int number = 0;
 		int ch;
 		int save = cursor;
 		while (ASCII.isDigit(ch = read())) {
 			number = number * 10 + ch - '0';
 		}
-		if (number <= 0 || (declared && number >= capturingGroupCount) || ch != closing) {
+		if (number <= 0 || ch != closing) {
 			cursor = save;
 			return -1;
 		}
 		return number;
+	}
+
+	private boolean isGroupDefined(int groupNumber) {
+		return groupNumber < capturingGroupCount;
 	}
 
 	/**
@@ -3804,58 +3903,44 @@ public final class Pattern implements java.io.Serializable {
 	 * single or a group, so it could be a chain of nodes.
 	 */
 	private Node closure(Node beginNode, Node endNode) {
-		Node atom;
 		int ch = peek();
-		boolean deterministic = isDeterministic(beginNode);
+		Navigator nav = createNavigator(endNode);
+		final Curly curly;
+
 		switch (ch) {
 		case '?':
 			ch = next();
 			if (ch == '?') {
 				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 0, 1, LAZY);
-				return new Curly(beginNode, createNavigator(endNode), 0, 1, LAZY);
+				curly = new Curly(beginNode, nav, 0, 1, LAZY);
 			} else if (ch == '+') {
 				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 0, 1, POSSESSIVE);
-				return new Curly(beginNode, createNavigator(endNode), 0, 1, POSSESSIVE);
-			}
-			if (deterministic)
-				return new DeterministicCurly(beginNode, 0, 1, GREEDY);
-			return new Curly(beginNode, createNavigator(endNode), 0, 1, GREEDY);
+				curly = new Curly(beginNode, nav, 0, 1, POSSESSIVE);
+			} else
+				curly = new Curly(beginNode, nav, 0, 1, GREEDY);
+			break;
 		case '*':
 			ch = next();
 			if (ch == '?') {
 				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 0, MAX_REPS, LAZY);
-				return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, LAZY);
+				curly = new Curly(beginNode, nav, 0, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 0, MAX_REPS, POSSESSIVE);
-				return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, POSSESSIVE);
-			}
-			if (deterministic)
-				return new DeterministicCurly(beginNode, 0, MAX_REPS, GREEDY);
-			return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, GREEDY);
+				curly = new Curly(beginNode, nav, 0, MAX_REPS, POSSESSIVE);
+			} else
+				curly = new Curly(beginNode, nav, 0, MAX_REPS, GREEDY);
+			break;
 		case '+':
 			ch = next();
 			if (ch == '?') {
 				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 1, MAX_REPS, LAZY);
-				return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, LAZY);
+				curly = new Curly(beginNode, nav, 1, MAX_REPS, LAZY);
 			} else if (ch == '+') {
 				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 1, MAX_REPS, POSSESSIVE);
-				return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, POSSESSIVE);
-			}
-			if (deterministic)
-				return new DeterministicCurly(beginNode, 1, MAX_REPS, GREEDY);
-			return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, GREEDY);
+				curly = new Curly(beginNode, nav, 1, MAX_REPS, POSSESSIVE);
+			} else
+				curly = new Curly(beginNode, nav, 1, MAX_REPS, GREEDY);
+			break;
 		case '{':
 			ch = temp[cursor + 1];
 			if (ASCII.isDigit(ch)) {
@@ -3883,18 +3968,12 @@ public final class Pattern implements java.io.Serializable {
 				ch = peek();
 				if (ch == '?') {
 					next();
-					if (deterministic)
-						return new DeterministicCurly(beginNode, cmin, cmax, LAZY);
-					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, LAZY);
+					curly = new Curly(beginNode, nav, cmin, cmax, LAZY);
 				} else if (ch == '+') {
 					next();
-					if (deterministic)
-						return new DeterministicCurly(beginNode, cmin, cmax, POSSESSIVE);
-					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, POSSESSIVE);
+					curly = new Curly(beginNode, nav, cmin, cmax, POSSESSIVE);
 				} else {
-					if (deterministic)
-						return new DeterministicCurly(beginNode, cmin, cmax, GREEDY);
-					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, GREEDY);
+					curly = new Curly(beginNode, nav, cmin, cmax, GREEDY);
 				}
 			} else {
 				throw error("Illegal repetition");
@@ -3902,6 +3981,11 @@ public final class Pattern implements java.io.Serializable {
 		default:
 			return beginNode;
 		}
+
+		validityChecks.add(() -> {
+			curly.deterministic = isDeterministic(beginNode);
+		});
+		return curly;
 	}
 
 	/**
@@ -5102,14 +5186,17 @@ public final class Pattern implements java.io.Serializable {
 	 * atom.study(info); return getNext().study(info); } } }
 	 */
 
-	static abstract class CurlyBase extends Node {
+	static class Curly extends Node {
 		Node beginNode;
+		Navigator endNode;
 		int type;
 		int cmin;
 		int cmax;
+		boolean deterministic;
 
-		CurlyBase(Node beginNode, int cmin, int cmax, int type) {
+		Curly(Node beginNode, Navigator endNode, int cmin, int cmax, int type) {
 			this.beginNode = beginNode;
+			this.endNode = endNode;
 			this.cmin = cmin;
 			this.cmax = cmax;
 			this.type = type;
@@ -5147,16 +5234,16 @@ public final class Pattern implements java.io.Serializable {
 				info.deterministic = false;
 			return getNext().study(info);
 		}
-	}
-
-	static final class DeterministicCurly extends CurlyBase {
-
-		DeterministicCurly(Node beginNode, int cmin, int cmax, int type) {
-			super(beginNode, cmin, cmax, type);
-		}
 
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
+			if (deterministic)
+				return matchDeterministic(matcher, i, seq);
+			else
+				return matchNonDeterministic(matcher, i, seq);
+		}
+
+		private boolean matchDeterministic(Matcher matcher, int i, CharSequence seq) {
 			int j = 0;
 			for (; j < cmin; ++j) {
 				if (!beginNode.match(matcher, i, seq))
@@ -5205,19 +5292,33 @@ public final class Pattern implements java.io.Serializable {
 			}
 		}
 
-	}
+		private boolean matchNonDeterministic(Matcher matcher, int i, CharSequence seq) {
+			if (type == GREEDY) {
+				Repeater mgr = new Repeater(this.getNext(), cmax - cmin, true);
+				Repeater mr = new Repeater(mgr, cmin, false);
+				return mr.match(matcher, i, seq);
+			} else if (type == LAZY) {
+				MaxLazyRepeater mlr = new MaxLazyRepeater(cmax - cmin);
+				Repeater mr = new Repeater(mlr, cmin, false);
+				return mr.match(matcher, i, seq);
+			} else { // type == POSSESSIVE
+				Repeater mr = new Repeater(accept, cmin, false);
+				Vector<Stack<Capture>> captures = matcher.cloneCaptures();
+				if (!mr.match(matcher, i, seq))
+					return false;
+				i = matcher.last;
+				int j = cmin;
+				for (; j < cmax; ++j) {
+					if (!beginNode.match(matcher, i, seq))
+						break;
+					i = matcher.last;
+				}
+				if (getNext().match(matcher, i, seq))
+					return true;
+				matcher.captures = captures;
+				return false;
+			}
 
-	/**
-	 * Handles the curly-brace style repetition with a specified minimum and
-	 * maximum occurrences. The * quantifier is handled as a special case. This
-	 * class handles the three types.
-	 */
-	static final class Curly extends CurlyBase {
-		Navigator endNode;
-
-		Curly(Node beginNode, Navigator endNode, int cmin, int cmax, int type) {
-			super(beginNode, cmin, cmax, type);
-			this.endNode = endNode;
 		}
 
 		private class MaxLazyRepeater extends Node {
@@ -5297,122 +5398,7 @@ public final class Pattern implements java.io.Serializable {
 			}
 		}
 
-		@Override
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-
-			if (type == GREEDY) {
-				Repeater mgr = new Repeater(this.getNext(), cmax - cmin, true);
-				Repeater mr = new Repeater(mgr, cmin, false);
-				return mr.match(matcher, i, seq);
-			} else if (type == LAZY) {
-				MaxLazyRepeater mlr = new MaxLazyRepeater(cmax - cmin);
-				Repeater mr = new Repeater(mlr, cmin, false);
-				return mr.match(matcher, i, seq);
-			} else { // type == POSSESSIVE
-				Repeater mr = new Repeater(accept, cmin, false);
-				Vector<Stack<Capture>> captures = matcher.cloneCaptures();
-				if (!mr.match(matcher, i, seq))
-					return false;
-				i = matcher.last;
-				int j = cmin;
-				for (; j < cmax; ++j) {
-					if (!beginNode.match(matcher, i, seq))
-						break;
-					i = matcher.last;
-				}
-				if (getNext().match(matcher, i, seq))
-					return true;
-				matcher.captures = captures;
-				return false;
-			}
-
-		}
-
 	}
-
-	/**
-	 * Handles the curly-brace style repetition with a specified minimum and
-	 * maximum occurrences in deterministic cases. This is an iterative
-	 * optimization over the Prolog and Loop system which would handle this in a
-	 * recursive way. The * quantifier is handled as a special case. If capture
-	 * is true then this class saves group settings and ensures that groups are
-	 * unset when backing off of a group match.
-	 */
-	/*
-	 * static final class GroupCurly extends Node { Node atom; int type; int
-	 * cmin; int cmax; int localIndex; int groupIndex; boolean capture;
-	 * 
-	 * GroupCurly(Node node, int cmin, int cmax, int type, int local, int group,
-	 * boolean capture) { this.atom = node; this.type = type; this.cmin = cmin;
-	 * this.cmax = cmax; this.localIndex = local; this.groupIndex = group;
-	 * this.capture = capture; }
-	 * 
-	 * boolean match(Matcher matcher, int i, CharSequence seq) { int[] groups =
-	 * matcher.groups; int[] locals = matcher.locals; int save0 =
-	 * locals[localIndex]; int save1 = 0; int save2 = 0;
-	 * 
-	 * if (capture) { save1 = groups[groupIndex]; save2 = groups[groupIndex +
-	 * 1]; }
-	 * 
-	 * // Notify GroupTail there is no need to setup group info // because it
-	 * will be set here locals[localIndex] = -1;
-	 * 
-	 * boolean ret = true; for (int j = 0; j < cmin; j++) { if
-	 * (atom.match(matcher, i, seq)) { if (capture) { groups[groupIndex] = i;
-	 * groups[groupIndex + 1] = matcher.last; } i = matcher.last; } else { ret =
-	 * false; break; } } if (ret) { if (type == GREEDY) { ret = match0(matcher,
-	 * i, cmin, seq); } else if (type == LAZY) { ret = match1(matcher, i, cmin,
-	 * seq); } else { ret = match2(matcher, i, cmin, seq); } } if (!ret) {
-	 * locals[localIndex] = save0; if (capture) { groups[groupIndex] = save1;
-	 * groups[groupIndex + 1] = save2; } } return ret; }
-	 * 
-	 * // Aggressive group match boolean match0(Matcher matcher, int i, int j,
-	 * CharSequence seq) { // don't back off passing the starting "j" int min =
-	 * j; int[] groups = matcher.groups; int save0 = 0; int save1 = 0; if
-	 * (capture) { save0 = groups[groupIndex]; save1 = groups[groupIndex + 1]; }
-	 * for (;;) { if (j >= cmax) break; if (!atom.match(matcher, i, seq)) break;
-	 * int k = matcher.last - i; if (k <= 0) { if (capture) { groups[groupIndex]
-	 * = i; groups[groupIndex + 1] = i + k; } i = i + k; break; } for (;;) { if
-	 * (capture) { groups[groupIndex] = i; groups[groupIndex + 1] = i + k; } i =
-	 * i + k; if (++j >= cmax) break; if (!atom.match(matcher, i, seq)) break;
-	 * if (i + k != matcher.last) { if (match0(matcher, i, j, seq)) return true;
-	 * break; } } while (j > min) { if (getNext().match(matcher, i, seq)) { if
-	 * (capture) { groups[groupIndex + 1] = i; groups[groupIndex] = i - k; }
-	 * return true; } // backing off i = i - k; if (capture) { groups[groupIndex
-	 * + 1] = i; groups[groupIndex] = i - k; } j--;
-	 * 
-	 * } break; } if (capture) { groups[groupIndex] = save0; groups[groupIndex +
-	 * 1] = save1; } return getNext().match(matcher, i, seq); }
-	 * 
-	 * // Reluctant matching boolean match1(Matcher matcher, int i, int j,
-	 * CharSequence seq) { for (;;) { if (getNext().match(matcher, i, seq))
-	 * return true; if (j >= cmax) return false; if (!atom.match(matcher, i,
-	 * seq)) return false; if (i == matcher.last) return false; if (capture) {
-	 * matcher.groups[groupIndex] = i; matcher.groups[groupIndex + 1] =
-	 * matcher.last; } i = matcher.last; j++; } }
-	 * 
-	 * // Possessive matching boolean match2(Matcher matcher, int i, int j,
-	 * CharSequence seq) { for (; j < cmax; j++) { if (!atom.match(matcher, i,
-	 * seq)) { break; } if (capture) { matcher.groups[groupIndex] = i;
-	 * matcher.groups[groupIndex + 1] = matcher.last; } if (i == matcher.last) {
-	 * break; } i = matcher.last; } return getNext().match(matcher, i, seq); }
-	 * 
-	 * boolean study(TreeInfo info) { // Save original info int minL =
-	 * info.minLength; int maxL = info.maxLength; boolean maxV = info.maxValid;
-	 * boolean detm = info.deterministic; info.reset();
-	 * 
-	 * atom.study(info);
-	 * 
-	 * int temp = info.minLength * cmin + minL; if (temp < minL) { temp =
-	 * 0xFFFFFFF; // Arbitrary large number } info.minLength = temp;
-	 * 
-	 * if (maxV & info.maxValid) { temp = info.maxLength * cmax + maxL;
-	 * info.maxLength = temp; if (temp < maxL) { info.maxValid = false; } } else
-	 * { info.maxValid = false; }
-	 * 
-	 * if (info.deterministic && cmin == cmax) { info.deterministic = detm; }
-	 * else { info.deterministic = false; } return getNext().study(info); } }
-	 */
 
 	/**
 	 * A Guard node at the end of each atom node in a Branch. It serves the
@@ -5633,10 +5619,14 @@ public final class Pattern implements java.io.Serializable {
 	}
 
 	static final class PopCapture extends Node {
-		private int groupIndex;
+		int groupIndex;
 
 		PopCapture(int groupIndex) {
 			this.groupIndex = groupIndex;
+		}
+
+		PopCapture() {
+
 		}
 
 		@Override
@@ -5665,6 +5655,14 @@ public final class Pattern implements java.io.Serializable {
 		private GroupTail groupTail;
 
 		RecursiveGroupCall(int groupNumber) {
+			setGroupNumber(groupNumber);
+		}
+
+		RecursiveGroupCall() {
+
+		}
+
+		void setGroupNumber(int groupNumber) {
 			GroupHeadAndTail ghat = groupHeadAndTailNodes.get(groupNumber);
 			groupHead = ghat.groupHead;
 			groupTail = ghat.groupTail;
@@ -5988,6 +5986,9 @@ public final class Pattern implements java.io.Serializable {
 			this.groupNumber = groupNumber;
 		}
 
+		public ConditionalGP() {
+		}
+
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			if (matcher.captures.size() > groupNumber && !matcher.captures.get(groupNumber).isEmpty()) {
@@ -6107,17 +6108,27 @@ public final class Pattern implements java.io.Serializable {
 		}
 	};
 
-	/**
-	 * Zero width positive lookbehind.
-	 */
-	static class Behind extends Node {
+	static class BehindBase extends Node {
 		Node cond;
 		int rmax, rmin;
 
-		Behind(Node cond, int rmax, int rmin) {
+		BehindBase(Node cond) {
 			this.cond = cond;
+		}
+
+		void setMinMaxLength(int rmax, int rmin) {
 			this.rmax = rmax;
 			this.rmin = rmin;
+		}
+	}
+
+	/**
+	 * Zero width positive lookbehind.
+	 */
+	static class Behind extends BehindBase {
+
+		Behind(Node cond) {
+			super(cond);
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
@@ -6152,8 +6163,8 @@ public final class Pattern implements java.io.Serializable {
 	 * unpaired surrogates.
 	 */
 	static final class BehindS extends Behind {
-		BehindS(Node cond, int rmax, int rmin) {
-			super(cond, rmax, rmin);
+		BehindS(Node cond) {
+			super(cond);
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
@@ -6188,14 +6199,10 @@ public final class Pattern implements java.io.Serializable {
 	/**
 	 * Zero width negative lookbehind.
 	 */
-	static class NotBehind extends Node {
-		Node cond;
-		int rmax, rmin;
+	static class NotBehind extends BehindBase {
 
-		NotBehind(Node cond, int rmax, int rmin) {
-			this.cond = cond;
-			this.rmax = rmax;
-			this.rmin = rmin;
+		NotBehind(Node cond) {
+			super(cond);
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
@@ -6227,8 +6234,8 @@ public final class Pattern implements java.io.Serializable {
 	 * unpaired surrogates.
 	 */
 	static final class NotBehindS extends NotBehind {
-		NotBehindS(Node cond, int rmax, int rmin) {
-			super(cond, rmax, rmin);
+		NotBehindS(Node cond) {
+			super(cond);
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {

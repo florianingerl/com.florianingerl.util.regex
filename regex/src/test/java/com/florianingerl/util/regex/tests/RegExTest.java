@@ -63,6 +63,7 @@ public class RegExTest {
 		try {
 			main(null);
 		} catch (Exception e) {
+			e.printStackTrace();
 			assertTrue(e.getMessage(), false);
 		}
 	}
@@ -110,7 +111,6 @@ public class RegExTest {
 		defineTest();
 
 		patternStatelessTest();
-		capturesTest();
 		conditionalBasedOnValidGroupCaptureTest();
 		lookaheadConditionalTest();
 		lookaheadTest();
@@ -200,35 +200,6 @@ public class RegExTest {
 		m.find();
 		if (m.group().equals(result) != expected)
 			failCount++;
-	}
-
-	private static void check(String p, String s, String[][] expected) {
-		check(Pattern.compile(p), s, expected);
-	}
-
-	private static void check(Pattern p, String s, String[][] expected) {
-		Matcher matcher = p.matcher(s);
-		if (!matcher.find()) {
-			++failCount;
-			return;
-		}
-		if (expected.length != matcher.groupCount() + 1) {
-			++failCount;
-			return;
-		}
-
-		for (int i = 0; i < expected.length; ++i) {
-			if (expected[i].length != matcher.captures(i).size()) {
-				++failCount;
-				return;
-			}
-			for (int j = 0; j < expected[i].length; ++j) {
-				if (!expected[i][j].equals(matcher.captures(i).get(j).getValue())) {
-					++failCount;
-					return;
-				}
-			}
-		}
 	}
 
 	private static void check(String regex, int flags, String s, int[] data) {
@@ -667,7 +638,7 @@ public class RegExTest {
 	private static void defineTest() throws Exception {
 
 		check("^(?(DEFINE)(?<A>a)(?<B>b))(?'A')(?'B')$", "ab", true);
-		check("(?x:( #comment\n? #comment \n ( #Hier is some comment\n DEFINE #Here is another comment\n )(?<A>a))  ( #comment\n ? #comment\n A #another comment\n ))",
+		check("(?x:( #comment\n? #comment \n ( #Hier is some comment\n DEFINE #Here is another comment\n )(?<A>a))  ( #comment\n ? #comment\n 'A' #another comment\n ))",
 				"a", true);
 		report("Define test");
 	}
@@ -724,20 +695,16 @@ public class RegExTest {
 		check(pattern, "1jT2", true);
 		check(pattern, "1jT<jT>2", true);
 
-		pattern = "\\b(([a-zA-Z])(?1)?(?<-2>\\2)|[a-zA-Z])\\b";
+		pattern = "\\b(([a-zA-Z])(?1)?\\2|[a-zA-Z])\\b";
 		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
 				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
-		pattern = "\\b(([a-zA-Z])(?1)?\\2(?<-2>)|[a-zA-Z])\\b";
+		pattern = "\\b(([a-zA-Z])(?1)?\\2|[a-zA-Z])\\b";
 		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
 				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
-		pattern = "\\b(?<anagramm>(?<letter>[a-zA-Z])(?'anagramm')?\\k<letter>(?<-letter>)|[a-zA-Z])\\b";
+		pattern = "\\b(?<anagramm>(?<letter>[a-zA-Z])(?'anagramm')?\\k<letter>|[a-zA-Z])\\b";
 		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
 				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
 
-		check("(?x:\\b(([a-zA-Z])(?1)?( #comment\n ? #comment\n < #comment\n - #comment\n 2 #comment\n > #comment\n \\2  )|[a-zA-Z])\\b)",
-				"lagerregal", true);
-		check("(?x:\\b(?<rep>(?<letter>[a-zA-Z])(?'rep')?( #comment\n ? #comment\n < #comment\n - #comment\n letter #comment\n > #comment\n \\k<letter>  )|[a-zA-Z])\\b)",
-				"lagerregal", true);
 		// recursive stuff in lookbehind and lookahead that has a maximum length
 		check("(h)(?<=(?1))ello", "hello", true);
 		check("(h|(b))(?<!(?2))ello", "hello", true);
@@ -830,9 +797,6 @@ public class RegExTest {
 		check(pattern, "1abst2", false);
 		check(pattern, "1amen2", false);
 
-		// conditionals are uncaptured groups!!!
-		check("1(?(?=ab)abba|amen)2(?(1)(?!))", "1abba2", true);
-
 		// backtracking
 		pattern = "1(?(?=(?<mygroup>aber))aberr)?aber2(?(mygroup)(?!))";
 		check(pattern, "1aber2", true);
@@ -842,55 +806,65 @@ public class RegExTest {
 		report("Conditional based on lookahead");
 	}
 
-	private static void capturesTest() throws Exception {
-		check("([a-f])+ef(?<-1>_\\1){4}(?(1)(?!))", "abcdef_d_c_b_a", true);
-		check("1((r)++)?rrr2(?(1)(?!))(?(2)(?!))", "1rrr2", true);
-		check("1((?>(r)+))?rrr2(?(2)(?!))", "1rrr2", true);
-		check("1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2(?<-1>_\\1){2}_(?<-1>){2}(?<-1>\\1)",
-				"1jT<jT<jT>,jT<jT,jT>>2_jT<jT<jT>,jT<jT,jT>>_jT<jT,jT>_jT<jT>", true);
-
-		check("([abc]+?)(b)?+(d)(?(2)(?!))", "abcd", true);
-		check("1(z(?1)ab|a+)2(?<-1>_\\1){2}(?(1)(?!))", "1zaaab2_zaaab_aa", true);
-		check("1(z(?1)|z)2(?<-1>_\\1){3}(?(1)(?!))", "1zzz2_zzz_zz_z", true);
-		check("1(a+)y(?1)ab2(?<-1>_\\1){2}(?(1)(?!))", "1ayaaab2_aa_a", true);
-
-		// backtracking of (?<-groupNumber>) supported?
-		check("1(a)((?<-1>)r)?r\\12", "1ara2", true);
-		// backtracking of (?<-groupNumber>) inside atomar group supported?
-		check("1(amen)((?>(?<-1>r)))?r\\12", "1amenramen2", true);
-
-		String anagramm = "\\b([a-zA-Z])*(?(1)[a-zA-Z]?|[a-zA-Z])(?<-1>\\1)*(?!(?<-1>))\\b";
-
-		check(anagramm, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
-				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
-
-		String[][] e1 = { { "aBBcccDDDDDeeeeeeee" }, { "a", "BB", "ccc", "DDDDD", "eeeeeeee" },
-				{ "a", "ccc", "eeeeeeee" }, { "BB", "DDDDD" } };
-		check("(([a-z]+)|([A-Z]+))+", "aBBcccDDDDDeeeeeeee", e1);
-		String[][] e3 = { { "abcbar" }, { "abc" }, {} };
-		check("(.*)bar|(.*)bah", "abcbar", e3);
-		String[][] e4 = { { "abcbah" }, {}, { "abc" } };
-		check("(.*)bar|(.*)bah", "abcbah", e4);
-		String[][] e5 = { { "now is the time for all good men to come to the aid of the party" }, { "now", "is", "the",
-				"time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the", "party" } };
-		check("^(?:(\\w+)|(?>\\W+))*$", "now is the time for all good men to come to the aid of the party", e5);
-		String[][] e6 = { { "now is the time for all good men to come to the aid of the party" }, { "now", "is", "the",
-				"time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the", "party" } };
-		check("^(?>(\\w+)\\W*)*$", "now is the time for all good men to come to the aid of the party", e6);
-		String[][] e7 = { { "now is the time for all good men to come to the aid of the party" }, { "now" },
-				{ "is", "the", "time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the" },
-				{ "party" } };
-		check("^(\\w+)\\W+(?>(\\w+)\\W+)*(\\w+)$", "now is the time for all good men to come to the aid of the party",
-				e7);
-		String[][] e8 = { { "now is the time for all good men to come to the aid of the party" }, { "now" },
-				{ "is", "for", "men", "to", "of" }, { "the", "time", "all", "good", "to", "come", "the", "aid", "the" },
-				{ "party" } };
-		check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$",
-				"now is the time for all good men to come to the aid of the party", e8);
-
-		report("Captures test");
-
-	}
+	/*
+	 * private static void capturesTest() throws Exception {
+	 * check("([a-f])+ef(?<-1>_\\1){4}(?(1)(?!))", "abcdef_d_c_b_a", true);
+	 * check("1((r)++)?rrr2(?(1)(?!))(?(2)(?!))", "1rrr2", true);
+	 * check("1((?>(r)+))?rrr2(?(2)(?!))", "1rrr2", true); check(
+	 * "1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2(?<-1>_\\1){2}_(?<-1>){2}(?<-1>\\1)",
+	 * "1jT<jT<jT>,jT<jT,jT>>2_jT<jT<jT>,jT<jT,jT>>_jT<jT,jT>_jT<jT>", true);
+	 * 
+	 * check("([abc]+?)(b)?+(d)(?(2)(?!))", "abcd", true);
+	 * check("1(z(?1)ab|a+)2(?<-1>_\\1){2}(?(1)(?!))", "1zaaab2_zaaab_aa",
+	 * true); check("1(z(?1)|z)2(?<-1>_\\1){3}(?(1)(?!))", "1zzz2_zzz_zz_z",
+	 * true); check("1(a+)y(?1)ab2(?<-1>_\\1){2}(?(1)(?!))", "1ayaaab2_aa_a",
+	 * true);
+	 * 
+	 * // backtracking of (?<-groupNumber>) supported?
+	 * check("1(a)((?<-1>)r)?r\\12", "1ara2", true); // backtracking of
+	 * (?<-groupNumber>) inside atomar group supported?
+	 * check("1(amen)((?>(?<-1>r)))?r\\12", "1amenramen2", true);
+	 * 
+	 * String anagramm =
+	 * "\\b([a-zA-Z])*(?(1)[a-zA-Z]?|[a-zA-Z])(?<-1>\\1)*(?!(?<-1>))\\b";
+	 * 
+	 * check(anagramm,
+	 * "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z"
+	 * , new String[] { "anna", "lagerregal", "otto", "otito", "z" });
+	 * 
+	 * String[][] e1 = { { "aBBcccDDDDDeeeeeeee" }, { "a", "BB", "ccc", "DDDDD",
+	 * "eeeeeeee" }, { "a", "ccc", "eeeeeeee" }, { "BB", "DDDDD" } };
+	 * check("(([a-z]+)|([A-Z]+))+", "aBBcccDDDDDeeeeeeee", e1); String[][] e3 =
+	 * { { "abcbar" }, { "abc" }, {} }; check("(.*)bar|(.*)bah", "abcbar", e3);
+	 * String[][] e4 = { { "abcbah" }, {}, { "abc" } }; check("(.*)bar|(.*)bah",
+	 * "abcbah", e4); String[][] e5 = { {
+	 * "now is the time for all good men to come to the aid of the party" }, {
+	 * "now", "is", "the", "time", "for", "all", "good", "men", "to", "come",
+	 * "to", "the", "aid", "of", "the", "party" } };
+	 * check("^(?:(\\w+)|(?>\\W+))*$",
+	 * "now is the time for all good men to come to the aid of the party", e5);
+	 * String[][] e6 = { {
+	 * "now is the time for all good men to come to the aid of the party" }, {
+	 * "now", "is", "the", "time", "for", "all", "good", "men", "to", "come",
+	 * "to", "the", "aid", "of", "the", "party" } }; check("^(?>(\\w+)\\W*)*$",
+	 * "now is the time for all good men to come to the aid of the party", e6);
+	 * String[][] e7 = { {
+	 * "now is the time for all good men to come to the aid of the party" }, {
+	 * "now" }, { "is", "the", "time", "for", "all", "good", "men", "to",
+	 * "come", "to", "the", "aid", "of", "the" }, { "party" } };
+	 * check("^(\\w+)\\W+(?>(\\w+)\\W+)*(\\w+)$",
+	 * "now is the time for all good men to come to the aid of the party", e7);
+	 * String[][] e8 = { {
+	 * "now is the time for all good men to come to the aid of the party" }, {
+	 * "now" }, { "is", "for", "men", "to", "of" }, { "the", "time", "all",
+	 * "good", "to", "come", "the", "aid", "the" }, { "party" } };
+	 * check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$",
+	 * "now is the time for all good men to come to the aid of the party", e8);
+	 * 
+	 * report("Captures test");
+	 * 
+	 * }
+	 */
 
 	private static void lookaheadTest() throws Exception {
 		// positive lookahead
@@ -2620,19 +2594,7 @@ public class RegExTest {
 		pattern = Pattern.compile("(abc)(def)\\1");
 		check(pattern, "abcdefabc", true);
 
-		pattern = Pattern.compile("(abc)(def)\\3");
-		check(pattern, "abcdefabc", false);
-
-		try {
-			for (int i = 1; i < 10; i++) {
-				// Make sure backref 1-9 are always accepted
-				pattern = Pattern.compile("abcdef\\" + i);
-				// and fail to match if the target group does not exit
-				check(pattern, "abcdef", false);
-			}
-		} catch (PatternSyntaxException e) {
-			failCount++;
-		}
+		checkExpectedFail("(abc)(def)\\3");
 
 		pattern = Pattern.compile("(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)\\11");
 		check(pattern, "abcdefghija", false);
@@ -2654,8 +2616,7 @@ public class RegExTest {
 		pattern = Pattern.compile(toSupplementaries("(abc)(def)\\1"));
 		check(pattern, toSupplementaries("abcdefabc"), true);
 
-		pattern = Pattern.compile(toSupplementaries("(abc)(def)\\3"));
-		check(pattern, toSupplementaries("abcdefabc"), false);
+		checkExpectedFail(toSupplementaries("(abc)(def)\\3"));
 
 		pattern = Pattern.compile(toSupplementaries("(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)\\11"));
 		check(pattern, toSupplementaries("abcdefghija"), false);

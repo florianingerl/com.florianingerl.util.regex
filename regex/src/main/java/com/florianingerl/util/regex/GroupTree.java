@@ -2,6 +2,7 @@ package com.florianingerl.util.regex;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 public class GroupTree {
@@ -10,6 +11,7 @@ public class GroupTree {
 	public Capture capture;
 	public List<GroupTree> children = new LinkedList<GroupTree>();
 	public GroupTree parent;
+	boolean recursion;
 
 	void setGroupName(Map<Integer, String> groupNames) {
 		groupName = groupNames.get(groupIndex);
@@ -36,4 +38,44 @@ public class GroupTree {
 		}
 
 	}
+
+	Capture findGroup(int group) {
+		return findGroup(group, true);
+	}
+
+	private Capture findGroup(int group, boolean searchParent) {
+
+		ListIterator<GroupTree> it = children.listIterator(children.size());
+		Capture c = findGroup(group, it);
+		if (c != null)
+			return c;
+
+		if (searchParent) {
+			GroupTree current = this;
+			while (!current.recursion && current.parent != null) {
+				current = current.parent;
+				it = current.children.listIterator(current.children.size() - 1);
+				c = findGroup(group, it);
+				if (c != null)
+					return c;
+			}
+		}
+
+		return null;
+	}
+
+	private Capture findGroup(int group, ListIterator<GroupTree> it) {
+		while (it.hasPrevious()) {
+			GroupTree child = it.previous();
+			if (child.groupIndex == group)
+				return child.capture;
+			if (child.recursion)
+				continue;
+			Capture c = child.findGroup(group, false);
+			if (c != null)
+				return c;
+		}
+		return null;
+	}
+
 }

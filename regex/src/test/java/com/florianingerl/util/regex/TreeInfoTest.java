@@ -23,7 +23,6 @@ public class TreeInfoTest {
 		check("1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2", 4, false, -1);
 
 		check("(\\(([^()]+|(?1))*+\\))", 2, false, -1);
-		check("\\b(([a-zA-Z])(?1)?(?<-2>\\2)|[a-zA-Z])\\b", 1, false, -1);
 
 		check("1(?<first>a\\((?<second>(?'first')|[a-zA-Z]),(?'second')\\))2", 8, false, -1);
 

@@ -192,33 +192,6 @@ public interface MatchResult {
 	public String group(String group);
 
 	/**
-	 * Returns the capture stack of the given group during the previous match
-	 * operation.
-	 * 
-	 * <p>
-	 * </p>
-	 * 
-	 * @param group
-	 *            The index of a capturing group in this matcher's pattern
-	 * @return The capture stack of the group. This can be an empty stack.
-	 */
-	public Stack<Capture> captures(int group);
-
-	/**
-	 * Returns the capture stack of the given
-	 * <a href="Pattern.html#groupname">named-capturing group</a> during the
-	 * previous match operation.
-	 * 
-	 * <p>
-	 * </p>
-	 * 
-	 * @param name
-	 *            The name of a named-capturing group in this matcher's pattern
-	 * @return The capture stack of the named group. This can be an empty stack.
-	 */
-	public Stack<Capture> captures(String name);
-
-	/**
 	 * Returns the number of capturing groups in this match result's pattern.
 	 *
 	 * <p>

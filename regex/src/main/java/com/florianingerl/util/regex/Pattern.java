@@ -1521,7 +1521,7 @@ public final class Pattern implements java.io.Serializable {
 	transient volatile Map<Integer, String> groupNames;
 
 	private transient ArrayList<GroupHeadAndTail> groupHeadAndTailNodes;
-	private transient List<Runnable> validityChecks = new LinkedList<Runnable>();
+	private transient List<Runnable> validityChecks;
 
 	/**
 	 * Temporary null terminated code point array used by pattern compiling.
@@ -2307,7 +2307,7 @@ public final class Pattern implements java.io.Serializable {
 		} else {
 			// Start recursive descent parsing
 			matchRoot = expr(lastAccept);
-			for (Runnable r : validityChecks) {
+			for (Runnable r : validityChecks()) {
 				r.run();
 			}
 			// Check extra pattern characters
@@ -2349,6 +2349,12 @@ public final class Pattern implements java.io.Serializable {
 		if (groupNames == null)
 			groupNames = new HashMap<Integer, String>();
 		return groupNames;
+	}
+
+	List<Runnable> validityChecks() {
+		if (validityChecks == null)
+			validityChecks = new LinkedList<Runnable>();
+		return validityChecks;
 	}
 
 	/**
@@ -2918,6 +2924,14 @@ public final class Pattern implements java.io.Serializable {
 				break;
 			}
 		}
+		if (!isGroupDefined(refNum)) {
+			int index = cursor - 1;
+			int groupNumber = refNum;
+			validityChecks().add(() -> {
+				if (!isGroupDefined(groupNumber))
+					throw error("capturing group < " + groupNumber + " > does not exist", index);
+			});
+		}
 		if (has(CASE_INSENSITIVE))
 			return new CIBackRef(refNum, has(UNICODE_CASE));
 		else
@@ -3060,14 +3074,28 @@ public final class Pattern implements java.io.Serializable {
 				break;
 			if (read() != '<')
 				throw error("\\k is not followed by '<' for named capturing group");
-			String name = groupname(read());
-			if (!groupIndices().containsKey(name))
-				throw error("(named capturing group <" + name + "> does not exit");
+			final String name = groupname(read());
+
 			if (create) {
-				if (has(CASE_INSENSITIVE))
-					root = new CIBackRef(groupIndices().get(name), has(UNICODE_CASE));
-				else
-					root = new BackRef(groupIndices().get(name));
+				if (isGroupDefined(name)) {
+					if (has(CASE_INSENSITIVE))
+						root = new CIBackRef(groupIndices().get(name), has(UNICODE_CASE));
+					else
+						root = new BackRef(groupIndices().get(name));
+				} else {
+					final BackRefBase brb;
+					if (has(CASE_INSENSITIVE))
+						root = brb = new CIBackRef(has(UNICODE_CASE));
+					else
+						root = brb = new BackRef();
+
+					int index = cursor - 1;
+					validityChecks().add(() -> {
+						if (!isGroupDefined(name))
+							throw error("named capturing group <" + name + "> does not exist", index);
+						brb.groupIndex = groupIndices().get(name);
+					});
+				}
 			}
 			return -1;
 		case 'l':
@@ -3518,46 +3546,9 @@ public final class Pattern implements java.io.Serializable {
 					groupIndices().put(name, capturingGroupCount - 1);
 					groupNames().put(capturingGroupCount - 1, name);
 					head.setNext(expr(tail));
-					head = tail = new RecursiveGroupCall(groupIndices().get(name));
+					head = tail = new RecursiveGroupCall(groupIndices().get(name), false);
 					tail.setNext(accept);
 					break;
-				} else if (ch == '-') {
-					ch = peek();
-					int groupNumber;
-					String groupName = null;
-					if ((groupNumber = doesGroupNumberFollowBefore('>')) != -1) {
-						tail = new PopCapture(groupNumber);
-						if (!isGroupDefined(groupNumber)) {
-							int index = cursor - 1;
-							validityChecks.add(0, () -> {
-								if (!isGroupDefined(groupNumber))
-									throw error("Undeclared group " + groupNumber
-											+ " used in pop group capture expression!", index);
-							});
-						}
-					} else if ((groupName = doesGroupNameFollowBefore('>')) != null) {
-						if (isGroupDefined(groupName)) {
-							tail = new PopCapture(groupIndices.get(groupName));
-						} else {
-							PopCapture pc = new PopCapture();
-							int index = cursor - 1;
-							final String gn = groupName;
-							validityChecks.add(0, () -> {
-								if (!isGroupDefined(gn))
-									throw error("Undeclared group " + gn + " used in pop group capture expression!",
-											index);
-								pc.groupIndex = groupIndices.get(gn);
-
-							});
-							tail = pc;
-						}
-					} else
-						throw error("Illegal pop group capture syntax");
-					tail = new PopCapture(groupNumber);
-
-					head = expr(tail);
-					break;
-
 				}
 				int start = cursor;
 				head = createGroup(true);
@@ -3575,7 +3566,7 @@ public final class Pattern implements java.io.Serializable {
 				} else {
 					throw error("Unknown look-behind group");
 				}
-				validityChecks.add(() -> {
+				validityChecks().add(() -> {
 					TreeInfo info = new TreeInfo();
 					cond.study(info);
 					if (info.maxValid == false) {
@@ -3603,7 +3594,7 @@ public final class Pattern implements java.io.Serializable {
 					conditional = new ConditionalGP(groupNumber);
 					if (!isGroupDefined(groupNumber)) {
 						int index = cursor - 1;
-						validityChecks.add(() -> {
+						validityChecks().add(() -> {
 							if (!isGroupDefined(groupNumber))
 								throw error("Undeclared group " + groupNumber + " used in conditional expression!",
 										index);
@@ -3617,7 +3608,7 @@ public final class Pattern implements java.io.Serializable {
 						ConditionalGP cgp = new ConditionalGP();
 						int index = cursor - 1;
 						final String gn = groupName;
-						validityChecks.add(() -> {
+						validityChecks().add(() -> {
 							if (!isGroupDefined(gn))
 								throw error("Undeclared group " + gn + " in conditional expression!", index);
 							cgp.groupNumber = groupIndices.get(gn);
@@ -3654,11 +3645,11 @@ public final class Pattern implements java.io.Serializable {
 					if ((groupName = doesGroupNameFollowBefore('\'')) == null || peek() != ')')
 						throw error("Unknown recursion syntax");
 					if (isGroupDefined(groupName)) {
-						head = tail = new RecursiveGroupCall(groupIndices.get(groupName));
+						head = tail = new RecursiveGroupCall(groupIndices.get(groupName), true);
 					} else {
-						RecursiveGroupCall rcg = new RecursiveGroupCall();
+						RecursiveGroupCall rcg = new RecursiveGroupCall(true);
 						int index = cursor - 1;
-						validityChecks.add(0, () -> {
+						validityChecks().add(0, () -> {
 							if (!isGroupDefined(groupName))
 								throw error("Undeclared group " + groupName + " used in recursive expression!", index);
 							rcg.setGroupNumber(groupIndices.get(groupName));
@@ -3669,13 +3660,17 @@ public final class Pattern implements java.io.Serializable {
 
 				} else if ((groupNumber = doesGroupNumberFollowBefore(')')) != -1) {
 					unread();
-					head = tail = new RecursiveGroupCall(groupNumber);
-					if (!isGroupDefined(groupNumber)) {
+					if (isGroupDefined(groupNumber))
+						head = tail = new RecursiveGroupCall(groupNumber, true);
+					else {
+						final RecursiveGroupCall rgc = new RecursiveGroupCall(true);
+						head = tail = rgc;
 						int index = cursor - 1;
-						validityChecks.add(0, () -> {
+						validityChecks().add(0, () -> {
 							if (!isGroupDefined(groupNumber))
 								throw error("Undeclared group " + groupNumber + " used in recursive expression!",
 										index);
+							rgc.setGroupNumber(groupNumber);
 
 						});
 					}
@@ -3699,7 +3694,7 @@ public final class Pattern implements java.io.Serializable {
 			tail = root;
 			int groupNumber = capturingGroupCount - 1;
 			head.setNext(expr(tail));
-			head = tail = new RecursiveGroupCall(groupNumber);
+			head = tail = new RecursiveGroupCall(groupNumber, false);
 			tail.setNext(accept);
 		}
 
@@ -3904,7 +3899,7 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	private Node closure(Node beginNode, Node endNode) {
 		int ch = peek();
-		boolean deterministic = isDeterministic(beginNode);
+		boolean deterministic = false; // isDeterministic(beginNode);
 		switch (ch) {
 		case '?':
 			ch = next();
@@ -4262,7 +4257,7 @@ public final class Pattern implements java.io.Serializable {
 		 */
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			matcher.last = i;
-			matcher.setGroup0(seq, matcher.first, matcher.last);
+			// matcher.setGroup0(seq, matcher.first, matcher.last);
 			return true;
 		}
 
@@ -5408,7 +5403,8 @@ public final class Pattern implements java.io.Serializable {
 				return mr.match(matcher, i, seq);
 			} else { // type == POSSESSIVE
 				Repeater mr = new Repeater(accept, cmin, false);
-				Vector<Stack<Capture>> captures = matcher.cloneCaptures();
+				// Vector<Stack<Capture>> captures = matcher.cloneCaptures();
+				int save = matcher.groupTree.children.size();
 				if (!mr.match(matcher, i, seq))
 					return false;
 				i = matcher.last;
@@ -5420,7 +5416,9 @@ public final class Pattern implements java.io.Serializable {
 				}
 				if (getNext().match(matcher, i, seq))
 					return true;
-				matcher.captures = captures;
+				if (matcher.groupTree.children.size() > save) {
+					matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+				}
 				return false;
 			}
 
@@ -5523,14 +5521,15 @@ public final class Pattern implements java.io.Serializable {
 
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			Vector<Stack<Capture>> captures = matcher.cloneCaptures();
+			int save = matcher.groupTree.children.size();
 			if (atom.match(matcher, i, seq))
 				i = matcher.last;
 			else
 				return false;
 			boolean r = getNext().match(matcher, i, seq);
-			if (!r)
-				matcher.captures = captures;
+			if (!r && matcher.groupTree.children.size() > save) {
+				matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+			}
 			return r;
 		}
 
@@ -5553,16 +5552,26 @@ public final class Pattern implements java.io.Serializable {
 	static final class GroupHead extends Node {
 		int localIndex;
 		int groupIndex;
+		private boolean recursion = false;
 
 		GroupHead(int localCount, int groupCount) {
 			localIndex = localCount;
 			groupIndex = groupCount;
 		}
 
+		boolean match(Matcher matcher, int i, CharSequence seq, boolean recursion) {
+			boolean save = this.recursion;
+			this.recursion = recursion;
+			boolean r = match(matcher, i, seq);
+			this.recursion = save;
+			return r;
+		}
+
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			GroupTree t = null;
 			if (groupIndex > 0) {
 				t = new GroupTree();
+				t.recursion = recursion;
 				t.groupIndex = groupIndex;
 				t.parent = matcher.groupTree;
 				matcher.groupTree.children.add(t);
@@ -5601,16 +5610,11 @@ public final class Pattern implements java.io.Serializable {
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			int tmp = matcher.localVector.get(localIndex).pop();
-			// Save the group so we can unset it if it
-			// backs off of a match.
-			/*
-			 * int groupStart = matcher.groups[groupIndex]; int groupEnd =
-			 * matcher.groups[groupIndex + 1];
-			 */
+
 			GroupTree t = null;
 			if (groupIndex > 0) {
 				Capture c = new Capture(seq, tmp, i);
-				matcher.captures.get(groupIndex).push(c);
+				// matcher.captures.get(groupIndex).push(c);
 				matcher.groupTree.capture = c;
 				t = matcher.groupTree;
 				matcher.groupTree = t.parent;
@@ -5620,7 +5624,7 @@ public final class Pattern implements java.io.Serializable {
 			if (groupIndex > 0) {
 				matcher.groupTree = t;
 				if (!r) {
-					matcher.captures.get(groupIndex).pop();
+					// matcher.captures.get(groupIndex).pop();
 					t.capture = null;
 				}
 			}
@@ -5646,48 +5650,18 @@ public final class Pattern implements java.io.Serializable {
 		}
 	}
 
-	static final class PopCapture extends Node {
-		int groupIndex;
-
-		PopCapture(int groupIndex) {
-			this.groupIndex = groupIndex;
-		}
-
-		PopCapture() {
-
-		}
-
-		@Override
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			if (matcher.captures.get(groupIndex).isEmpty())
-				return false;
-			Capture capture = matcher.captures.get(groupIndex).pop();
-			boolean r = getNext().match(matcher, i, seq);
-			if (!r)
-				matcher.captures.get(groupIndex).push(capture);
-			return r;
-		}
-
-		@Override
-		boolean study(TreeInfo info) {
-			info.deterministic = false;
-			if (getNext() != null)
-				return getNext().study(info);
-			return false;
-		}
-
-	}
-
 	final class RecursiveGroupCall extends Node {
 		private GroupHead groupHead;
 		private GroupTail groupTail;
+		private boolean recursion;
 
-		RecursiveGroupCall(int groupNumber) {
+		RecursiveGroupCall(int groupNumber, boolean recursion) {
+			this(recursion);
 			setGroupNumber(groupNumber);
 		}
 
-		RecursiveGroupCall() {
-
+		RecursiveGroupCall(boolean recursion) {
+			this.recursion = recursion;
 		}
 
 		void setGroupNumber(int groupNumber) {
@@ -5706,7 +5680,7 @@ public final class Pattern implements java.io.Serializable {
 					first = false;
 					groupTailsNext = groupTail.getNext(matcher);
 					groupTail.setNext(matcher, this);
-					boolean r = groupHead.match(matcher, i, seq);
+					boolean r = groupHead.match(matcher, i, seq, recursion);
 					groupTail.setNext(matcher, groupTailsNext);
 					return r;
 				} else {
@@ -5832,23 +5806,38 @@ public final class Pattern implements java.io.Serializable {
 	 * = false; return false; } }
 	 */
 
+	static class BackRefBase extends Node {
+		int groupIndex;
+
+		BackRefBase(int groupCount) {
+			this.groupIndex = groupCount;
+		}
+
+		BackRefBase() {
+
+		}
+	}
+
 	/**
 	 * Refers to a group in the regular expression. Attempts to match whatever
 	 * the group referred to last matched.
 	 */
-	static class BackRef extends Node {
-		int groupIndex;
+	static class BackRef extends BackRefBase {
 
 		BackRef(int groupCount) {
-			super();
-			groupIndex = groupCount;
+			super(groupCount);
+		}
+
+		BackRef() {
+
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			// If the referenced group didn't match, neither can this
-			if (matcher.captures.get(groupIndex).isEmpty())
+			Capture last = matcher.groupTree.findGroup(groupIndex);
+			if (last == null)
 				return false;
-			Capture last = matcher.captures.get(groupIndex).peek();
+
 			int j = last.getStart();
 			int k = last.getEnd();
 
@@ -5874,21 +5863,24 @@ public final class Pattern implements java.io.Serializable {
 		}
 	}
 
-	static class CIBackRef extends Node {
-		int groupIndex;
+	static class CIBackRef extends BackRefBase {
 		boolean doUnicodeCase;
 
 		CIBackRef(int groupCount, boolean doUnicodeCase) {
-			super();
-			groupIndex = groupCount;
+			super(groupCount);
+			this.doUnicodeCase = doUnicodeCase;
+		}
+
+		CIBackRef(boolean doUnicodeCase) {
 			this.doUnicodeCase = doUnicodeCase;
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			// If the referenced group didn't match, neither can this
-			if (matcher.captures.get(groupIndex).isEmpty())
+			Capture last = matcher.groupTree.findGroup(groupIndex);
+			if (last == null)
 				return false;
-			Capture last = matcher.captures.get(groupIndex).peek();
+
 			int j = last.getStart();
 			int k = last.getEnd();
 
@@ -6019,7 +6011,9 @@ public final class Pattern implements java.io.Serializable {
 
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			if (matcher.captures.size() > groupNumber && !matcher.captures.get(groupNumber).isEmpty()) {
+			// if (matcher.captures.size() > groupNumber &&
+			// !matcher.captures.get(groupNumber).isEmpty()) {
+			if (matcher.groupTree.findGroup(groupNumber) != null) {
 				return yes.match(matcher, i, seq);
 			} else if (not != null) {
 				return not.match(matcher, i, seq);
@@ -6039,10 +6033,12 @@ public final class Pattern implements java.io.Serializable {
 
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			Vector<Stack<Capture>> captures = matcher.cloneCaptures();
+			int save = matcher.groupTree.children.size();
 			if (cond.match(matcher, i, seq)) {
 				if (!yes.match(matcher, i, seq)) {
-					matcher.captures = captures;
+					if (matcher.groupTree.children.size() > save) {
+						matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+					}
 					return false;
 				}
 				return true;
@@ -6069,7 +6065,7 @@ public final class Pattern implements java.io.Serializable {
 			int savedTo = matcher.to;
 			boolean conditionMatched = false;
 
-			Vector<Stack<Capture>> captures = matcher.cloneCaptures();
+			int save = matcher.groupTree.children.size();
 			// Relax transparent region boundaries for lookahead
 			if (matcher.transparentBounds)
 				matcher.to = matcher.getTextLength();
@@ -6081,8 +6077,9 @@ public final class Pattern implements java.io.Serializable {
 			}
 			if (conditionMatched) {
 				conditionMatched = conditionMatched & getNext().match(matcher, i, seq);
-				if (!conditionMatched)
-					matcher.captures = captures;
+				if (!conditionMatched && matcher.groupTree.children.size() > save) {
+					matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+				}
 			}
 			return conditionMatched;
 		}
@@ -6102,7 +6099,7 @@ public final class Pattern implements java.io.Serializable {
 			int savedTo = matcher.to;
 			boolean conditionMatched = false;
 
-			Vector<Stack<Capture>> captures = matcher.cloneCaptures();
+			int save = matcher.groupTree.children.size();
 			// Relax transparent region boundaries for lookahead
 			if (matcher.transparentBounds)
 				matcher.to = matcher.getTextLength();
@@ -6119,8 +6116,8 @@ public final class Pattern implements java.io.Serializable {
 				// Reinstate region boundaries
 				matcher.to = savedTo;
 			}
-			if (!conditionMatched) {
-				matcher.captures = captures;
+			if (!conditionMatched && matcher.groupTree.children.size() > save) {
+				matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
 			}
 			return conditionMatched && getNext().match(matcher, i, seq);
 		}
@@ -6170,7 +6167,7 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
-			Vector<Stack<Capture>> savedCaptures = matcher.cloneCaptures();
+			int save = matcher.groupTree.children.size();
 			for (int j = i - rmin; !conditionMatched && j >= from; j--) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
@@ -6178,8 +6175,8 @@ public final class Pattern implements java.io.Serializable {
 			matcher.lookbehindTo = savedLBT;
 			if (conditionMatched) {
 				conditionMatched = getNext().match(matcher, i, seq);
-				if (!conditionMatched) {
-					matcher.captures = savedCaptures;
+				if (!conditionMatched && matcher.groupTree.children.size() > save) {
+					matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
 				}
 			}
 			return conditionMatched;
@@ -6208,7 +6205,7 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
-			Vector<Stack<Capture>> savedCaptures = matcher.cloneCaptures();
+			int save = matcher.groupTree.children.size();
 			for (int j = i - rminChars; !conditionMatched && j >= from; j -= j > from ? countChars(seq, j, -1) : 1) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
@@ -6216,8 +6213,8 @@ public final class Pattern implements java.io.Serializable {
 			matcher.lookbehindTo = savedLBT;
 			if (conditionMatched) {
 				conditionMatched = getNext().match(matcher, i, seq);
-				if (!conditionMatched) {
-					matcher.captures = savedCaptures;
+				if (!conditionMatched && matcher.groupTree.children.size() > save) {
+					matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
 				}
 			}
 			return conditionMatched;
@@ -6243,15 +6240,15 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
-			Vector<Stack<Capture>> savedCaptures = matcher.cloneCaptures();
+			int save = matcher.groupTree.children.size();
 			for (int j = i - rmin; !conditionMatched && j >= from; j--) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
 			// Reinstate region boundaries
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
-			if (conditionMatched) {
-				matcher.captures = savedCaptures;
+			if (conditionMatched && matcher.groupTree.children.size() > save) {
+				matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
 			}
 			return !conditionMatched && getNext().match(matcher, i, seq);
 		}
@@ -6278,15 +6275,15 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
-			Vector<Stack<Capture>> savedCaptures = matcher.cloneCaptures();
+			int save = matcher.groupTree.children.size();
 			for (int j = i - rminChars; !conditionMatched && j >= from; j -= j > from ? countChars(seq, j, -1) : 1) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
 			// Reinstate region boundaries
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
-			if (conditionMatched) {
-				matcher.captures = savedCaptures;
+			if (conditionMatched && matcher.groupTree.children.size() > save) {
+				matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
 			}
 			return !conditionMatched && getNext().match(matcher, i, seq);
 		}

@@ -2,6 +2,12 @@ package com.florianingerl.util.regex.tests;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Scanner;
+
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
 import com.florianingerl.util.regex.GroupTree;
@@ -17,14 +23,14 @@ public class GroupTreeTest {
 		assertTrue(s.matches());
 
 		GroupTree gt = s.groupTree();
-		assertEquals("0\n\tsum\n\t\tnumber\n\t\tnumber\n", gt.print());
+		assertEquals("0\n\tsum\n\t\tnumber\n\t\tnumber\n", gt.toString());
 
 		s = p.matcher("5+6+7");
 		assertTrue(s.matches());
 
 		gt = s.groupTree();
-		System.out.println(gt.print());
-		assertEquals("0\n\tsum\n\t\tnumber\n\t\tsum\n\t\t\tnumber\n\t\t\tnumber\n", gt.print());
+		System.out.println(gt);
+		assertEquals("0\n\tsum\n\t\tnumber\n\t\tsum\n\t\t\tnumber\n\t\t\tnumber\n", gt.toString());
 	}
 
 	@Test
@@ -35,7 +41,30 @@ public class GroupTreeTest {
 		assertTrue(m.matches());
 
 		GroupTree gt = m.groupTree();
-		System.out.println(gt.print());
+		System.out.println(gt);
+
+	}
+
+	@Test
+	public void test3() throws IOException {
+		String regex = IOUtils.toString(
+				new FileInputStream(getClass().getClassLoader().getResource("term.regex").getFile()), "UTF-8");
+		Pattern p = Pattern.compile(regex);
+
+		String term = "(6*[6+7+8]+9)*78*[4*(6+5)+4]";
+
+		System.out.println("You see the term tree for: " + term);
+		Matcher m = p.matcher(term);
+		assertTrue(m.matches());
+		System.out.println(m.groupTree());
+
+		assertTrue(p.matcher("5").matches());
+		assertTrue(p.matcher("4+55").matches());
+		assertTrue(p.matcher("55+67+888").matches());
+		assertTrue(p.matcher("6+99*2").matches());
+		assertTrue(p.matcher("99*2+7").matches());
+		assertTrue(p.matcher("(4+6*7)*(4+6)").matches());
+		assertTrue(p.matcher("(6*[6+7+8]+9)*78*[4*(6+5)+4]").matches());
 
 	}
 

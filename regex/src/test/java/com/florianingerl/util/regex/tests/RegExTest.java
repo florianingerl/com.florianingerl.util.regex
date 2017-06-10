@@ -644,6 +644,7 @@ public class RegExTest {
 	}
 
 	private static void recursiveGroupTest() throws Exception {
+		// Matching Java types
 		String pattern = "^(?<javaType>[a-zA-Z]\\w*(\\s*\\<(?<rep>\\s*(?'javaType')\\s*)(,(?'rep'))*\\>)?)$";
 		check(pattern, "List<Integer>", true);
 		check(pattern, "HashMap<Integer,String>", true);
@@ -696,8 +697,8 @@ public class RegExTest {
 		check(pattern, "1jT<jT>2", true);
 
 		pattern = "\\b(([a-zA-Z])(?1)?\\2|[a-zA-Z])\\b";
-		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
-				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
+		check(pattern, "anna is an anagram, so is lagerregal and otto and radar and every single letter like z",
+				new String[] { "anna", "lagerregal", "otto", "radar", "z" });
 		pattern = "\\b(([a-zA-Z])(?1)?\\2|[a-zA-Z])\\b";
 		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
 				new String[] { "anna", "lagerregal", "otto", "otito", "z" });

@@ -1,0 +1,15 @@
+(?x)
+(?(DEFINE)
+(?<term>(?'number')|(?'sum')|(?'product'))
+(?<sum> (?= (?: [^()+]+ | (?<brace> \( (?: [^()]+| (?'brace') )+ \) ) )+ \+ )#lookahead, that detects the start of a sum 
+(?'summand')(?:\+(?'summand'))+
+) # end of sum
+(?<summand> (?'number') | (?'product') | (?: (?'round') | \[ )(?: (?'sum') | (?'product') ) (?(round)\)|\]) ) # end of summand
+(?<product> (?= (?: [^()*+]+ | (?'brace') )+ \* ) # lookahead, that detects the start of a product
+(?'factor')(?:\*(?'factor'))+
+) # end of product
+(?<factor>(?'number')| (?: (?'round') | \[ )(?: (?'sum') | (?'product') ) (?(round)\)|\]) ) # end of factor
+(?<number>\d+)
+(?<round>\()
+)# end of DEFINE
+(?'term')

@@ -19,13 +19,14 @@ public class GroupTree {
 			gt.setGroupName(groupNames);
 	}
 
-	public String print() {
+	@Override
+	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		print(sb, 0);
+		toString(sb, 0);
 		return sb.toString();
 	}
 
-	private void print(StringBuilder sb, int numTabs) {
+	private void toString(StringBuilder sb, int numTabs) {
 
 		for (int i = 0; i < numTabs; ++i) {
 			sb.append("\t");
@@ -34,7 +35,7 @@ public class GroupTree {
 		sb.append("\n");
 
 		for (GroupTree gt : children) {
-			gt.print(sb, numTabs + 1);
+			gt.toString(sb, numTabs + 1);
 		}
 
 	}

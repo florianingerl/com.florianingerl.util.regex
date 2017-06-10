@@ -271,11 +271,12 @@ public final class Matcher implements MatchResult {
 	 * @since 1.5
 	 */
 	public MatchResult toMatchResult() {
-		return this;
-		/*
-		 * Matcher result = new Matcher(this.parentPattern, text.toString());
-		 * result.first = this.first; result.last = this.last; return result;
-		 */
+		Matcher result = new Matcher(this.parentPattern, text.toString());
+		result.first = this.first;
+		result.last = this.last;
+		result.groupTree = this.groupTree;
+		return result;
+
 	}
 
 	/**

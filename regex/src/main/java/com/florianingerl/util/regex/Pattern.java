@@ -648,7 +648,7 @@ import java.util.stream.StreamSupport;
  * </tr>
  * <tr>
  * <td valign="top" headers="construct recursive">
- * <tt>(?<a href="#groupname">name</a>)</tt></td>
+ * <tt>(?'<a href="#groupname">name</a>')</tt></td>
  * <td headers="matches">Matches the pattern of the
  * <a href="#groupname">named-capturing group</a> "name" again.</td>
  * </tr>
@@ -695,20 +695,6 @@ import java.util.stream.StreamSupport;
  * <td valign="top" headers="construct special">
  * <tt>(?&lt;<a href="#groupname">name</a>&gt;</tt><i>X</i><tt>)</tt></td>
  * <td headers="matches"><i>X</i>, as a named-capturing group</td>
- * </tr>
- * <tr>
- * <td valign="top" headers="construct special">
- * <tt>(?&lt;-<a href="#groupname">name</a>&gt;</tt><i>X</i><tt>)</tt></td>
- * <td headers="matches">After a successfull match of <i>X</i>, one capture is
- * popped from the capture stack of the <a href="#groupname">named-capturing
- * group</a> "name". If the capture stack is empty, the search backtracks.</td>
- * </tr>
- * <tr>
- * <td valign="top" headers="construct special"><tt>(?&lt;-</tt><i>n</i>
- * <tt>&gt;</tt><i>X</i><tt>)</tt></td>
- * <td headers="matches">After a successfull match of <i>X</i>, one capture is
- * popped from the capture stack of the <i>n</i><sup>th</sup> group. If the
- * capture stack is empty, the search backtracks.</td>
  * </tr>
  * <tr>
  * <td valign="top" headers="construct
@@ -1521,7 +1507,9 @@ public final class Pattern implements java.io.Serializable {
 	transient volatile Map<Integer, String> groupNames;
 
 	private transient ArrayList<GroupHeadAndTail> groupHeadAndTailNodes;
-	private transient List<Runnable> validityChecks;
+	private transient List<Runnable> groupExistsChecks;
+	private transient List<Runnable> lookbehindHasMaxChecks;
+	private transient List<Runnable> curlyDeterministicChecks;
 
 	/**
 	 * Temporary null terminated code point array used by pattern compiling.
@@ -2307,9 +2295,6 @@ public final class Pattern implements java.io.Serializable {
 		} else {
 			// Start recursive descent parsing
 			matchRoot = expr(lastAccept);
-			for (Runnable r : validityChecks()) {
-				r.run();
-			}
 			// Check extra pattern characters
 			if (patternLength != cursor) {
 				if (peek() == ')') {
@@ -2318,6 +2303,17 @@ public final class Pattern implements java.io.Serializable {
 					throw error("Unexpected internal error");
 				}
 			}
+		}
+
+		for (Runnable r : groupExistsChecks()) {
+			r.run();
+		}
+		for (Runnable r : lookbehindHasMaxChecks()) {
+			r.run();
+		}
+
+		for (Runnable r : curlyDeterministicChecks()) {
+			r.run();
 		}
 
 		// Peephole optimization
@@ -2351,10 +2347,22 @@ public final class Pattern implements java.io.Serializable {
 		return groupNames;
 	}
 
-	List<Runnable> validityChecks() {
-		if (validityChecks == null)
-			validityChecks = new LinkedList<Runnable>();
-		return validityChecks;
+	List<Runnable> groupExistsChecks() {
+		if (groupExistsChecks == null)
+			groupExistsChecks = new LinkedList<Runnable>();
+		return groupExistsChecks;
+	}
+
+	List<Runnable> lookbehindHasMaxChecks() {
+		if (lookbehindHasMaxChecks == null)
+			lookbehindHasMaxChecks = new LinkedList<Runnable>();
+		return lookbehindHasMaxChecks;
+	}
+
+	List<Runnable> curlyDeterministicChecks() {
+		if (curlyDeterministicChecks == null)
+			curlyDeterministicChecks = new LinkedList<Runnable>();
+		return curlyDeterministicChecks;
 	}
 
 	/**
@@ -2927,7 +2935,7 @@ public final class Pattern implements java.io.Serializable {
 		if (!isGroupDefined(refNum)) {
 			int index = cursor - 1;
 			int groupNumber = refNum;
-			validityChecks().add(() -> {
+			groupExistsChecks().add(() -> {
 				if (!isGroupDefined(groupNumber))
 					throw error("capturing group < " + groupNumber + " > does not exist", index);
 			});
@@ -3090,7 +3098,7 @@ public final class Pattern implements java.io.Serializable {
 						root = brb = new BackRef();
 
 					int index = cursor - 1;
-					validityChecks().add(() -> {
+					groupExistsChecks().add(() -> {
 						if (!isGroupDefined(name))
 							throw error("named capturing group <" + name + "> does not exist", index);
 						brb.groupIndex = groupIndices().get(name);
@@ -3566,7 +3574,7 @@ public final class Pattern implements java.io.Serializable {
 				} else {
 					throw error("Unknown look-behind group");
 				}
-				validityChecks().add(() -> {
+				lookbehindHasMaxChecks().add(() -> {
 					TreeInfo info = new TreeInfo();
 					cond.study(info);
 					if (info.maxValid == false) {
@@ -3594,10 +3602,9 @@ public final class Pattern implements java.io.Serializable {
 					conditional = new ConditionalGP(groupNumber);
 					if (!isGroupDefined(groupNumber)) {
 						int index = cursor - 1;
-						validityChecks().add(() -> {
+						groupExistsChecks().add(() -> {
 							if (!isGroupDefined(groupNumber))
-								throw error("Undeclared group " + groupNumber + " used in conditional expression!",
-										index);
+								throw error("capturing group < " + groupNumber + " > does not exist", index);
 
 						});
 					}
@@ -3608,9 +3615,9 @@ public final class Pattern implements java.io.Serializable {
 						ConditionalGP cgp = new ConditionalGP();
 						int index = cursor - 1;
 						final String gn = groupName;
-						validityChecks().add(() -> {
+						groupExistsChecks().add(() -> {
 							if (!isGroupDefined(gn))
-								throw error("Undeclared group " + gn + " in conditional expression!", index);
+								throw error("named capturing group < " + gn + " > does not exist", index);
 							cgp.groupNumber = groupIndices.get(gn);
 						});
 						conditional = cgp;
@@ -3629,8 +3636,8 @@ public final class Pattern implements java.io.Serializable {
 				tail = root;
 				conditional.yes = expr2(tail);
 				conditional.not = root;
-				head.next = conditional;
-				head.next.next = tail;
+				head.setNext(conditional);
+				head.getNext().setNext(tail);
 				break;
 			case '$':
 			case '@':
@@ -3649,9 +3656,9 @@ public final class Pattern implements java.io.Serializable {
 					} else {
 						RecursiveGroupCall rcg = new RecursiveGroupCall(true);
 						int index = cursor - 1;
-						validityChecks().add(0, () -> {
+						groupExistsChecks().add(0, () -> {
 							if (!isGroupDefined(groupName))
-								throw error("Undeclared group " + groupName + " used in recursive expression!", index);
+								throw error("Named capturing group < " + groupName + " > does not exist", index);
 							rcg.setGroupNumber(groupIndices.get(groupName));
 						});
 						head = tail = rcg;
@@ -3666,10 +3673,9 @@ public final class Pattern implements java.io.Serializable {
 						final RecursiveGroupCall rgc = new RecursiveGroupCall(true);
 						head = tail = rgc;
 						int index = cursor - 1;
-						validityChecks().add(0, () -> {
+						groupExistsChecks().add(0, () -> {
 							if (!isGroupDefined(groupNumber))
-								throw error("Undeclared group " + groupNumber + " used in recursive expression!",
-										index);
+								throw error("capturing group < " + groupNumber + " > does not exist", index);
 							rgc.setGroupNumber(groupNumber);
 
 						});
@@ -3892,6 +3898,17 @@ public final class Pattern implements java.io.Serializable {
 		return info.deterministic;
 	}
 
+	private int getType(int modifier) {
+		if (modifier == '?') {
+			next();
+			return LAZY;
+		} else if (modifier == '+') {
+			next();
+			return POSSESSIVE;
+		}
+		return GREEDY;
+	}
+
 	/**
 	 * Processes repetition. If the next character peeked is a quantifier then
 	 * new nodes must be appended to handle the repetition. Prev could be a
@@ -3899,65 +3916,36 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	private Node closure(Node beginNode, Node endNode) {
 		int ch = peek();
-		boolean deterministic = false; // isDeterministic(beginNode);
+		int cmin, cmax, type;
+
 		switch (ch) {
 		case '?':
+			cmin = 0;
+			cmax = 1;
 			ch = next();
-			if (ch == '?') {
-				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 0, 1, LAZY);
-				return new Curly(beginNode, createNavigator(endNode), 0, 1, LAZY);
-			} else if (ch == '+') {
-				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 0, 1, POSSESSIVE);
-				return new Curly(beginNode, createNavigator(endNode), 0, 1, POSSESSIVE);
-			}
-			if (deterministic)
-				return new DeterministicCurly(beginNode, 0, 1, GREEDY);
-			return new Curly(beginNode, createNavigator(endNode), 0, 1, GREEDY);
+			type = getType(ch);
+			break;
 		case '*':
+			cmin = 0;
+			cmax = MAX_REPS;
 			ch = next();
-			if (ch == '?') {
-				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 0, MAX_REPS, LAZY);
-				return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, LAZY);
-			} else if (ch == '+') {
-				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 0, MAX_REPS, POSSESSIVE);
-				return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, POSSESSIVE);
-			}
-			if (deterministic)
-				return new DeterministicCurly(beginNode, 0, MAX_REPS, GREEDY);
-			return new Curly(beginNode, createNavigator(endNode), 0, MAX_REPS, GREEDY);
+			type = getType(ch);
+			break;
 		case '+':
 			ch = next();
-			if (ch == '?') {
-				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 1, MAX_REPS, LAZY);
-				return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, LAZY);
-			} else if (ch == '+') {
-				next();
-				if (deterministic)
-					return new DeterministicCurly(beginNode, 1, MAX_REPS, POSSESSIVE);
-				return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, POSSESSIVE);
-			}
-			if (deterministic)
-				return new DeterministicCurly(beginNode, 1, MAX_REPS, GREEDY);
-			return new Curly(beginNode, createNavigator(endNode), 1, MAX_REPS, GREEDY);
+			cmin = 1;
+			cmax = MAX_REPS;
+			type = getType(ch);
+			break;
 		case '{':
 			ch = temp[cursor + 1];
 			if (ASCII.isDigit(ch)) {
 				skip();
-				int cmin = 0;
+				cmin = 0;
 				do {
 					cmin = cmin * 10 + (ch - '0');
 				} while (ASCII.isDigit(ch = read()));
-				int cmax = cmin;
+				cmax = cmin;
 				if (ch == ',') {
 					ch = read();
 					cmax = MAX_REPS;
@@ -3974,27 +3962,25 @@ public final class Pattern implements java.io.Serializable {
 				if (((cmin) | (cmax) | (cmax - cmin)) < 0)
 					throw error("Illegal repetition range");
 				ch = peek();
-				if (ch == '?') {
-					next();
-					if (deterministic)
-						return new DeterministicCurly(beginNode, cmin, cmax, LAZY);
-					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, LAZY);
-				} else if (ch == '+') {
-					next();
-					if (deterministic)
-						return new DeterministicCurly(beginNode, cmin, cmax, POSSESSIVE);
-					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, POSSESSIVE);
-				} else {
-					if (deterministic)
-						return new DeterministicCurly(beginNode, cmin, cmax, GREEDY);
-					return new Curly(beginNode, createNavigator(endNode), cmin, cmax, GREEDY);
-				}
+				type = getType(ch);
+				break;
 			} else {
 				throw error("Illegal repetition");
 			}
 		default:
 			return beginNode;
 		}
+
+		final Curly curly = new Curly(beginNode, cmin, cmax, type);
+
+		curlyDeterministicChecks().add(() -> {
+			if (!isDeterministic(beginNode)) {
+				curly.setEndNode(createNavigator(endNode));
+			}
+		});
+
+		return curly;
+
 	}
 
 	/**
@@ -4239,17 +4225,23 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	static class Node {
 		private Node next;
+		private Node previous;
 
 		Node getNext() {
 			return next;
 		}
 
+		Node getPrevious() {
+			return previous;
+		}
+
 		void setNext(Node next) {
 			this.next = next;
+			next.previous = this;
 		}
 
 		Node() {
-			this.setNext(Pattern.accept);
+			this.next = Pattern.accept;
 		}
 
 		/**
@@ -4365,12 +4357,15 @@ public final class Pattern implements java.io.Serializable {
 		 */
 		protected abstract boolean isMaxValid();
 
+		protected abstract boolean isDeterministic();
+
 		@Override
 		boolean study(TreeInfo info) {
 			info.minLength += minLength();
 			info.maxLength += maxLength();
 			if (!isMaxValid())
 				info.maxValid = false;
+			info.deterministic = info.deterministic & isDeterministic();
 			return getNext().study(info);
 		}
 
@@ -5172,40 +5167,26 @@ public final class Pattern implements java.io.Serializable {
 	}
 
 	/**
-	 * The 0 or 1 quantifier. This one class implements all three types.
+	 * Handles the curly-brace style repetition with a specified minimum and
+	 * maximum occurrences. The * quantifier is handled as a special case. This
+	 * class handles the three types.
 	 */
-	/*
-	 * static final class Ques extends Node { Node atom; int type;
-	 * 
-	 * Ques(Node node, int type) { this.atom = node; this.type = type; }
-	 * 
-	 * boolean match(Matcher matcher, int i, CharSequence seq) { switch (type) {
-	 * case GREEDY: return (atom.match(matcher, i, seq) &&
-	 * getNext().match(matcher, matcher.last, seq)) || getNext().match(matcher,
-	 * i, seq); case LAZY: return getNext().match(matcher, i, seq) ||
-	 * (atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last,
-	 * seq)); case POSSESSIVE: if (atom.match(matcher, i, seq)) i =
-	 * matcher.last; return getNext().match(matcher, i, seq); default: return
-	 * atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last,
-	 * seq); } }
-	 * 
-	 * boolean study(TreeInfo info) { if (type != INDEPENDENT) { int minL =
-	 * info.minLength; atom.study(info); info.minLength = minL;
-	 * info.deterministic = false; return getNext().study(info); } else {
-	 * atom.study(info); return getNext().study(info); } } }
-	 */
-
-	static abstract class CurlyBase extends Node {
+	static class Curly extends Node {
 		Node beginNode;
+		Navigator endNode;
 		int type;
 		int cmin;
 		int cmax;
 
-		CurlyBase(Node beginNode, int cmin, int cmax, int type) {
+		Curly(Node beginNode, int cmin, int cmax, int type) {
 			this.beginNode = beginNode;
 			this.cmin = cmin;
 			this.cmax = cmax;
 			this.type = type;
+		}
+
+		void setEndNode(Navigator endNode) {
+			this.endNode = endNode;
 		}
 
 		boolean study(TreeInfo info) {
@@ -5240,16 +5221,17 @@ public final class Pattern implements java.io.Serializable {
 				info.deterministic = false;
 			return getNext().study(info);
 		}
-	}
-
-	static final class DeterministicCurly extends CurlyBase {
-
-		DeterministicCurly(Node beginNode, int cmin, int cmax, int type) {
-			super(beginNode, cmin, cmax, type);
-		}
 
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
+			if (endNode == null) {
+				return matchDeterministic(matcher, i, seq);
+			} else {
+				return matchNonDeterministic(matcher, i, seq);
+			}
+		}
+
+		private boolean matchDeterministic(Matcher matcher, int i, CharSequence seq) {
 			int j = 0;
 			for (; j < cmin; ++j) {
 				if (!beginNode.match(matcher, i, seq))
@@ -5298,19 +5280,37 @@ public final class Pattern implements java.io.Serializable {
 			}
 		}
 
-	}
+		boolean matchNonDeterministic(Matcher matcher, int i, CharSequence seq) {
 
-	/**
-	 * Handles the curly-brace style repetition with a specified minimum and
-	 * maximum occurrences. The * quantifier is handled as a special case. This
-	 * class handles the three types.
-	 */
-	static final class Curly extends CurlyBase {
-		Navigator endNode;
+			if (type == GREEDY) {
+				Repeater mgr = new Repeater(this.getNext(), cmax - cmin, true);
+				Repeater mr = new Repeater(mgr, cmin, false);
+				return mr.match(matcher, i, seq);
+			} else if (type == LAZY) {
+				MaxLazyRepeater mlr = new MaxLazyRepeater(cmax - cmin);
+				Repeater mr = new Repeater(mlr, cmin, false);
+				return mr.match(matcher, i, seq);
+			} else { // type == POSSESSIVE
+				Repeater mr = new Repeater(accept, cmin, false);
+				// Vector<Stack<Capture>> captures = matcher.cloneCaptures();
+				int save = matcher.groupTree.children.size();
+				if (!mr.match(matcher, i, seq))
+					return false;
+				i = matcher.last;
+				int j = cmin;
+				for (; j < cmax; ++j) {
+					if (!beginNode.match(matcher, i, seq))
+						break;
+					i = matcher.last;
+				}
+				if (getNext().match(matcher, i, seq))
+					return true;
+				if (matcher.groupTree.children.size() > save) {
+					matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+				}
+				return false;
+			}
 
-		Curly(Node beginNode, Navigator endNode, int cmin, int cmax, int type) {
-			super(beginNode, cmin, cmax, type);
-			this.endNode = endNode;
 		}
 
 		private class MaxLazyRepeater extends Node {
@@ -5388,40 +5388,6 @@ public final class Pattern implements java.io.Serializable {
 					r = r || getNext().match(matcher, i, seq);
 				return r;
 			}
-		}
-
-		@Override
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-
-			if (type == GREEDY) {
-				Repeater mgr = new Repeater(this.getNext(), cmax - cmin, true);
-				Repeater mr = new Repeater(mgr, cmin, false);
-				return mr.match(matcher, i, seq);
-			} else if (type == LAZY) {
-				MaxLazyRepeater mlr = new MaxLazyRepeater(cmax - cmin);
-				Repeater mr = new Repeater(mlr, cmin, false);
-				return mr.match(matcher, i, seq);
-			} else { // type == POSSESSIVE
-				Repeater mr = new Repeater(accept, cmin, false);
-				// Vector<Stack<Capture>> captures = matcher.cloneCaptures();
-				int save = matcher.groupTree.children.size();
-				if (!mr.match(matcher, i, seq))
-					return false;
-				i = matcher.last;
-				int j = cmin;
-				for (; j < cmax; ++j) {
-					if (!beginNode.match(matcher, i, seq))
-						break;
-					i = matcher.last;
-				}
-				if (getNext().match(matcher, i, seq))
-					return true;
-				if (matcher.groupTree.children.size() > save) {
-					matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
-				}
-				return false;
-			}
-
 		}
 
 	}

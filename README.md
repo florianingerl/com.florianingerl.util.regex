@@ -9,6 +9,8 @@ In the following screenshot, all the new features are summarized.
 
 ### What's new :star:
 
+### Version 1.1.1
+
 ### Version 1.0.3
 - (?(DEFINE)never-executed-pattern)
 - Plugins into the regex engine
@@ -43,7 +45,7 @@ static void check(String regex, String input, String[] expected)
 		failCount++;
 }
 ```
-The following tests illustrate what you can do with Recursive Regular Expressions. Be aware that the syntax (?R) or (?0) as in Perl is not supported, only (?n) where n is greater than 0 or (?groupName) is supported.
+The following tests illustrate what you can do with Recursive Regular Expressions. Be aware that the syntax (?R) or (?0) as in Perl is not supported, only (?n) where n is greater than 0 or (?'groupName') is supported.
 ```
 String pattern = "1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2";
 check(pattern, "1jT2", true);
@@ -55,24 +57,6 @@ check(pattern, "1jT<jT<jT>,jT<jT,jT>>2", true);
 check("(\\(([^()]+|(?1))*+\\))", "(go away (here (everything) is fine) afterwards",
 				new String[] { "(here (everything) is fine)" });
 ```
-The following tests illustrate the concept of Captures. The basic idea is that for every group, a stack of captures is maintained. With \n where n is a valid group number or \k\<groupName\>, you always match the last capture of the respective group. With the syntax (?<-n>X) or (?<-groupName>X) you pop one capture from the capture stack of the respective group if X is matched. 
-
-```
-String pattern = "\\b(?<anagram>(?<letter>[a-zA-Z])(?anagram)?(?<-letter>\\k<letter>)|[a-zA-Z])\\b";
-check(pattern, "anna is an anagram, so is lagerregal and otto and otito and every single letter like z",
-			new String[] { "anna", "lagerregal", "otto", "otito", "z" });
-```
-The MatchResult interface also adds two methods providing access to the stack of captures for a group.
-![com.florianingerl.util.regex.captures](media/captures.png)
-
-
-Now, an example for the usage of Conditional Regular Expressions is given. The following code snippet matches anagrams. Note that the construct (?(1)(?!)) consisting of a condition and a negative look-ahead fails if and only if the capture stack of group 1 isn't empty!
-```
-String anagram = "\\b([a-zA-Z])*(?(1)[a-zA-Z]?|[a-zA-Z])(?<-1>\\1)*(?(1)(?!))\\b";
-check(anagram, "anna is an anagram, so is lagerregal and otto and otito and every single letter like z",
-		new String[] { "anna", "lagerregal", "otto", "otito", "z" });
-```
-
 
 Since version 1.0.3, you can install plugins into the regex engine. The method of the Pattern class seen in the screenshot below is used for that purpose.
 ![com.florianingerl.util.regex.plugins](media/plugins.png)
@@ -86,7 +70,7 @@ In order to use this library, add the following dependency to your pom.xml.
 <dependency>
 	<groupId>com.github.florianingerl.util</groupId>
 	<artifactId>regex</artifactId>
-	<version>1.0.3</version>
+	<version>1.1.1</version>
 </dependency>
 ```
 

@@ -22,7 +22,7 @@ public class BackReferenceTest {
 
 	@Test
 	public void test3() {
-		Pattern p = Pattern.compile("(?letter)\\k<letter>(?(DEFINE)(?<letter>[a-z]))");
+		Pattern p = Pattern.compile("(?'letter')\\k<letter>(?(DEFINE)(?<letter>[a-z]))");
 		Matcher m = p.matcher("bb");
 		assertTrue(m.matches());
 

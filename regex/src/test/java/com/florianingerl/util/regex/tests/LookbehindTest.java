@@ -11,12 +11,12 @@ public class LookbehindTest {
 
 	@Test
 	public void test() {
-		Pattern.compile("(?<=(?digits))(?(DEFINE)(?<digits>\\d))");
+		Pattern.compile("(?<=(?'digits'))(?(DEFINE)(?<digits>\\d))");
 	}
 
 	@Test(expected = PatternSyntaxException.class)
 	public void test3() {
-		Pattern.compile("(?<=(?digits))(?(DEFINE)(?<digits>a\\d+))");
+		Pattern.compile("(?<=(?'digits'))(?(DEFINE)(?<digits>a\\d+))");
 	}
 
 }

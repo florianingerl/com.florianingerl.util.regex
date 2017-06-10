@@ -24,8 +24,6 @@
 
 package com.florianingerl.util.regex.tests;
 
-
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -59,7 +57,7 @@ public class RegExTest {
 	private static boolean failure = false;
 	private static int failCount = 0;
 	private static String firstFailure = null;
-	
+
 	@Test
 	public void callMain() {
 		try {
@@ -68,14 +66,14 @@ public class RegExTest {
 			assertTrue(e.getMessage(), false);
 		}
 	}
-	
+
 	/**
 	 * Main to interpret arguments and run several tests.
 	 *
 	 */
 	public static void main(String[] args) throws Exception {
 		// Most of the tests are in a file
-		
+
 		processFile("TestCases.txt");
 		// processFile("PerlCases.txt");
 		processFile("BMPTestCases.txt");
@@ -110,7 +108,7 @@ public class RegExTest {
 		// Misc
 		recursiveGroupTest();
 		defineTest();
-		
+
 		patternStatelessTest();
 		capturesTest();
 		conditionalBasedOnValidGroupCaptureTest();
@@ -203,49 +201,48 @@ public class RegExTest {
 		if (m.group().equals(result) != expected)
 			failCount++;
 	}
-	
-	private static void check(String p, String s, String[][] expected ){
+
+	private static void check(String p, String s, String[][] expected) {
 		check(Pattern.compile(p), s, expected);
 	}
-	
-	private static void check(Pattern p, String s, String[][] expected )
-	{
+
+	private static void check(Pattern p, String s, String[][] expected) {
 		Matcher matcher = p.matcher(s);
-		if(!matcher.find() ){
+		if (!matcher.find()) {
 			++failCount;
 			return;
 		}
-		if( expected.length != matcher.groupCount() + 1 ){
+		if (expected.length != matcher.groupCount() + 1) {
 			++failCount;
 			return;
 		}
-		
-		for(int i=0; i < expected.length; ++i){
-			if(expected[i].length != matcher.captures(i).size() ){
+
+		for (int i = 0; i < expected.length; ++i) {
+			if (expected[i].length != matcher.captures(i).size()) {
 				++failCount;
 				return;
 			}
-			for(int j=0; j < expected[i].length; ++j){
-				if(!expected[i][j].equals( matcher.captures(i).get(j).getValue() ) ){
+			for (int j = 0; j < expected[i].length; ++j) {
+				if (!expected[i][j].equals(matcher.captures(i).get(j).getValue())) {
 					++failCount;
 					return;
 				}
 			}
 		}
 	}
-	 
-	private static void check(String regex, int flags, String s, int [] data ){
-		Pattern p = Pattern.compile(regex, flags );
+
+	private static void check(String regex, int flags, String s, int[] data) {
+		Pattern p = Pattern.compile(regex, flags);
 		Matcher m = p.matcher(s);
 		int i = 0;
-		while(data[i] != -2 ){
-			if(!m.find() ){
+		while (data[i] != -2) {
+			if (!m.find()) {
 				++failCount;
 				return;
 			}
 			int j = 0;
-			while( data[i] != -2 ){
-				if(m.start(j) != data[i++] || m.end(j) != data[i++] ){
+			while (data[i] != -2) {
+				if (m.start(j) != data[i++] || m.end(j) != data[i++]) {
 					++failCount;
 					return;
 				}
@@ -253,17 +250,18 @@ public class RegExTest {
 			}
 			++i;
 		}
-		if( m.find() )++failCount;
-	}
-	
-	private static void check(String regex, String s, Function<Matcher, String> evaluator, String expected){
-		Pattern p = Pattern.compile(regex);
-		Matcher m = p.matcher(s);
-		
-		if(! m.replaceAll(evaluator).equals(expected) )
+		if (m.find())
 			++failCount;
 	}
-	
+
+	private static void check(String regex, String s, Function<Matcher, String> evaluator, String expected) {
+		Pattern p = Pattern.compile(regex);
+		Matcher m = p.matcher(s);
+
+		if (!m.replaceAll(evaluator).equals(expected))
+			++failCount;
+	}
+
 	private static void check(Pattern p, String s, boolean expected) {
 		if (p.matcher(s).find() != expected)
 			failCount++;
@@ -293,8 +291,6 @@ public class RegExTest {
 		if (!matcher.find())
 			failCount++;
 	}
-	
-	
 
 	private static void check(String p, int flag, String input, String s, boolean expected) {
 		Pattern pattern = Pattern.compile(p, flag);
@@ -411,17 +407,17 @@ public class RegExTest {
 		});
 		check(new Runnable() {
 			public void run() {
-				m.replaceAll((String)null);
+				m.replaceAll((String) null);
 			}
 		});
 		check(new Runnable() {
 			public void run() {
-				m.replaceAll((Function<Matcher,String>) null );
+				m.replaceAll((Function<Matcher, String>) null);
 			}
 		});
 		check(new Runnable() {
 			public void run() {
-				m.replaceFirst( (String)null);
+				m.replaceFirst((String) null);
 			}
 		});
 		check(new Runnable() {
@@ -645,50 +641,45 @@ public class RegExTest {
 		if (!Arrays.asList(expected).equals(result))
 			failCount++;
 	}
-	
+
 	private static void patternStatelessTest() throws Exception {
-		final Pattern pattern = Pattern.compile("1(?<first>a\\((?<second>(?first)|[a-zA-Z]),(?second)\\))2");
+		final Pattern pattern = Pattern.compile("1(?<first>a\\((?<second>(?'first')|[a-zA-Z]),(?'second')\\))2");
 		final String input = "1a(a(a(a(a(b,c),d),a(e,f)),g),h)2";
-		Thread [] threads = new Thread[20];
-		Runnable runnable = new Runnable(){
+		Thread[] threads = new Thread[20];
+		Runnable runnable = new Runnable() {
 			@Override
-			public void run()
-			{
+			public void run() {
 				check(pattern, input, true);
 			}
 		};
-		for(int i = 0; i < threads.length; ++i)
-		{
+		for (int i = 0; i < threads.length; ++i) {
 			threads[i] = new Thread(runnable);
 			threads[i].start();
 		}
-		for(int i = 0; i < threads.length; ++i)
-		{
+		for (int i = 0; i < threads.length; ++i) {
 			threads[i].join();
 		}
-		
-		report("Pattern stateless test");
-	
-	}
-	
-	
 
-	
+		report("Pattern stateless test");
+
+	}
+
 	private static void defineTest() throws Exception {
-	
-		check("^(?(DEFINE)(?<A>a)(?<B>b))(?A)(?B)$","ab",true);
-		check("(?x:( #comment\n? #comment \n ( #Hier is some comment\n DEFINE #Here is another comment\n )(?<A>a))  ( #comment\n ? #comment\n A #another comment\n ))", "a", true);
+
+		check("^(?(DEFINE)(?<A>a)(?<B>b))(?'A')(?'B')$", "ab", true);
+		check("(?x:( #comment\n? #comment \n ( #Hier is some comment\n DEFINE #Here is another comment\n )(?<A>a))  ( #comment\n ? #comment\n A #another comment\n ))",
+				"a", true);
 		report("Define test");
 	}
-	
+
 	private static void recursiveGroupTest() throws Exception {
-		String pattern = "^(?<javaType>[a-zA-Z]\\w*(\\s*\\<(?<rep>\\s*(?javaType)\\s*)(,(?rep))*\\>)?)$";
+		String pattern = "^(?<javaType>[a-zA-Z]\\w*(\\s*\\<(?<rep>\\s*(?'javaType')\\s*)(,(?'rep'))*\\>)?)$";
 		check(pattern, "List<Integer>", true);
 		check(pattern, "HashMap<Integer,String>", true);
 		check(pattern, "Map<Integer, List<String> >", true);
-	
-		check("^(a|b*)*$","abbb", true);
-	
+
+		check("^(a|b*)*$", "abbb", true);
+
 		check("(a(?1)?z)", "---az---aazz---aaazzz---aaaazzzz---aaaazzz",
 				new String[] { "az", "aazz", "aaazzz", "aaaazzzz", "aaazzz" });
 		check("(a(?1)??z)", "---az---aazz---aaazzz---aaaazzzz---aaaazzz",
@@ -708,10 +699,10 @@ public class RegExTest {
 				new String[] { "q", "aqqqz", "aaqqqzqqz", "aqaqqqzqz", "aqqaqqqzz" });
 		pattern = "(?x: 1 ( a ( ? 1 ) {3}z|q)2)";
 		check(pattern, "1aqqqz2", true);
-		
+
 		check("(?x:1(a ( #comment\n ? #comment\n 1 #comment\n ){3}z|q)2)", "1aqqqz2", true);
-		check("(?x:1(?<rep> a ( #comment\n ? #comment\n rep #comment\n ){3}z|q)2)", "1aqqqz2", true);
-		
+		check("(?x:1(?<rep> a ( #comment\n ? #comment\n 'rep' #comment\n ){3}z|q)2)", "1aqqqz2", true);
+
 		pattern = "1(jT(\\<((?1)(,|(?=\\>)))+\\>)?)2";
 		check(pattern, "1jT2", true);
 		check(pattern, "1jT<jT>2", true);
@@ -728,8 +719,8 @@ public class RegExTest {
 		check("1\\>2", "1>2", true);
 
 		// Recursion with group names
-		check("(?<mygroupname>a(?mygroupname)?z)", "aazz", true);
-		pattern = "1(?<indianagroup>jT(\\<((?indianagroup)(,|(?=\\>)))+\\>)?)2";
+		check("(?<mygroupname>a(?'mygroupname')?z)", "aazz", true);
+		pattern = "1(?<indianagroup>jT(\\<((?'indianagroup')(,|(?=\\>)))+\\>)?)2";
 		check(pattern, "1jT2", true);
 		check(pattern, "1jT<jT>2", true);
 
@@ -739,25 +730,19 @@ public class RegExTest {
 		pattern = "\\b(([a-zA-Z])(?1)?\\2(?<-2>)|[a-zA-Z])\\b";
 		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
 				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
-		pattern = "\\b(?<anagramm>(?<letter>[a-zA-Z])(?anagramm)?\\k<letter>(?<-letter>)|[a-zA-Z])\\b";
+		pattern = "\\b(?<anagramm>(?<letter>[a-zA-Z])(?'anagramm')?\\k<letter>(?<-letter>)|[a-zA-Z])\\b";
 		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
 				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
-		
-		check("(?x:\\b(([a-zA-Z])(?1)?( #comment\n ? #comment\n < #comment\n - #comment\n 2 #comment\n > #comment\n \\2  )|[a-zA-Z])\\b)", "lagerregal", true );
-		check("(?x:\\b(?<rep>(?<letter>[a-zA-Z])(?rep)?( #comment\n ? #comment\n < #comment\n - #comment\n letter #comment\n > #comment\n \\k<letter>  )|[a-zA-Z])\\b)", "lagerregal", true );
+
+		check("(?x:\\b(([a-zA-Z])(?1)?( #comment\n ? #comment\n < #comment\n - #comment\n 2 #comment\n > #comment\n \\2  )|[a-zA-Z])\\b)",
+				"lagerregal", true);
+		check("(?x:\\b(?<rep>(?<letter>[a-zA-Z])(?'rep')?( #comment\n ? #comment\n < #comment\n - #comment\n letter #comment\n > #comment\n \\k<letter>  )|[a-zA-Z])\\b)",
+				"lagerregal", true);
 		// recursive stuff in lookbehind and lookahead that has a maximum length
 		check("(h)(?<=(?1))ello", "hello", true);
 		check("(h|(b))(?<!(?2))ello", "hello", true);
-		
-		pattern = "1(?<first>a\\(((?first)|[a-zA-Z]),((?first)|[a-zA-Z])\\))2";
-		check(pattern, "1a(b,c)2", true);
-		check(pattern, "1a(a(b,c),d)2", true);
-		check(pattern, "1a(a(a(b,c),g),h)2", true);
-		check(pattern, "1a(a(a(b,a(e,f)),g),h)2", true);
-		check(pattern, "1a(a(a(a(b,c),a(e,f)),g),h)2", true);
-		check(pattern, "1a(a(a(a(a(b,c),d),a(e,f)),g),h)2", true);
-		
-		pattern = "1(?<first>a\\((?<second>(?first)|[a-zA-Z]),(?second)\\))2";
+
+		pattern = "1(?<first>a\\(((?'first')|[a-zA-Z]),((?'first')|[a-zA-Z])\\))2";
 		check(pattern, "1a(b,c)2", true);
 		check(pattern, "1a(a(b,c),d)2", true);
 		check(pattern, "1a(a(a(b,c),g),h)2", true);
@@ -765,36 +750,48 @@ public class RegExTest {
 		check(pattern, "1a(a(a(a(b,c),a(e,f)),g),h)2", true);
 		check(pattern, "1a(a(a(a(a(b,c),d),a(e,f)),g),h)2", true);
 
-		checkExpectedFail("1(a(?1)?z)(?<=(?1))2", "Look-behind group does not have an obvious maximum length" );
+		pattern = "1(?<first>a\\((?<second>(?'first')|[a-zA-Z]),(?'second')\\))2";
+		check(pattern, "1a(b,c)2", true);
+		check(pattern, "1a(a(b,c),d)2", true);
+		check(pattern, "1a(a(a(b,c),g),h)2", true);
+		check(pattern, "1a(a(a(b,a(e,f)),g),h)2", true);
+		check(pattern, "1a(a(a(a(b,c),a(e,f)),g),h)2", true);
+		check(pattern, "1a(a(a(a(a(b,c),d),a(e,f)),g),h)2", true);
+
+		checkExpectedFail("1(a(?1)?z)(?<=(?1))2", "Look-behind group does not have an obvious maximum length");
 
 		check("1(abcd|e)_e(?<=(?1))_abcd(?<=(?1))2", "1e_e_abcd2", true);
-		
-		check("a+", 0, "aaa", new int[]{0,3,-2,-2} );
-		check("(a)(b)(c)", 0, "abc", new int[]{0,3,0,1,1,2,2,3,-2,-2} );
-		check("(a)?bc", 0, "bc", new int[]{0,2,-1,-1,-2,-2} );
-		
-		check("(a(?1)b)",0|Pattern.DOTALL,"abc", new int[]{-2, -2});
-		check("(a(?1)+b)",0|Pattern.DOTALL,"abc", new int[]{-2, -2});
-		check("^([^()]|\\((?1)*\\))*$",0|Pattern.DOTALL,"abc", new int[]{0, 3, 2, 3, -2, -2});
-		check("^([^()]|\\((?1)*\\))*$",0|Pattern.DOTALL,"a(b)c", new int[]{0, 5, 4, 5, -2, -2});
-		check("^([^()]|\\((?1)*\\))*$",0|Pattern.DOTALL,"a(b(c))d", new int[]{0, 8, 7, 8, -2, -2});
-		check("^([^()]|\\((?1)*\\))*$",0|Pattern.DOTALL,"a(b(c)d", new int[]{-2, -2});
-		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.DOTALL,">abc>123<xyz<", new int[]{0, 13, 7, 8, -2, -2});
-		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.DOTALL,">abc>1(2)3<xyz<", new int[]{0, 15, 9, 10, -2, -2});
-		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$",0|Pattern.DOTALL,">abc>(1(2)3)<xyz<", new int[]{0, 17, 5, 12, -2, -2});
-		
+
+		check("a+", 0, "aaa", new int[] { 0, 3, -2, -2 });
+		check("(a)(b)(c)", 0, "abc", new int[] { 0, 3, 0, 1, 1, 2, 2, 3, -2, -2 });
+		check("(a)?bc", 0, "bc", new int[] { 0, 2, -1, -1, -2, -2 });
+
+		check("(a(?1)b)", 0 | Pattern.DOTALL, "abc", new int[] { -2, -2 });
+		check("(a(?1)+b)", 0 | Pattern.DOTALL, "abc", new int[] { -2, -2 });
+		check("^([^()]|\\((?1)*\\))*$", 0 | Pattern.DOTALL, "abc", new int[] { 0, 3, 2, 3, -2, -2 });
+		check("^([^()]|\\((?1)*\\))*$", 0 | Pattern.DOTALL, "a(b)c", new int[] { 0, 5, 4, 5, -2, -2 });
+		check("^([^()]|\\((?1)*\\))*$", 0 | Pattern.DOTALL, "a(b(c))d", new int[] { 0, 8, 7, 8, -2, -2 });
+		check("^([^()]|\\((?1)*\\))*$", 0 | Pattern.DOTALL, "a(b(c)d", new int[] { -2, -2 });
+		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$", 0 | Pattern.DOTALL, ">abc>123<xyz<",
+				new int[] { 0, 13, 7, 8, -2, -2 });
+		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$", 0 | Pattern.DOTALL, ">abc>1(2)3<xyz<",
+				new int[] { 0, 15, 9, 10, -2, -2 });
+		check("^\\>abc\\>([^()]|\\((?1)*\\))*\\<xyz\\<$", 0 | Pattern.DOTALL, ">abc>(1(2)3)<xyz<",
+				new int[] { 0, 17, 5, 12, -2, -2 });
+
 		report("Recursive group test");
 
 	}
 
 	private static void conditionalBasedOnValidGroupCaptureTest() throws Exception {
 		check("(a)?(?(1)|A)B", "aB", true);
-		check("(?x: (a)?( #comment\n ? #comment\n ( #comment\n 1 #comment\n ) | A ) B )", "aB", true );
-		check("(?x: (?<GROUPNAME>a)?( #comment\n ? #comment\n ( #comment\n GROUPNAME #comment\n ) | A ) B )", "aB", true);
+		check("(?x: (a)?( #comment\n ? #comment\n ( #comment\n 1 #comment\n ) | A ) B )", "aB", true);
+		check("(?x: (?<GROUPNAME>a)?( #comment\n ? #comment\n ( #comment\n GROUPNAME #comment\n ) | A ) B )", "aB",
+				true);
 		check("(a)?(?(1)|A)B", "AB", true);
 		check("(a)?(?(1)A|)B", "aAB", true);
 		check("(a)?(?(1)A|)B", "B", true);
-	
+
 		String pattern = "1(a)?bbb(?(1)yy|zz)st2";
 		check(pattern, "1abbbyyst2", true);
 		check(pattern, "1abbbzzst2", false);
@@ -834,7 +831,7 @@ public class RegExTest {
 		check(pattern, "1amen2", false);
 
 		// conditionals are uncaptured groups!!!
-		check("1(?(?=ab)abba|amen)2(?(1)(?!))","1abba2", true);
+		check("1(?(?=ab)abba|amen)2(?(1)(?!))", "1abba2", true);
 
 		// backtracking
 		pattern = "1(?(?=(?<mygroup>aber))aberr)?aber2(?(mygroup)(?!))";
@@ -866,53 +863,30 @@ public class RegExTest {
 
 		check(anagramm, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
 				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
-				
-		String[][] e1 = {
-      { "aBBcccDDDDDeeeeeeee" },
-      { "a", "BB", "ccc", "DDDDD", "eeeeeeee" },
-      { "a", "ccc", "eeeeeeee" },
-      { "BB", "DDDDD" }
-   };
-check("(([a-z]+)|([A-Z]+))+","aBBcccDDDDDeeeeeeee",e1);
-   String[][] e3 = {
-      { "abcbar" },
-      { "abc" },
-	  {}
-   };
-check("(.*)bar|(.*)bah","abcbar",e3);
-   String[][] e4 = {
-      { "abcbah" },
-      { },
-      { "abc" }
-   };
-check("(.*)bar|(.*)bah","abcbah",e4);
-   String[][] e5 = {
-      { "now is the time for all good men to come to the aid of the party" },
-      { "now", "is", "the", "time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the", "party" }
-   };
-check("^(?:(\\w+)|(?>\\W+))*$","now is the time for all good men to come to the aid of the party",e5);
-   String[][] e6 = {
-      { "now is the time for all good men to come to the aid of the party" },
-      { "now", "is", "the", "time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the", "party" }
-   };
-check("^(?>(\\w+)\\W*)*$","now is the time for all good men to come to the aid of the party",e6);
-   String[][] e7 = {
-      { "now is the time for all good men to come to the aid of the party" },
-      { "now" },
-      { "is", "the", "time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the" },
-      { "party" }
-   };
-check("^(\\w+)\\W+(?>(\\w+)\\W+)*(\\w+)$","now is the time for all good men to come to the aid of the party",e7);
-   String[][] e8 = {
-      { "now is the time for all good men to come to the aid of the party" } ,
-      { "now" },
-      { "is", "for", "men", "to", "of" },
-      { "the", "time", "all", "good", "to", "come", "the", "aid", "the" },
-      { "party" }
-   };
-check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$","now is the time for all good men to come to the aid of the party",e8);
 
-		
+		String[][] e1 = { { "aBBcccDDDDDeeeeeeee" }, { "a", "BB", "ccc", "DDDDD", "eeeeeeee" },
+				{ "a", "ccc", "eeeeeeee" }, { "BB", "DDDDD" } };
+		check("(([a-z]+)|([A-Z]+))+", "aBBcccDDDDDeeeeeeee", e1);
+		String[][] e3 = { { "abcbar" }, { "abc" }, {} };
+		check("(.*)bar|(.*)bah", "abcbar", e3);
+		String[][] e4 = { { "abcbah" }, {}, { "abc" } };
+		check("(.*)bar|(.*)bah", "abcbah", e4);
+		String[][] e5 = { { "now is the time for all good men to come to the aid of the party" }, { "now", "is", "the",
+				"time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the", "party" } };
+		check("^(?:(\\w+)|(?>\\W+))*$", "now is the time for all good men to come to the aid of the party", e5);
+		String[][] e6 = { { "now is the time for all good men to come to the aid of the party" }, { "now", "is", "the",
+				"time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the", "party" } };
+		check("^(?>(\\w+)\\W*)*$", "now is the time for all good men to come to the aid of the party", e6);
+		String[][] e7 = { { "now is the time for all good men to come to the aid of the party" }, { "now" },
+				{ "is", "the", "time", "for", "all", "good", "men", "to", "come", "to", "the", "aid", "of", "the" },
+				{ "party" } };
+		check("^(\\w+)\\W+(?>(\\w+)\\W+)*(\\w+)$", "now is the time for all good men to come to the aid of the party",
+				e7);
+		String[][] e8 = { { "now is the time for all good men to come to the aid of the party" }, { "now" },
+				{ "is", "for", "men", "to", "of" }, { "the", "time", "all", "good", "to", "come", "the", "aid", "the" },
+				{ "party" } };
+		check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$",
+				"now is the time for all good men to come to the aid of the party", e8);
 
 		report("Captures test");
 
@@ -1818,10 +1792,13 @@ check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$","now is the time fo
 		matcher = pattern.matcher(toSupplementaries("zzzaaaaaaaaaa"));
 		if (!matcher.replaceFirst(toSupplementaries("test")).equals(toSupplementaries("zzztest")))
 			failCount++;
-			
+
 		pattern = Pattern.compile("(?<!\\d)\\d+(?!\\d)");
 		matcher = pattern.matcher("Florian is 23 years old. His sister is 2 years older. She is 25 years old.");
-		if(!matcher.replaceFirst( (Matcher m) -> { int i = Integer.parseInt( m.group() ); return "" + (i+1); } ).equals("Florian is 24 years old. His sister is 2 years older. She is 25 years old.") )
+		if (!matcher.replaceFirst((Matcher m) -> {
+			int i = Integer.parseInt(m.group());
+			return "" + (i + 1);
+		}).equals("Florian is 24 years old. His sister is 2 years older. She is 25 years old."))
 			++failCount;
 
 		report("Replace First");
@@ -3826,12 +3803,13 @@ check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$","now is the time fo
 		}
 		failCount++;
 	}
-	
-	private static void checkExpectedFail(String p, String message){
+
+	private static void checkExpectedFail(String p, String message) {
 		try {
 			Pattern.compile(p);
-		} catch(PatternSyntaxException pse) {
-			if(!pse.getMessage().contains(message) ) ++failCount;
+		} catch (PatternSyntaxException pse) {
+			if (!pse.getMessage().contains(message))
+				++failCount;
 			return;
 		}
 		++failCount;
@@ -4358,13 +4336,14 @@ check("^(\\w+)\\W+(?>(\\w+)\\W+(?:(\\w+)\\W+){0,2})*(\\w+)$","now is the time fo
 		}
 		report("Pattern.asPredicate");
 	}
-	
+
 	private static void replaceAllWithMatchEvaluators() throws Exception {
-		check("(?<!\\d)\\d{2,}(?!\\d)", 
-			  "Florian is 23 years old. His sister is 2 years older. She is 25 years old.",
-			  (Matcher m) -> { int i = Integer.parseInt( m.group() ); return "" + (i+1); },
-			  "Florian is 24 years old. His sister is 2 years older. She is 26 years old." );
-	
+		check("(?<!\\d)\\d{2,}(?!\\d)", "Florian is 23 years old. His sister is 2 years older. She is 25 years old.",
+				(Matcher m) -> {
+					int i = Integer.parseInt(m.group());
+					return "" + (i + 1);
+				}, "Florian is 24 years old. His sister is 2 years older. She is 26 years old.");
+
 		report("replaceAllWithMatchEvaluators");
 	}
 }

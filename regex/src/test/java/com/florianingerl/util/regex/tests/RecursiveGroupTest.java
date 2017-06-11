@@ -44,4 +44,15 @@ public class RecursiveGroupTest {
 		assertTrue(p.matcher("aa").matches());
 	}
 
+	@Test
+	public void shouldMatchAnagrams() {
+		Pattern p = Pattern.compile(
+				"(?(DEFINE)(?<letter>[a-zA-Z]))\\b(?<anagram>(?'letter')(?'anagram')?\\k<letter>|(?'letter'))\\b");
+		assertTrue(p.matcher("radar").matches());
+
+		p = Pattern.compile(
+				"(?(DEFINE)(?<wrapper>(?<letter>[a-zA-Z])))\\b(?<anagram>(?'wrapper')(?'anagram')?\\k<letter>|(?'letter'))\\b");
+		assertFalse(p.matcher("radar").matches());
+	}
+
 }

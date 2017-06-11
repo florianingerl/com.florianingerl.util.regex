@@ -700,11 +700,16 @@ public class RegExTest {
 		check(pattern, "anna is an anagram, so is lagerregal and otto and radar and every single letter like z",
 				new String[] { "anna", "lagerregal", "otto", "radar", "z" });
 		pattern = "\\b(([a-zA-Z])(?1)?\\2|[a-zA-Z])\\b";
-		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
-				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
-		pattern = "\\b(?<anagramm>(?<letter>[a-zA-Z])(?'anagramm')?\\k<letter>|[a-zA-Z])\\b";
-		check(pattern, "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z",
-				new String[] { "anna", "lagerregal", "otto", "otito", "z" });
+		check(pattern, "anna is an anagram, so is lagerregal and otto and radar and every single letter like z",
+				new String[] { "anna", "lagerregal", "otto", "radar", "z" });
+		pattern = "\\b(?<anagram>(?<letter>[a-zA-Z])(?'anagram')?\\k<letter>|[a-zA-Z])\\b";
+		check(pattern, "anna is an anagram, so is lagerregal and otto and radar and every single letter like z",
+				new String[] { "anna", "lagerregal", "otto", "radar", "z" });
+		pattern = "(?(DEFINE)(?<letter>[a-zA-Z]))\\b(?<anagram>(?'letter')(?'anagram')?\\k<letter>|(?'letter'))\\b";
+		check(pattern, "anna is an anagram, so is lagerregal and otto and radar and every single letter like z",
+				new String[] { "anna", "lagerregal", "otto", "radar", "z" });
+		pattern = "(?(DEFINE)(?<wrapper>(?<letter>[a-zA-Z])))\\b(?<anagram>(?'wrapper')(?'anagram')?\\k<letter>|(?'letter'))\\b";
+		check(pattern, "otto", false);
 
 		// recursive stuff in lookbehind and lookahead that has a maximum length
 		check("(h)(?<=(?1))ello", "hello", true);
@@ -826,12 +831,12 @@ public class RegExTest {
 	 * (?<-groupNumber>) inside atomar group supported?
 	 * check("1(amen)((?>(?<-1>r)))?r\\12", "1amenramen2", true);
 	 * 
-	 * String anagramm =
+	 * String anagram =
 	 * "\\b([a-zA-Z])*(?(1)[a-zA-Z]?|[a-zA-Z])(?<-1>\\1)*(?!(?<-1>))\\b";
 	 * 
-	 * check(anagramm,
-	 * "anna is an anagramm, so is lagerregal and otto and otito and every single letter like z"
-	 * , new String[] { "anna", "lagerregal", "otto", "otito", "z" });
+	 * check(anagram,
+	 * "anna is an anagram, so is lagerregal and otto and radar and every single letter like z"
+	 * , new String[] { "anna", "lagerregal", "otto", "radar", "z" });
 	 * 
 	 * String[][] e1 = { { "aBBcccDDDDDeeeeeeee" }, { "a", "BB", "ccc", "DDDDD",
 	 * "eeeeeeee" }, { "a", "ccc", "eeeeeeee" }, { "BB", "DDDDD" } };

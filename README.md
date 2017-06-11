@@ -68,20 +68,18 @@ new String[] { "anna", "lagerregal", "otto", "radar", "z" });
 
 Different Regular Expression libraries handle Recursion, Group Capturing and Backreferences differently, so this topic deserves some comment here.
 
-com.florianingerl.util.regex, as Perl 5.10 did, isolates capturing groups between each level of recursion. When the regex engine enters recursion, all capturing groups appear as they have not participated in the match yet. Initially, all backreferences will fail. During the recursion, capturing groups capture as normal. Backreferences match text captured during the same recursion as normal. When the regex engine exits from the recursion, all capturing groups revert to the state they were in prior to the recursion.
+com.florianingerl.util.regex isolates capturing groups between each level of recursion. When the regex engine enters recursion, all capturing groups appear as they have not participated in the match yet. Initially, all backreferences will fail. During the recursion, capturing groups capture as normal. Backreferences match text captured during the same recursion as normal. When the regex engine exits from the recursion, all capturing groups revert to the state they were in prior to the recursion, except for the capturing group that was recursed to and has just been freshly captured.
 These tests will illustrate:
 
 ```
-String pattern = "(?<first>[a-z])(?<second>\\k<first>)";
-check(pattern, "bb", true);
-check(pattern, "ab", false);
+String pattern = "(?(DEFINE)(?<letter>[a-zA-Z]))\\b(?<anagram>(?'letter')(?'anagram')?\\k<letter>|(?'letter'))\\b";
+check(pattern, "anna is an anagram, so is lagerregal and otto and radar and every single letter like z",
+new String[] { "anna", "lagerregal", "otto", "radar", "z" });
+pattern = "(?(DEFINE)(?<wrapper>(?<letter>[a-zA-Z])))\\b(?<anagram>(?'wrapper')(?'anagram')?\\k<letter>|(?'letter'))\\b";
+check(pattern, "otto", false);
 
 pattern = "(?(DEFINE)(?<second>\\k<first>))(?<first>[a-z])(?'second')";
 check(pattern, "bb", false);
-
-pattern = "(?(DEFINE)(?<first>[a-z]))(?'first')(?<second>\\k<first>)";
-check(pattern, "bb", true);
-check(pattern, "ab", false);
 ```
 
 ### Plugins for the Regex engine
@@ -91,7 +89,7 @@ Since version 1.0.3, you can install plugins into the regex engine. The method o
 Good examples of what possibilites plugins offer you, are given in the PluginTest class, see [PluginTest.java](regex/src/test/java/com/florianingerl/util/regex/tests/PluginTest.java). You might also want to read the [JavaDoc](https://florianingerl.github.io/com.florianingerl.util.regex/).
 
 ### Group Trees
-This concept is best illustrated by an example. The following regex (which is stored in a file) should parse mathematical terms such as (6*[6+7+8]+9)*78*[4*(6+5)+4] .
+This concept is best illustrated by an example. The following regex (which is stored in a file) should parse mathematical terms such as (6*[6+7+8]+9)\*78\*[4*(6+5)+4] .
 
 ```
 //term.regex
@@ -112,13 +110,13 @@ This concept is best illustrated by an example. The following regex (which is st
 (?'term')
 ```
 
-After having parsed a term, you can inspect the so-called Group Tree of the match, which reflects the hierarchical nature of the groups. E.g. in this case, the term (6*[6+7+8]+9)*78*[4*(6+5)+4] is a product which consists of three factors. The first one of these factor is a sum and so on...
+After having parsed a term, you can inspect the so-called Group Tree of the match, which reflects the hierarchical nature of the groups. E.g. in this case, the term (6*[6+7+8]+9)\*78\*[4*(6+5)+4] is a product which consists of three factors. The first one of these factors is a sum and so on...
 
 The following code
 
 ```
 String regex = IOUtils.toString(
-				new FileInputStream(getClass().getClassLoader().getResource("term.regex").getFile()), "UTF-8");
+				new FileInputStream("term.regex"), "UTF-8");
 Pattern p = Pattern.compile(regex);
 
 String term = "(6*[6+7+8]+9)*78*[4*(6+5)+4]";

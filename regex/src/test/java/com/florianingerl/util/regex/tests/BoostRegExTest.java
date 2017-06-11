@@ -800,11 +800,10 @@ public class BoostRegExTest {
 				new int[] { 0, 4, -1, -1, -2, -2 });
 		check("(\\()?[^()]+(?(1)\\))", 0 | Pattern.MULTILINE | Pattern.DOTALL, "(abcd)",
 				new int[] { 0, 6, 0, 1, -2, -2 });
-		/*
-		 * check("(\\()?[^()]+(?(1)\\))", 0 | Pattern.MULTILINE |
-		 * Pattern.DOTALL, "the quick (abcd) fox", new int[] { 0, 10, -1, -1,
-		 * -2, 10, 16, 10, 11, -2, 16, 20, -1, -1, -2, -2 });
-		 */
+
+		check("(\\()?[^()]+(?(1)\\))", 0 | Pattern.MULTILINE | Pattern.DOTALL, "the quick (abcd) fox",
+				new int[] { 0, 10, -1, -1, -2, 10, 16, 10, 11, -2, 16, 20, -1, -1, -2, -2 });
+
 		check("(\\()?[^()]+(?(1)\\))", 0 | Pattern.MULTILINE | Pattern.DOTALL, "(abcd",
 				new int[] { 1, 5, -1, -1, -2, -2 });
 		check("\\b(?:(?:(one)|(two)|(three))(?:,|\\b)){3,}(?(1)|(?!))(?(2)|(?!))(?(3)|(?!))",

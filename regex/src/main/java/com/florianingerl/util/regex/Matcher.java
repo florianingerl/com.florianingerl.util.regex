@@ -236,15 +236,10 @@ public final class Matcher implements MatchResult {
 	Matcher(Pattern parent, CharSequence text) {
 		this.parentPattern = parent;
 		this.text = text;
-		groupTree = new GroupTree();
 		// Allocate state storage
-		int parentGroupCount = Math.max(parent.capturingGroupCount, 10);
-
-		localVector = new Vector<Stack<Integer>>(parent.localCount);
-		localVector.setSize(parent.localCount);
-		nextNodes = new Pattern.Node[parent.localCount];
-
-		genData();
+		localVector = new Vector<Stack<Integer>>(parentPattern.localCount);
+		localVector.setSize(parentPattern.localCount);
+		nextNodes = new Pattern.Node[parentPattern.localCount];
 		// Put fields into initial states
 		reset();
 	}
@@ -301,16 +296,13 @@ public final class Matcher implements MatchResult {
 			throw new IllegalArgumentException("Pattern cannot be null");
 		parentPattern = newPattern;
 
-		groupTree = new GroupTree();
 		// Reallocate state storage
-		int parentGroupCount = Math.max(newPattern.capturingGroupCount, 10);
-		localVector = new Vector<Stack<Integer>>(newPattern.localCount);
-		localVector.setSize(newPattern.localCount);
+		localVector = new Vector<Stack<Integer>>(parentPattern.localCount);
+		localVector.setSize(parentPattern.localCount);
+		nextNodes = new Pattern.Node[parentPattern.localCount];
+		// Put fields into initial states
+		reset();
 
-		for (int i = 0; i < localVector.size(); i++) {
-			localVector.set(i, new Stack<Integer>());
-		}
-		nextNodes = new Pattern.Node[newPattern.localCount];
 		return this;
 	}
 
@@ -692,7 +684,6 @@ public final class Matcher implements MatchResult {
 
 		// If next search starts beyond region then it fails
 		if (nextSearchIndex > to) {
-			genData();
 			return false;
 		}
 		return search(nextSearchIndex);
@@ -1390,6 +1381,7 @@ public final class Matcher implements MatchResult {
 		this.first = from;
 		this.oldLast = oldLast < 0 ? from : oldLast;
 		genData();
+		groupTree = new GroupTree();
 		acceptMode = NOANCHOR;
 		boolean result = parentPattern.root.match(this, from, text);
 		if (!result)
@@ -1411,6 +1403,7 @@ public final class Matcher implements MatchResult {
 		this.first = from;
 		this.oldLast = oldLast < 0 ? from : oldLast;
 		genData();
+		groupTree = new GroupTree();
 		acceptMode = anchor;
 		boolean result = parentPattern.matchRoot.match(this, from, text);
 		if (!result)

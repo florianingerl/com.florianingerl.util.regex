@@ -50,6 +50,10 @@ public class ConditionalTest {
 		assertTrue(m.find());
 		System.out.println(m.groupTree());
 		assertEquals("the quick ", m.group());
+		assertTrue(m.find());
+		assertEquals("(abcd)", m.group());
+		assertTrue(m.find());
+		assertEquals(" fox", m.group());
 	}
 
 }

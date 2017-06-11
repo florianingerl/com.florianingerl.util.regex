@@ -645,10 +645,10 @@ public class RegExTest {
 
 	private static void recursiveGroupTest() throws Exception {
 		// Matching Java types
-		String pattern = "^(?<javaType>[a-zA-Z]\\w*(\\s*\\<(?<rep>\\s*(?'javaType')\\s*)(,(?'rep'))*\\>)?)$";
+		String pattern = "^(?<javaType>[a-zA-Z]\\w*(?:\\<(?'javaType')(,(?'javaType'))*\\>)?)$";
 		check(pattern, "List<Integer>", true);
 		check(pattern, "HashMap<Integer,String>", true);
-		check(pattern, "Map<Integer, List<String> >", true);
+		check(pattern, "Map<Integer,List<String>>", true);
 
 		check("^(a|b*)*$", "abbb", true);
 

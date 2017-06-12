@@ -1,7 +1,7 @@
 ![com.github.florianingerl.util.regex](media/logo.png)
 
 ### Introduction
-This is a Java Regular Expressions library. Compared to the Regular Expression library shipped with the Java JDK, it provides support for Recursive and Conditional Regular Expressions, gives detailed results for a successfull match via a so-called Group Tree and allows the user to install plugins into the regex engine.
+This is a Java Regular Expressions library. Compared to the Regular Expression library shipped with the Java JDK, it provides support for Recursive and Conditional Regular Expressions, gives detailed results for a successfull match via a so-called Capture Tree and allows the user to install plugins into the regex engine.
 
 In the following screenshot, all the new features are summarized.
 ![com.github.florianingerl.util.regex.newfeatures](media/newfeatures.png)
@@ -10,7 +10,7 @@ In the following screenshot, all the new features are summarized.
 ### What's new :star:
 
 ### Version 1.1.1
-- Group Trees
+- Capture Trees
 - Recursive Regular Expressions now deal with Capturing Groups, Backreferences and Backtracking similar as Perl 5.10 did (see explanations and examples below)
 ### Version 1.0.3
 - `(?(DEFINE)never-executed-pattern)`
@@ -88,7 +88,7 @@ Since version 1.0.3, you can install plugins for the Regex engine. The method of
 
 Good examples for plugins are given in the PluginTest class, see [PluginTest.java](regex/src/test/java/com/florianingerl/util/regex/tests/PluginTest.java). You might also want to read the [JavaDoc](https://florianingerl.github.io/com.florianingerl.util.regex/).
 
-### Group Trees
+### Capture Trees
 This concept is best illustrated by an example. The following regex (which is stored in a file) should parse mathematical terms such as (6*[6+7+8]+9)\*78\*[4*(6+5)+4] .
 
 ```
@@ -110,7 +110,7 @@ This concept is best illustrated by an example. The following regex (which is st
 (?'term')
 ```
 
-After having parsed a term, you can inspect the so-called Group Tree of the match, which reflects the hierarchical nature of the groups. E.g. in this case, the term (6*[6+7+8]+9)\*78\*[4*(6+5)+4] is a product which consists of three factors. The first one of these factors is a sum and so on...
+After having parsed a term, you can inspect the so-called Capture Tree of the match, which reflects the hierarchical nature of the groups. E.g. in this case, the term (6*[6+7+8]+9)\*78\*[4*(6+5)+4] is a product which consists of three factors. The first one of these factors is a sum and so on...
 
 The following code
 
@@ -124,7 +124,7 @@ String term = "(6*[6+7+8]+9)*78*[4*(6+5)+4]";
 System.out.println("You see the term tree for: " + term);
 Matcher m = p.matcher(term);
 assertTrue(m.matches());
-System.out.println(m.groupTree());
+System.out.println(m.captureTree());
 ```
 
 produces the output seen in the following screenshot:

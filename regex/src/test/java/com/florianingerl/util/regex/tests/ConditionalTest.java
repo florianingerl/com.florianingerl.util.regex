@@ -48,7 +48,7 @@ public class ConditionalTest {
 		Pattern p = Pattern.compile("(\\()?[^()]+(?(1)\\))", 0 | Pattern.MULTILINE | Pattern.DOTALL);
 		Matcher m = p.matcher("the quick (abcd) fox");
 		assertTrue(m.find());
-		System.out.println(m.groupTree());
+		System.out.println(m.captureTree());
 		assertEquals("the quick ", m.group());
 		assertTrue(m.find());
 		assertEquals("(abcd)", m.group());

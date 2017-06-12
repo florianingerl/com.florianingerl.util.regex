@@ -184,7 +184,7 @@ public final class Matcher implements MatchResult {
 	 * hold state during a match.
 	 */
 	Vector<Stack<Integer>> localVector;
-	GroupTree groupTree;
+	CaptureTreeNode captureTreeNode;
 	Pattern.Node[] nextNodes;
 
 	/**
@@ -269,7 +269,7 @@ public final class Matcher implements MatchResult {
 		Matcher result = new Matcher(this.parentPattern, text.toString());
 		result.first = this.first;
 		result.last = this.last;
-		result.groupTree = this.groupTree;
+		result.captureTreeNode = this.captureTreeNode;
 		return result;
 
 	}
@@ -321,7 +321,7 @@ public final class Matcher implements MatchResult {
 		first = -1;
 		last = 0;
 		oldLast = -1;
-		groupTree = new GroupTree();
+		captureTreeNode = new CaptureTreeNode();
 		for (int i = 0; i < localVector.size(); i++) {
 			localVector.set(i, new Stack<Integer>());
 			nextNodes[i] = null;
@@ -358,8 +358,8 @@ public final class Matcher implements MatchResult {
 		if (group < 0 || group > groupCount())
 			throw new IndexOutOfBoundsException("No group " + group);
 		if (group == 0)
-			return groupTree.capture;
-		return groupTree.findGroup(group);
+			return captureTreeNode.capture;
+		return captureTreeNode.findGroup(group);
 	}
 
 	/**
@@ -617,9 +617,9 @@ public final class Matcher implements MatchResult {
 		return group(group);
 	}
 
-	public GroupTree groupTree() {
-		groupTree.setGroupName(parentPattern.groupNames());
-		return groupTree;
+	public CaptureTree captureTree() {
+		captureTreeNode.setGroupName(parentPattern.groupNames());
+		return new CaptureTree(captureTreeNode);
 	}
 
 	/**
@@ -975,6 +975,19 @@ public final class Matcher implements MatchResult {
 		return this;
 	}
 
+	public Matcher appendReplacement(StringBuffer sb, CaptureReplacer replacer) {
+		// If no match, return error
+		if (first < 0)
+			throw new IllegalStateException("No match available");
+
+		sb.append(text, lastAppendPosition, first);
+		replacer.setInput(text);
+		sb.append(replacer.replace(captureTree().getRoot()));
+
+		lastAppendPosition = last;
+		return this;
+	}
+
 	/**
 	 * Implements a terminal append-and-replace step.
 	 *
@@ -1064,6 +1077,21 @@ public final class Matcher implements MatchResult {
 		return text.toString();
 	}
 
+	public String replaceAll(CaptureReplacer replacer) {
+		reset();
+		boolean result = find();
+		if (result) {
+			StringBuffer sb = new StringBuffer();
+			do {
+				appendReplacement(sb, replacer);
+				result = find();
+			} while (result);
+			appendTail(sb);
+			return sb.toString();
+		}
+		return text.toString();
+	}
+
 	/**
 	 * Replaces the first subsequence of the input sequence that matches the
 	 * pattern with the given replacement string.
@@ -1122,6 +1150,18 @@ public final class Matcher implements MatchResult {
 			return text.toString();
 		StringBuffer sb = new StringBuffer();
 		appendReplacement(sb, evaluator);
+		appendTail(sb);
+		return sb.toString();
+	}
+
+	public String replaceFirst(CaptureReplacer replacer) {
+		if (replacer == null)
+			throw new NullPointerException("replacer");
+		reset();
+		if (!find())
+			return text.toString();
+		StringBuffer sb = new StringBuffer();
+		appendReplacement(sb, replacer);
 		appendTail(sb);
 		return sb.toString();
 	}
@@ -1381,7 +1421,7 @@ public final class Matcher implements MatchResult {
 		this.first = from;
 		this.oldLast = oldLast < 0 ? from : oldLast;
 		genData();
-		groupTree = new GroupTree();
+		captureTreeNode = new CaptureTreeNode();
 		acceptMode = NOANCHOR;
 		boolean result = parentPattern.root.match(this, from, text);
 		if (!result)
@@ -1403,7 +1443,7 @@ public final class Matcher implements MatchResult {
 		this.first = from;
 		this.oldLast = oldLast < 0 ? from : oldLast;
 		genData();
-		groupTree = new GroupTree();
+		captureTreeNode = new CaptureTreeNode();
 		acceptMode = anchor;
 		boolean result = parentPattern.matchRoot.match(this, from, text);
 		if (!result)
@@ -1459,7 +1499,7 @@ public final class Matcher implements MatchResult {
 
 	void setGroup0(CharSequence seq, int start, int end) {
 		Capture capture = new Capture(seq, start, end);
-		groupTree.capture = capture;
+		captureTreeNode.capture = capture;
 	}
 
 }

@@ -5,18 +5,36 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-public class GroupTree {
-	public int groupIndex;
-	public String groupName;
-	public Capture capture;
-	public List<GroupTree> children = new LinkedList<GroupTree>();
-	public GroupTree parent;
+public class CaptureTreeNode {
+	int groupNumber;
+	String groupName;
+	Capture capture;
+	List<CaptureTreeNode> children = new LinkedList<CaptureTreeNode>();
+	CaptureTreeNode parent;
 	boolean recursion;
 
-	void setGroupName(Map<Integer, String> groupNames) {
-		groupName = groupNames.get(groupIndex);
-		for (GroupTree gt : children)
-			gt.setGroupName(groupNames);
+	public int getGroupNumber() {
+		return groupNumber;
+	}
+
+	public String getGroupName() {
+		return groupName;
+	}
+
+	public Capture getCapture() {
+		return capture;
+	}
+
+	public List<CaptureTreeNode> getChildren() {
+		return children;
+	}
+
+	public CaptureTreeNode getParent() {
+		return parent;
+	}
+
+	public boolean isRecursion() {
+		return recursion;
 	}
 
 	@Override
@@ -26,16 +44,22 @@ public class GroupTree {
 		return sb.toString();
 	}
 
+	void setGroupName(Map<Integer, String> groupNames) {
+		groupName = groupNames.get(groupNumber);
+		for (CaptureTreeNode ctn : children)
+			ctn.setGroupName(groupNames);
+	}
+
 	private void toString(StringBuilder sb, int numTabs) {
 
 		for (int i = 0; i < numTabs; ++i) {
 			sb.append("\t");
 		}
-		sb.append(groupName != null ? groupName : groupIndex);
+		sb.append(groupName != null ? groupName : groupNumber);
 		sb.append("\n");
 
-		for (GroupTree gt : children) {
-			gt.toString(sb, numTabs + 1);
+		for (CaptureTreeNode ctn : children) {
+			ctn.toString(sb, numTabs + 1);
 		}
 
 	}
@@ -46,13 +70,13 @@ public class GroupTree {
 
 	private Capture findGroup(int group, boolean searchParent) {
 
-		ListIterator<GroupTree> it = children.listIterator(children.size());
+		ListIterator<CaptureTreeNode> it = children.listIterator(children.size());
 		Capture c = findGroup(group, it);
 		if (c != null)
 			return c;
 
 		if (searchParent) {
-			GroupTree current = this;
+			CaptureTreeNode current = this;
 			while (!current.recursion && current.parent != null) {
 				current = current.parent;
 				it = current.children.listIterator(current.children.size() - 1);
@@ -65,10 +89,10 @@ public class GroupTree {
 		return null;
 	}
 
-	private Capture findGroup(int group, ListIterator<GroupTree> it) {
+	private Capture findGroup(int group, ListIterator<CaptureTreeNode> it) {
 		while (it.hasPrevious()) {
-			GroupTree child = it.previous();
-			if (child.groupIndex == group)
+			CaptureTreeNode child = it.previous();
+			if (child.groupNumber == group)
 				return child.capture;
 			if (child.recursion)
 				continue;

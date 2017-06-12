@@ -25,6 +25,7 @@
 				<pathelement location="${output-main}" />
 				<pathelement location="lib/junit-4.12.jar" />
 				<pathelement location="lib/hamcrest-core-1.3.jar" />
+				<pathelement location="lib/commons-io-2.5.jar"/>
 			</classpath>
 		</javac>
 		<copy todir="${output-test}">
@@ -41,6 +42,7 @@
 				<pathelement location="${output-test}" />
 				<pathelement location="lib/junit-4.12.jar" />
 				<pathelement location="lib/hamcrest-core-1.3.jar" />
+				<pathelement location="lib/commons-io-2.5.jar"/>
 			</classpath>
 			<batchtest>
 				<fileset dir="${output-test}">
@@ -53,7 +55,7 @@
 	</target>
 
 	<target name="jar" depends="test"  >
-		<jar destfile="ant-target/regex-1.0.3.jar" basedir="${output-main}" includes="**/*.class">
+		<jar destfile="ant-target/regex-1.1.1.jar" basedir="${output-main}" includes="**/*.class">
 			<manifest>
 				<attribute name="Author" value="Florian Ingerl" />
 			</manifest>

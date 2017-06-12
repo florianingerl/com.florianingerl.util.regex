@@ -10,7 +10,8 @@ import java.util.Scanner;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
-import com.florianingerl.util.regex.GroupTree;
+import com.florianingerl.util.regex.CaptureTree;
+import com.florianingerl.util.regex.CaptureTreeNode;
 import com.florianingerl.util.regex.Matcher;
 import com.florianingerl.util.regex.Pattern;
 
@@ -22,13 +23,13 @@ public class GroupTreeTest {
 		Matcher s = p.matcher("5+8");
 		assertTrue(s.matches());
 
-		GroupTree gt = s.groupTree();
+		CaptureTree gt = s.captureTree();
 		assertEquals("0\n\tsum\n\t\tnumber\n\t\tnumber\n", gt.toString());
 
 		s = p.matcher("5+6+7");
 		assertTrue(s.matches());
 
-		gt = s.groupTree();
+		gt = s.captureTree();
 		System.out.println(gt);
 		assertEquals("0\n\tsum\n\t\tnumber\n\t\tsum\n\t\t\tnumber\n\t\t\tnumber\n", gt.toString());
 	}
@@ -40,7 +41,7 @@ public class GroupTreeTest {
 		Matcher m = p.matcher("5+6*9");
 		assertTrue(m.matches());
 
-		GroupTree gt = m.groupTree();
+		CaptureTree gt = m.captureTree();
 		System.out.println(gt);
 
 	}
@@ -56,7 +57,7 @@ public class GroupTreeTest {
 		System.out.println("You see the term tree for: " + term);
 		Matcher m = p.matcher(term);
 		assertTrue(m.matches());
-		System.out.println(m.groupTree());
+		System.out.println(m.captureTree());
 
 		assertTrue(p.matcher("5").matches());
 		assertTrue(p.matcher("4+55").matches());

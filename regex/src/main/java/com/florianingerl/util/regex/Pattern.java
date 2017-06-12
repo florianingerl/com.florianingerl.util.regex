@@ -5293,7 +5293,7 @@ public final class Pattern implements java.io.Serializable {
 			} else { // type == POSSESSIVE
 				Repeater mr = new Repeater(accept, cmin, false);
 				// Vector<Stack<Capture>> captures = matcher.cloneCaptures();
-				int save = matcher.groupTree.children.size();
+				int save = matcher.captureTreeNode.children.size();
 				if (!mr.match(matcher, i, seq))
 					return false;
 				i = matcher.last;
@@ -5305,8 +5305,8 @@ public final class Pattern implements java.io.Serializable {
 				}
 				if (getNext().match(matcher, i, seq))
 					return true;
-				if (matcher.groupTree.children.size() > save) {
-					matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+				if (matcher.captureTreeNode.children.size() > save) {
+					matcher.captureTreeNode.children.subList(save, matcher.captureTreeNode.children.size()).clear();
 				}
 				return false;
 			}
@@ -5487,14 +5487,14 @@ public final class Pattern implements java.io.Serializable {
 
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			int save = matcher.groupTree.children.size();
+			int save = matcher.captureTreeNode.children.size();
 			if (atom.match(matcher, i, seq))
 				i = matcher.last;
 			else
 				return false;
 			boolean r = getNext().match(matcher, i, seq);
-			if (!r && matcher.groupTree.children.size() > save) {
-				matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+			if (!r && matcher.captureTreeNode.children.size() > save) {
+				matcher.captureTreeNode.children.subList(save, matcher.captureTreeNode.children.size()).clear();
 			}
 			return r;
 		}
@@ -5534,22 +5534,22 @@ public final class Pattern implements java.io.Serializable {
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			GroupTree t = null;
+			CaptureTreeNode t = null;
 			if (groupIndex > 0) {
-				t = new GroupTree();
+				t = new CaptureTreeNode();
 				t.recursion = recursion;
-				t.groupIndex = groupIndex;
-				t.parent = matcher.groupTree;
-				matcher.groupTree.children.add(t);
-				matcher.groupTree = t;
+				t.groupNumber = groupIndex;
+				t.parent = matcher.captureTreeNode;
+				matcher.captureTreeNode.children.add(t);
+				matcher.captureTreeNode = t;
 			}
 			matcher.localVector.get(localIndex).push(i);
 			boolean ret = getNext().match(matcher, i, seq);
 			matcher.localVector.get(localIndex).pop();
 			if (t != null) {
-				matcher.groupTree = t.parent;
+				matcher.captureTreeNode = t.parent;
 				if (!ret)
-					matcher.groupTree.children.remove(t);
+					matcher.captureTreeNode.children.remove(t);
 			}
 
 			return ret;
@@ -5577,18 +5577,18 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			int tmp = matcher.localVector.get(localIndex).pop();
 
-			GroupTree t = null;
+			CaptureTreeNode t = null;
 			if (groupIndex > 0) {
 				Capture c = new Capture(seq, tmp, i);
 				// matcher.captures.get(groupIndex).push(c);
-				matcher.groupTree.capture = c;
-				t = matcher.groupTree;
-				matcher.groupTree = t.parent;
+				matcher.captureTreeNode.capture = c;
+				t = matcher.captureTreeNode;
+				matcher.captureTreeNode = t.parent;
 
 			}
 			boolean r = getNext(matcher).match(matcher, i, seq);
 			if (groupIndex > 0) {
-				matcher.groupTree = t;
+				matcher.captureTreeNode = t;
 				if (!r) {
 					// matcher.captures.get(groupIndex).pop();
 					t.capture = null;
@@ -5800,7 +5800,7 @@ public final class Pattern implements java.io.Serializable {
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			// If the referenced group didn't match, neither can this
-			Capture last = matcher.groupTree.findGroup(groupIndex);
+			Capture last = matcher.captureTreeNode.findGroup(groupIndex);
 			if (last == null)
 				return false;
 
@@ -5843,7 +5843,7 @@ public final class Pattern implements java.io.Serializable {
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			// If the referenced group didn't match, neither can this
-			Capture last = matcher.groupTree.findGroup(groupIndex);
+			Capture last = matcher.captureTreeNode.findGroup(groupIndex);
 			if (last == null)
 				return false;
 
@@ -5979,7 +5979,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			// if (matcher.captures.size() > groupNumber &&
 			// !matcher.captures.get(groupNumber).isEmpty()) {
-			if (matcher.groupTree.findGroup(groupNumber) != null) {
+			if (matcher.captureTreeNode.findGroup(groupNumber) != null) {
 				return yes.match(matcher, i, seq);
 			} else if (not != null) {
 				return not.match(matcher, i, seq);
@@ -5999,11 +5999,11 @@ public final class Pattern implements java.io.Serializable {
 
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			int save = matcher.groupTree.children.size();
+			int save = matcher.captureTreeNode.children.size();
 			if (cond.match(matcher, i, seq)) {
 				if (!yes.match(matcher, i, seq)) {
-					if (matcher.groupTree.children.size() > save) {
-						matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+					if (matcher.captureTreeNode.children.size() > save) {
+						matcher.captureTreeNode.children.subList(save, matcher.captureTreeNode.children.size()).clear();
 					}
 					return false;
 				}
@@ -6031,7 +6031,7 @@ public final class Pattern implements java.io.Serializable {
 			int savedTo = matcher.to;
 			boolean conditionMatched = false;
 
-			int save = matcher.groupTree.children.size();
+			int save = matcher.captureTreeNode.children.size();
 			// Relax transparent region boundaries for lookahead
 			if (matcher.transparentBounds)
 				matcher.to = matcher.getTextLength();
@@ -6043,8 +6043,8 @@ public final class Pattern implements java.io.Serializable {
 			}
 			if (conditionMatched) {
 				conditionMatched = conditionMatched & getNext().match(matcher, i, seq);
-				if (!conditionMatched && matcher.groupTree.children.size() > save) {
-					matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+				if (!conditionMatched && matcher.captureTreeNode.children.size() > save) {
+					matcher.captureTreeNode.children.subList(save, matcher.captureTreeNode.children.size()).clear();
 				}
 			}
 			return conditionMatched;
@@ -6065,7 +6065,7 @@ public final class Pattern implements java.io.Serializable {
 			int savedTo = matcher.to;
 			boolean conditionMatched = false;
 
-			int save = matcher.groupTree.children.size();
+			int save = matcher.captureTreeNode.children.size();
 			// Relax transparent region boundaries for lookahead
 			if (matcher.transparentBounds)
 				matcher.to = matcher.getTextLength();
@@ -6082,8 +6082,8 @@ public final class Pattern implements java.io.Serializable {
 				// Reinstate region boundaries
 				matcher.to = savedTo;
 			}
-			if (!conditionMatched && matcher.groupTree.children.size() > save) {
-				matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+			if (!conditionMatched && matcher.captureTreeNode.children.size() > save) {
+				matcher.captureTreeNode.children.subList(save, matcher.captureTreeNode.children.size()).clear();
 			}
 			return conditionMatched && getNext().match(matcher, i, seq);
 		}
@@ -6133,7 +6133,7 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
-			int save = matcher.groupTree.children.size();
+			int save = matcher.captureTreeNode.children.size();
 			for (int j = i - rmin; !conditionMatched && j >= from; j--) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
@@ -6141,8 +6141,8 @@ public final class Pattern implements java.io.Serializable {
 			matcher.lookbehindTo = savedLBT;
 			if (conditionMatched) {
 				conditionMatched = getNext().match(matcher, i, seq);
-				if (!conditionMatched && matcher.groupTree.children.size() > save) {
-					matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+				if (!conditionMatched && matcher.captureTreeNode.children.size() > save) {
+					matcher.captureTreeNode.children.subList(save, matcher.captureTreeNode.children.size()).clear();
 				}
 			}
 			return conditionMatched;
@@ -6171,7 +6171,7 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
-			int save = matcher.groupTree.children.size();
+			int save = matcher.captureTreeNode.children.size();
 			for (int j = i - rminChars; !conditionMatched && j >= from; j -= j > from ? countChars(seq, j, -1) : 1) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
@@ -6179,8 +6179,8 @@ public final class Pattern implements java.io.Serializable {
 			matcher.lookbehindTo = savedLBT;
 			if (conditionMatched) {
 				conditionMatched = getNext().match(matcher, i, seq);
-				if (!conditionMatched && matcher.groupTree.children.size() > save) {
-					matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+				if (!conditionMatched && matcher.captureTreeNode.children.size() > save) {
+					matcher.captureTreeNode.children.subList(save, matcher.captureTreeNode.children.size()).clear();
 				}
 			}
 			return conditionMatched;
@@ -6206,15 +6206,15 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
-			int save = matcher.groupTree.children.size();
+			int save = matcher.captureTreeNode.children.size();
 			for (int j = i - rmin; !conditionMatched && j >= from; j--) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
 			// Reinstate region boundaries
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
-			if (conditionMatched && matcher.groupTree.children.size() > save) {
-				matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+			if (conditionMatched && matcher.captureTreeNode.children.size() > save) {
+				matcher.captureTreeNode.children.subList(save, matcher.captureTreeNode.children.size()).clear();
 			}
 			return !conditionMatched && getNext().match(matcher, i, seq);
 		}
@@ -6241,15 +6241,15 @@ public final class Pattern implements java.io.Serializable {
 			// Relax transparent region boundaries for lookbehind
 			if (matcher.transparentBounds)
 				matcher.from = 0;
-			int save = matcher.groupTree.children.size();
+			int save = matcher.captureTreeNode.children.size();
 			for (int j = i - rminChars; !conditionMatched && j >= from; j -= j > from ? countChars(seq, j, -1) : 1) {
 				conditionMatched = cond.match(matcher, j, seq);
 			}
 			// Reinstate region boundaries
 			matcher.from = savedFrom;
 			matcher.lookbehindTo = savedLBT;
-			if (conditionMatched && matcher.groupTree.children.size() > save) {
-				matcher.groupTree.children.subList(save, matcher.groupTree.children.size()).clear();
+			if (conditionMatched && matcher.captureTreeNode.children.size() > save) {
+				matcher.captureTreeNode.children.subList(save, matcher.captureTreeNode.children.size()).clear();
 			}
 			return !conditionMatched && getNext().match(matcher, i, seq);
 		}

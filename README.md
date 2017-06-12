@@ -93,14 +93,14 @@ This concept is best illustrated by an example. The following regex (which is st
 
 ```
 //term.regex
-(?x) #turned on the comment mode
+(?x) # turns on comment mode
 (?(DEFINE)
 (?<term>(?'number')|(?'sum')|(?'product'))
-(?<sum> (?= (?: [^()+]+ | (?<brace> \( (?: [^()]+| (?'brace') )+ \) ) )+ \+ )#lookahead, that detects the start of a sum 
+(?<sum> 
 (?'summand')(?:\+(?'summand'))+
 ) # end of sum
 (?<summand> (?'number') | (?'product') | (?: (?'round') | \[ )(?: (?'sum') | (?'product') ) (?(round)\)|\]) ) # end of summand
-(?<product> (?= (?: [^()*+]+ | (?'brace') )+ \* ) # lookahead, that detects the start of a product
+(?<product> 
 (?'factor')(?:\*(?'factor'))+
 ) # end of product
 (?<factor>(?'number')| (?: (?'round') | \[ )(?: (?'sum') | (?'product') ) (?(round)\)|\]) ) # end of factor

@@ -1,4 +1,4 @@
-(?x)
+(?x) #comment mode
 (?(DEFINE)
 (?<sum> (?'summand')(?:\+(?'summand'))+ )
 (?<summand> (?'product') | (?'number') )

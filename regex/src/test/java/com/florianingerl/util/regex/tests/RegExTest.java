@@ -786,6 +786,9 @@ public class RegExTest {
 		pattern = "1(?<letter>a)?bbb(?(letter)yy)st2";
 		check(pattern, "1abbbyyst2", true);
 
+		pattern = "(?:(\\()|\\[)[a-z]+(?(1)\\)|\\])";
+		check(pattern, "(first) [second] [not third) (not fourth match]", new String[] { "(first)", "[second]" });
+
 		report("Conditional based on valid group catpure");
 	}
 

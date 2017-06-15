@@ -32,11 +32,8 @@ public class CaptureReplacerTest {
 
 		Matcher m = p.matcher(term);
 
-		String expected = "\\product{\\sum{\\product{6,\\sum{6,7,8}},9},78,\\sum{\\product{4,\\sum{6,5}},4}}";
+		String expected = "\\product{(\\sum{\\product{6,[\\sum{6,7,8}]},9}),78,[\\sum{\\product{4,(\\sum{6,5})},4}]}";
 		CaptureReplacer replacer = new DefaultCaptureReplacer() {
-
-			private List<String> summandFactor = Arrays.asList("summand", "factor");
-			private List<String> numSumProd = Arrays.asList("number", "sum", "product");
 
 			@Override
 			public String replace(CaptureTreeNode node) {
@@ -46,9 +43,6 @@ public class CaptureReplacerTest {
 				} else if ("product".equals(node.getGroupName())) {
 					return "\\product{" + node.getChildren().stream().filter(n -> "factor".equals(n.getGroupName()))
 							.map(n -> replace(n)).collect(Collectors.joining(",")) + "}";
-				} else if (summandFactor.contains(node.getGroupName())) {
-					return replace(node.getChildren().stream().filter(n -> numSumProd.contains(n.getGroupName()))
-							.findFirst().get());
 				} else {
 					return super.replace(node);
 				}
@@ -57,6 +51,7 @@ public class CaptureReplacerTest {
 		};
 		String actual = m.replaceAll(replacer);
 		System.out.println(actual);
+		System.out.println(expected);
 
 		assertEquals(expected, actual);
 

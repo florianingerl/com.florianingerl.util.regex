@@ -1,30 +1,28 @@
 ![com.github.florianingerl.util.regex](media/logo.png)
 
-### Introduction
-This is a Java Regular Expressions library. Compared to the Regular Expression library shipped with the Java JDK, it provides support for Recursive and Conditional Regular Expressions, gives detailed results for a successfull match via a so-called Capture Tree and allows the user to install plugins into the regex engine.
+This is a Regular Expressions library for Java. Compared to java.util.regex, it supports Recursive and Conditional Regular Expressions, Capture Trees and Plugins.
 
-In the following screenshot, all the new features are summarized.
-![com.github.florianingerl.util.regex.newfeatures](media/newfeatures.png)
+## Table of Contents
+- [Pre-requirement for this tutorial](#pre-requirements-for-this-tutorial)
+- [API usage](#api-usage)
+- [Regular Expression features](#regular-expression-features)
+    - [Recursive Regular Expressions](#recursive-regular-expressions)
+    - [Conditional Regular Expressions](#conditional-regular-expressions)
+    - [Capture Trees](#capture-trees)
+	- [Recursive replace](#recursive-replace)
+	- [Plugins for the Regex engine](#plugins-for-the-regex-engine)
+	- [Known Issues](#known-issues)
+- [JavaDoc](#javadoc)	
+- [Download](#download)	
+- [Links](#links)
 
+##Pre-requirement for this tutorial
+This tutorial assumes that you are already familiar with [Regular Expressions](http://www.regular-expressions.info/tutorial.html) and also with the [Regular Expression API of Java](https://docs.oracle.com/javase/tutorial/essential/regex/). 
 
-### What's new :star:
-
-### Version 1.1.1
-- Capture Trees
-- Recursive Regular Expressions now deal with Capturing Groups, Backreferences and Backtracking similar as Perl 5.10 did (see explanations and examples below)
-### Version 1.0.3
-- `(?(DEFINE)never-executed-pattern)`
-- Plugins for the Regex engine
-
-### Version 1.0.2
-- Recursive Regular Expressions
-- Conditional Regular Expressions
-- Captures
-
-### Usage
+##API usage
 The API is exactly the same as in java.util.regex. The only difference is that the required import statement is `import com.florianingerl.util.regex.\*;` instead of `import java.util.regex.\*;`
 
-To illustrate the functionality, we will use the following utility functions
+Throughout this tutorial, we will make use of the following two utility functions:
 ```java
 import com.florianingerl.util.regex.*;
 
@@ -32,8 +30,9 @@ private static void check(String p, String s, boolean expected)
 {
 	Matcher matcher = Pattern.compile(p).matcher(s);
 	if (matcher.find() != expected)
-		failCount++;
+		System.exit(1);
 }
+
 static void check(String regex, String input, String[] expected) 
 {
 	List<String> result = new ArrayList<String>();
@@ -43,12 +42,17 @@ static void check(String regex, String input, String[] expected)
 		result.add(m.group());
 	}
 	if (!Arrays.asList(expected).equals(result))
-		failCount++;
+		System.exit(1);
 }
 ```
 
-### Recursive Regular Expressions
-The following tests illustrate what you can do with Recursive Regular Expressions. Be aware that the syntax `(?R)` or `(?0)` as in Perl is not supported, only `(?n)` where `n` is greater than `0` or `(?'groupName')` is supported.
+###Regular Expression features
+In the following screenshot, all the new features are summarized.
+![com.github.florianingerl.util.regex.newfeatures](media/newfeatures.png)
+
+##Recursive Regular Expressions
+This section assumes that you are already familiar with [Recursive Regular Expressions](http://www.regular-expressions.info/recurse.html).
+Be aware that the syntax `(?R)` or `(?0)` as in Perl is not supported by this library, only `(?n)` where `n` is greater than `0` or `(?'groupName')` is supported. Examples:
 ```java
 //Matching Java types
 String pattern = "^(?<javaType>[a-zA-Z]\\w*(?:\\<(?'javaType')(,(?'javaType'))*\\>)?)$";
@@ -82,14 +86,17 @@ pattern = "(?(DEFINE)(?<second>\\k<first>))(?<first>[a-z])(?'second')";
 check(pattern, "bb", false);
 ```
 
-### Plugins for the Regex engine
-Since version 1.0.3, you can install plugins for the Regex engine. The method of the Pattern class seen in the screenshot below is used for that purpose.
-![com.florianingerl.util.regex.plugins](media/plugins.png)
+##Conditional Regular Expressions
+This section assumes that you are already familiar with [Conditional Regular Expressions](http://www.regular-expressions.info/conditional.html) .
+The syntax supported by this library is `(?(groupNumber)yes|no)` or `(?(groupName)yes|no)`. An example:
 
-Good examples for plugins are given in the PluginTest class, see [PluginTest.java](regex/src/test/java/com/florianingerl/util/regex/tests/PluginTest.java). You might also want to read the [JavaDoc](https://florianingerl.github.io/com.florianingerl.util.regex/).
+```java
+String pattern = "(?:(\\()|\\[)[a-z]+(?(1)\\)|\\])";
+		check(pattern, "(first) [second] [not third) (not fourth match]", new String[] { "(first)", "[second]" });
+```
 
-### Capture Trees
-This concept is best illustrated by an example. The following regex (which is stored in a file) should parse mathematical terms such as (6*[6+7+8]+9)\*78\*[4*(6+5)+4] .
+##Capture Trees
+This concept is best illustrated by an example. The following Regex (which is stored in a file) should parse mathematical terms such as `(6*[6+7+8]+9)*78*[4*(6+5)+4]` .
 
 ```
 //term.regex
@@ -110,45 +117,75 @@ This concept is best illustrated by an example. The following regex (which is st
 (?'term')
 ```
 
-After having parsed a term, you can inspect the so-called Capture Tree of the match, which reflects the hierarchical nature of the groups. E.g. in this case, the term (6*[6+7+8]+9)\*78\*[4*(6+5)+4] is a product which consists of three factors. The first one of these factors is a sum and so on...
+After having parsed a term, you can inspect the so-called Capture Tree of the match, which reflects the hierarchical nature of the groups. E.g. in this case, the term `(6*[6+7+8]+9)*78*[4*(6+5)+4]` is a product which consists of three factors. The first one of these factors is a sum and so on...
 
 The following code
 
 ```java
-String regex = IOUtils.toString(
-				new FileInputStream("term.regex"), "UTF-8");
+String regex = IOUtils.toString( new FileInputStream("term.regex"), "UTF-8");
 Pattern p = Pattern.compile(regex);
 
 String term = "(6*[6+7+8]+9)*78*[4*(6+5)+4]";
 
 System.out.println("You see the term tree for: " + term);
 Matcher m = p.matcher(term);
-assertTrue(m.matches());
+m.matches();
 System.out.println(m.captureTree());
 ```
 
 produces the output seen in the following screenshot:
 ![a term tree](media/termtree.png)
 
-### Maven Dependency
-In order to use this library, add the following dependency to your pom.xml.
+##Recursive replace
+Continuing with the example from above, we now want to replace each sum like `6+7` with `\sum{6,7}` and to replace each product like `5*3` with `\product{5,3}`. The short code snippet
+
+```java
+String replacement = m.replaceAll( new DefaultCaptureReplacer() {
+			@Override
+			public String replace(CaptureTreeNode node) {
+				if ("sum".equals(node.getGroupName())) {
+					return "\\sum{" + node.getChildren().stream().filter(n -> "summand".equals(n.getGroupName()))
+							.map(n -> replace(n)).collect(Collectors.joining(",")) + "}";
+				} else if ("product".equals(node.getGroupName())) {
+					return "\\product{" + node.getChildren().stream().filter(n -> "factor".equals(n.getGroupName()))
+							.map(n -> replace(n)).collect(Collectors.joining(",")) + "}";
+				} else {
+					return super.replace(node);
+				}
+			}
+
+		});
+System.out.println(replacement);
 ```
-<dependency>
-	<groupId>com.github.florianingerl.util</groupId>
-	<artifactId>regex</artifactId>
-	<version>1.1.1</version>
-</dependency>
+prints
+```
+\product{(\sum{\product{6,[\sum{6,7,8}]},9}),78,[\sum{\product{4,(\sum{6,5})},4}]}
 ```
 
-### Known Issues
-Unfortunately this library needs more stacks than java.util.regex which can lead to a StackOverflowException more quickly in rare cases.
-E.g. suppose you wanted to match Java strings with the regex 
+##Plugins for the Regex engine
+You can install plugins for the Regex engine. The method of the Pattern class seen in the screenshot below is used for that purpose.
+![com.florianingerl.util.regex.plugins](media/plugins.png)
+
+An example for a plugin is given in [PluginTest.java](regex/src/test/java/com/florianingerl/util/regex/tests/PluginTest.java). 
+
+##Known Issues
+Unfortunately, this library needs more stacks than java.util.regex which can lead to a `StackOverflowException` more quickly in rare cases.
+E.g. suppose you wanted to match Java strings with the following Regex:
 ```
 "(\\.|[^"])*"
 ```
-then this would only work for string lengths up to 3890, whereas with java.util.regex it would work with string lengths up to 6930. The problem is the
+Then this would only work for string lengths up to 3890, whereas with java.util.regex it would work with string lengths up to 6930. The problem is the
 *-repetition that has to keep track of group captures and the backtracking options of the alternation. However a simple character class can be repeated nearly an unlimited number of times,
-so the regex above could be improved to
+so the Regex above could be improved to
 ```
 "(?:\\.|[^"\\]+)*"
 ```
+
+##JavaDoc
+Read the [JavaDoc for this library](https://florianingerl.github.io/com.florianingerl.util.regex/).
+
+##Download
+Download the library from [Maven central](https://mvnrepository.com/artifact/com.github.florianingerl.util/regex/1.0.3).
+
+##Links
+* [Regular Expressions tutorial](http://www.regular-expressions.info/tutorial.html)

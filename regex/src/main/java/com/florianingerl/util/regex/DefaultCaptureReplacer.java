@@ -20,6 +20,8 @@ public class DefaultCaptureReplacer implements CaptureReplacer {
 		StringBuffer sb = new StringBuffer();
 		int j = node.getCapture().getStart();
 		for (CaptureTreeNode child : node.getChildren()) {
+			if (child.inLookaround)
+				continue;
 			sb.append(input.subSequence(j, child.getCapture().getStart()));
 			sb.append(replace(child));
 			j = child.getCapture().getEnd();

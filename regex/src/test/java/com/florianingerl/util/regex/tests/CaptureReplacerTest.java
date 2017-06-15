@@ -65,4 +65,23 @@ public class CaptureReplacerTest {
 		assertEquals(expected, actual);
 	}
 
+	@Test
+	public void defaultReplacerShouldIgnoreGroupsInLookaround() {
+		Pattern p = Pattern.compile("(?<=(Row='))(\\d++)(?=('))");
+		Matcher m = p.matcher("Row='100' Row='40'");
+		String actual = m.replaceAll(new DefaultCaptureReplacer() {
+
+			@Override
+			public String replace(CaptureTreeNode node) {
+				if (node.getGroupNumber() == 2) {
+					int i = Integer.parseInt(node.getCapture().getValue());
+					return "" + (i + 1);
+				} else
+					return super.replace(node);
+			}
+
+		});
+		assertEquals(actual, "Row='101' Row='41'");
+	}
+
 }

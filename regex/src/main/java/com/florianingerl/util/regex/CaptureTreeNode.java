@@ -12,6 +12,7 @@ public class CaptureTreeNode {
 	List<CaptureTreeNode> children = new LinkedList<CaptureTreeNode>();
 	CaptureTreeNode parent;
 	boolean recursion;
+	boolean inLookaround;
 
 	public int getGroupNumber() {
 		return groupNumber;

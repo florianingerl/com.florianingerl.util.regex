@@ -1470,6 +1470,7 @@ public final class Pattern implements java.io.Serializable {
 	 * @serial
 	 */
 	private int flags;
+	private boolean inLookaround;
 
 	/**
 	 * Boolean indicating this Pattern is compiled; this is necessary in order
@@ -3517,6 +3518,7 @@ public final class Pattern implements java.io.Serializable {
 		Node head = null;
 		Node tail = null;
 		int save = flags;
+		boolean ila = inLookaround;
 		root = null;
 		int ch = next();
 		if (ch == '?') {
@@ -3532,7 +3534,9 @@ public final class Pattern implements java.io.Serializable {
 			case '!':
 				head = createGroup(true);
 				tail = root;
+				inLookaround = true;
 				head.setNext(expr(tail));
+				inLookaround = ila;
 				if (ch == '=') {
 					head = tail = new Pos(head);
 				} else {
@@ -3554,14 +3558,16 @@ public final class Pattern implements java.io.Serializable {
 					groupIndices().put(name, capturingGroupCount - 1);
 					groupNames().put(capturingGroupCount - 1, name);
 					head.setNext(expr(tail));
-					head = tail = new RecursiveGroupCall(groupIndices().get(name), false);
+					head = tail = new RecursiveGroupCall(groupIndices().get(name), false, inLookaround);
 					tail.setNext(accept);
 					break;
 				}
 				int start = cursor;
 				head = createGroup(true);
 				tail = root;
+				inLookaround = true;
 				head.setNext(expr(tail));
+				inLookaround = ila;
 				tail.setNext(lookbehindEnd);
 
 				boolean hasSupplementary = findSupplementary(start, patternLength);
@@ -3652,9 +3658,9 @@ public final class Pattern implements java.io.Serializable {
 					if ((groupName = doesGroupNameFollowBefore('\'')) == null || peek() != ')')
 						throw error("Unknown recursion syntax");
 					if (isGroupDefined(groupName)) {
-						head = tail = new RecursiveGroupCall(groupIndices.get(groupName), true);
+						head = tail = new RecursiveGroupCall(groupIndices.get(groupName), true, inLookaround);
 					} else {
-						RecursiveGroupCall rcg = new RecursiveGroupCall(true);
+						RecursiveGroupCall rcg = new RecursiveGroupCall(true, inLookaround);
 						int index = cursor - 1;
 						groupExistsChecks().add(0, () -> {
 							if (!isGroupDefined(groupName))
@@ -3668,9 +3674,9 @@ public final class Pattern implements java.io.Serializable {
 				} else if ((groupNumber = doesGroupNumberFollowBefore(')')) != -1) {
 					unread();
 					if (isGroupDefined(groupNumber))
-						head = tail = new RecursiveGroupCall(groupNumber, true);
+						head = tail = new RecursiveGroupCall(groupNumber, true, inLookaround);
 					else {
-						final RecursiveGroupCall rgc = new RecursiveGroupCall(true);
+						final RecursiveGroupCall rgc = new RecursiveGroupCall(true, inLookaround);
 						head = tail = rgc;
 						int index = cursor - 1;
 						groupExistsChecks().add(0, () -> {
@@ -3700,7 +3706,7 @@ public final class Pattern implements java.io.Serializable {
 			tail = root;
 			int groupNumber = capturingGroupCount - 1;
 			head.setNext(expr(tail));
-			head = tail = new RecursiveGroupCall(groupNumber, false);
+			head = tail = new RecursiveGroupCall(groupNumber, false, inLookaround);
 			tail.setNext(accept);
 		}
 
@@ -5518,18 +5524,22 @@ public final class Pattern implements java.io.Serializable {
 	static final class GroupHead extends Node {
 		int localIndex;
 		int groupIndex;
-		private boolean recursion = false;
+		private boolean recursion;
+		private boolean inLookaround;
 
 		GroupHead(int localCount, int groupCount) {
 			localIndex = localCount;
 			groupIndex = groupCount;
 		}
 
-		boolean match(Matcher matcher, int i, CharSequence seq, boolean recursion) {
+		boolean match(Matcher matcher, int i, CharSequence seq, boolean recursion, boolean inLookaround) {
 			boolean save = this.recursion;
+			boolean save2 = this.inLookaround;
 			this.recursion = recursion;
+			this.inLookaround = inLookaround;
 			boolean r = match(matcher, i, seq);
 			this.recursion = save;
+			this.inLookaround = save2;
 			return r;
 		}
 
@@ -5538,6 +5548,7 @@ public final class Pattern implements java.io.Serializable {
 			if (groupIndex > 0) {
 				t = new CaptureTreeNode();
 				t.recursion = recursion;
+				t.inLookaround = inLookaround;
 				t.groupNumber = groupIndex;
 				t.parent = matcher.captureTreeNode;
 				matcher.captureTreeNode.children.add(t);
@@ -5620,14 +5631,16 @@ public final class Pattern implements java.io.Serializable {
 		private GroupHead groupHead;
 		private GroupTail groupTail;
 		private boolean recursion;
+		private boolean inLookaround;
 
-		RecursiveGroupCall(int groupNumber, boolean recursion) {
-			this(recursion);
+		RecursiveGroupCall(int groupNumber, boolean recursion, boolean inLookaround) {
+			this(recursion, inLookaround);
 			setGroupNumber(groupNumber);
 		}
 
-		RecursiveGroupCall(boolean recursion) {
+		RecursiveGroupCall(boolean recursion, boolean inLookaround) {
 			this.recursion = recursion;
+			this.inLookaround = inLookaround;
 		}
 
 		void setGroupNumber(int groupNumber) {
@@ -5646,7 +5659,7 @@ public final class Pattern implements java.io.Serializable {
 					first = false;
 					groupTailsNext = groupTail.getNext(matcher);
 					groupTail.setNext(matcher, this);
-					boolean r = groupHead.match(matcher, i, seq, recursion);
+					boolean r = groupHead.match(matcher, i, seq, recursion, inLookaround);
 					groupTail.setNext(matcher, groupTailsNext);
 					return r;
 				} else {

@@ -16,10 +16,10 @@ This is a Regular Expressions library for Java. Compared to java.util.regex, it 
 - [Download](#download)	
 - [Links](#links)
 
-##Pre-requirement for this tutorial
+## Pre-requirement for this tutorial
 This tutorial assumes that you are already familiar with [Regular Expressions](http://www.regular-expressions.info/tutorial.html) and also with the [Regular Expression API of Java](https://docs.oracle.com/javase/tutorial/essential/regex/). 
 
-##API usage
+## API usage
 The API is exactly the same as in java.util.regex. The only difference is that the required import statement is `import com.florianingerl.util.regex.\*;` instead of `import java.util.regex.\*;`
 
 Throughout this tutorial, we will make use of the following two utility functions:
@@ -46,11 +46,11 @@ static void check(String regex, String input, String[] expected)
 }
 ```
 
-###Regular Expression features
+### Regular Expression features
 In the following screenshot, all the new features are summarized.
 ![com.github.florianingerl.util.regex.newfeatures](media/newfeatures.png)
 
-##Recursive Regular Expressions
+## Recursive Regular Expressions
 This section assumes that you are already familiar with [Recursive Regular Expressions](http://www.regular-expressions.info/recurse.html).
 Be aware that the syntax `(?R)` or `(?0)` as in Perl is not supported by this library, only `(?n)` where `n` is greater than `0` or `(?'groupName')` is supported. Examples:
 ```java
@@ -86,16 +86,16 @@ pattern = "(?(DEFINE)(?<second>\\k<first>))(?<first>[a-z])(?'second')";
 check(pattern, "bb", false);
 ```
 
-##Conditional Regular Expressions
+## Conditional Regular Expressions
 This section assumes that you are already familiar with [Conditional Regular Expressions](http://www.regular-expressions.info/conditional.html) .
 The syntax supported by this library is `(?(groupNumber)yes|no)` or `(?(groupName)yes|no)`. An example:
 
 ```java
 String pattern = "(?:(\\()|\\[)[a-z]+(?(1)\\)|\\])";
-		check(pattern, "(first) [second] [not third) (not fourth match]", new String[] { "(first)", "[second]" });
+check(pattern, "(first) [second] [not third) (not fourth match]", new String[] {"(first)", "[second]" });
 ```
 
-##Capture Trees
+## Capture Trees
 This concept is best illustrated by an example. The following Regex (which is stored in a file) should parse mathematical terms such as `(6*[6+7+8]+9)*78*[4*(6+5)+4]` .
 
 ```
@@ -136,7 +136,7 @@ System.out.println(m.captureTree());
 produces the output seen in the following screenshot:
 ![a term tree](media/termtree.png)
 
-##Recursive replace
+## Recursive replace
 Continuing with the example from above, we now want to replace each sum like `6+7` with `\sum{6,7}` and to replace each product like `5*3` with `\product{5,3}`. The short code snippet
 
 ```java
@@ -162,13 +162,13 @@ prints
 \product{(\sum{\product{6,[\sum{6,7,8}]},9}),78,[\sum{\product{4,(\sum{6,5})},4}]}
 ```
 
-##Plugins for the Regex engine
+## Plugins for the Regex engine
 You can install plugins for the Regex engine. The method of the Pattern class seen in the screenshot below is used for that purpose.
 ![com.florianingerl.util.regex.plugins](media/plugins.png)
 
 An example for a plugin is given in [PluginTest.java](regex/src/test/java/com/florianingerl/util/regex/tests/PluginTest.java). 
 
-##Known Issues
+## Known Issues
 Unfortunately, this library needs more stacks than java.util.regex which can lead to a `StackOverflowException` more quickly in rare cases.
 E.g. suppose you wanted to match Java strings with the following Regex:
 ```
@@ -181,11 +181,11 @@ so the Regex above could be improved to
 "(?:\\.|[^"\\]+)*"
 ```
 
-##JavaDoc
+## JavaDoc
 Read the [JavaDoc for this library](https://florianingerl.github.io/com.florianingerl.util.regex/).
 
-##Download
+## Download
 Download the library from [Maven central](https://mvnrepository.com/artifact/com.github.florianingerl.util/regex/1.0.3).
 
-##Links
+## Links
 * [Regular Expressions tutorial](http://www.regular-expressions.info/tutorial.html)

@@ -3,7 +3,7 @@
 This is a Regular Expressions library for Java. Compared to java.util.regex, it supports Recursive and Conditional Regular Expressions, Capture Trees and Plugins.
 
 ## Table of Contents
-- [Pre-requirement for this tutorial](#pre-requirements-for-this-tutorial)
+- [Pre-requirements for this tutorial](#pre-requirements-for-this-tutorial)
 - [API usage](#api-usage)
 - [Regular Expression features](#regular-expression-features)
     - [Recursive Regular Expressions](#recursive-regular-expressions)
@@ -16,7 +16,7 @@ This is a Regular Expressions library for Java. Compared to java.util.regex, it 
 - [Download](#download)	
 - [Links](#links)
 
-## Pre-requirement for this tutorial
+## Pre-requirements for this tutorial
 This tutorial assumes that you are already familiar with [Regular Expressions](http://www.regular-expressions.info/tutorial.html) and also with the [Regular Expression API of Java](https://docs.oracle.com/javase/tutorial/essential/regex/). 
 
 ## API usage
@@ -46,7 +46,7 @@ static void check(String regex, String input, String[] expected)
 }
 ```
 
-### Regular Expression features
+## Regular Expression features
 In the following screenshot, all the new features are summarized.
 ![com.github.florianingerl.util.regex.newfeatures](media/newfeatures.png)
 

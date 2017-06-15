@@ -185,6 +185,7 @@ public final class Matcher implements MatchResult {
 	 */
 	Vector<Stack<Integer>> localVector;
 	CaptureTreeNode captureTreeNode;
+	private CaptureTree captureTree;
 	Pattern.Node[] nextNodes;
 
 	/**
@@ -321,6 +322,7 @@ public final class Matcher implements MatchResult {
 		first = -1;
 		last = 0;
 		oldLast = -1;
+		captureTree = null;
 		captureTreeNode = new CaptureTreeNode();
 		for (int i = 0; i < localVector.size(); i++) {
 			localVector.set(i, new Stack<Integer>());
@@ -617,9 +619,52 @@ public final class Matcher implements MatchResult {
 		return group(group);
 	}
 
+	/**
+	 * Returns the {@link CaptureTree} of the previous match operation.
+	 * 
+	 * <p>
+	 * The {@link CaptureTree} contains all captures made during the previous
+	 * match operation of all <a href="Pattern.html#cg">capturing groups</a> in
+	 * a hierarchical data structure. E.g.
+	 * </p>
+	 * 
+	 * <pre>
+	 * Matcher matcher = Pattern.compile("(?x)" + "(?(DEFINE)" + "(?&lt;sum&gt; (?'summand')(?:\\+(?'summand'))+ )"
+	 * 		+ "(?&lt;summand&gt; (?'product') |  (?'number') )" + "(?&lt;product&gt; (?'factor')(?:\\*(?'factor'))+ )"
+	 * 		+ "(?&lt;factor&gt;(?'number') ) " + "(?&lt;number&gt;\\d++)" + ")" + "(?'sum')").matcher("5+6*8");
+	 * matcher.matches();
+	 * System.out.println(matcher.captureTree());
+	 * </pre>
+	 * 
+	 * prints out
+	 * 
+	 * <pre>
+	 * 0
+	 *	sum
+	 *		summand
+	 *			number
+	 *		summand
+	 *			product
+	 *				factor
+	 *					number
+	 *				factor
+	 *					number
+	 * </pre>
+	 * 
+	 * @throws IllegalStateException
+	 *             If no match has yet been attempted, or if the previous match
+	 *             operation failed
+	 * @return The {@link CaptureTree} of the previous match operation
+	 * @see CaptureTree
+	 */
 	public CaptureTree captureTree() {
-		captureTreeNode.setGroupName(parentPattern.groupNames());
-		return new CaptureTree(captureTreeNode);
+		if (first < 0)
+			throw new IllegalStateException("No match available");
+		if (captureTree == null) {
+			captureTreeNode.setGroupName(parentPattern.groupNames());
+			captureTree = new CaptureTree(captureTreeNode);
+		}
+		return captureTree;
 	}
 
 	/**
@@ -975,6 +1020,11 @@ public final class Matcher implements MatchResult {
 		return this;
 	}
 
+	/**
+	 * Implements a non-terminal append-and-replace step.
+	 * 
+	 * @see Matcher#replaceAll(CaptureReplacer)
+	 */
 	public Matcher appendReplacement(StringBuffer sb, CaptureReplacer replacer) {
 		// If no match, return error
 		if (first < 0)
@@ -1062,6 +1112,15 @@ public final class Matcher implements MatchResult {
 		return text.toString();
 	}
 
+	/**
+	 * Replaces every subsequence of the input sequence that matches the pattern
+	 * with the replacement string computed with the given Match Evaluator.
+	 * 
+	 * @param evaluator
+	 *            The Match Evaluator to be used to compute the replacement
+	 *            string
+	 * @see Matcher#replaceAll(String)
+	 */
 	public String replaceAll(Function<Matcher, String> evaluator) {
 		reset();
 		boolean result = find();
@@ -1077,6 +1136,48 @@ public final class Matcher implements MatchResult {
 		return text.toString();
 	}
 
+	/**
+	 * Replaces every subsequence of the input sequence that matches the pattern
+	 * with the replacement string computed with the given
+	 * {@link CaptureReplacer}.
+	 * 
+	 * <p>
+	 * E.g.
+	 * </p>
+	 * 
+	 * <pre>
+	 * Pattern pattern = Pattern.compile("(?x)" + "(?(DEFINE)" + "(?&lt;sum&gt; (?'summand')(?:\\+(?'summand'))+ )"
+	 * 		+ "(?&lt;summand&gt;  (?'product') | (?'number') )" + "(?&lt;product&gt; (?'factor')(?:\\*(?'factor'))+ )"
+	 * 		+ "(?&lt;factor&gt;(?'number') )" + "(?&lt;number&gt;\\d++)" + ")" + "(?'sum')");
+	 * Matcher matcher = pattern.matcher("First: 6+7*8 Second: 6*8+7");
+	 * String replacement = matcher.replaceAll(new DefaultCaptureReplacer() {
+	 * 	&#64;Override
+	 * 	public String replace(CaptureTreeNode node) {
+	 * 		if ("sum".equals(node.getGroupName())) {
+	 * 			return "\\sum{" + node.getChildren().stream().filter(n -&gt; "summand".equals(n.getGroupName()))
+	 * 					.map(n -&gt; replace(n)).collect(Collectors.joining(",")) + "}";
+	 * 		} else if ("product".equals(node.getGroupName())) {
+	 * 			return "\\product{" + node.getChildren().stream().filter(n -&gt; "factor".equals(n.getGroupName()))
+	 * 					.map(n -&gt; replace(n)).collect(Collectors.joining(",")) + "}";
+	 * 		} else
+	 * 			return super.replace(node);
+	 * 	}
+	 * });
+	 * System.out.println(replacement);
+	 * </pre>
+	 * 
+	 * prints out
+	 * 
+	 * <pre>
+	 * First: \\sum{6,\\product{7,8}} Second: \\sum{\\product{6,8},7}
+	 * </pre>
+	 * 
+	 * @param replacer
+	 *            The {@link CaptureReplacer} to be used to compute the
+	 *            replacement string
+	 * @see Matcher#replaceAll(String)
+	 * @see DefaultCaptureReplacer
+	 */
 	public String replaceAll(CaptureReplacer replacer) {
 		reset();
 		boolean result = find();
@@ -1154,6 +1255,16 @@ public final class Matcher implements MatchResult {
 		return sb.toString();
 	}
 
+	/**
+	 * Replaces the first subsequence of the input sequence that matches the
+	 * pattern with the replacement string computed with the given
+	 * {@link CaptureReplacer}.
+	 * 
+	 * @param replacer
+	 *            The {@link CaptureReplacer} to be used to compute the
+	 *            replacement string
+	 * @see Matcher#replaceAll(CaptureReplacer)
+	 */
 	public String replaceFirst(CaptureReplacer replacer) {
 		if (replacer == null)
 			throw new NullPointerException("replacer");
@@ -1421,6 +1532,7 @@ public final class Matcher implements MatchResult {
 		this.first = from;
 		this.oldLast = oldLast < 0 ? from : oldLast;
 		genData();
+		captureTree = null;
 		captureTreeNode = new CaptureTreeNode();
 		acceptMode = NOANCHOR;
 		boolean result = parentPattern.root.match(this, from, text);
@@ -1443,6 +1555,7 @@ public final class Matcher implements MatchResult {
 		this.first = from;
 		this.oldLast = oldLast < 0 ? from : oldLast;
 		genData();
+		captureTree = null;
 		captureTreeNode = new CaptureTreeNode();
 		acceptMode = anchor;
 		boolean result = parentPattern.matchRoot.match(this, from, text);

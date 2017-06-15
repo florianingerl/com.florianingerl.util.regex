@@ -5,6 +5,14 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
+/**
+ * A node inside a {@link CaptureTree}.
+ * 
+ * @author Florian Ingerl
+ * @see CaptureTree
+ * @see Matcher#captureTree()
+ * 
+ */
 public class CaptureTreeNode {
 	int groupNumber;
 	String groupName;
@@ -14,26 +22,67 @@ public class CaptureTreeNode {
 	boolean recursion;
 	boolean inLookaround;
 
+	/**
+	 * Returns the group number of the <a href="Pattern.html#cg">capturing
+	 * group</a> that was captured
+	 * 
+	 * @return The group number of the <a href="Pattern.html#cg">capturing
+	 *         group</a> that was captured
+	 */
 	public int getGroupNumber() {
 		return groupNumber;
 	}
 
+	/**
+	 * Returns the group name of the
+	 * <a href="Pattern.html#groupname">named-capturing group</a> that was
+	 * captured
+	 * 
+	 * @return The group name of the
+	 *         <a href="Pattern.html#groupname">named-capturing group</a> that
+	 *         was captured or null if this isn't a
+	 *         <a href="Pattern.html#groupname">named-capturing group</a>
+	 */
 	public String getGroupName() {
 		return groupName;
 	}
 
+	/**
+	 * Returns a {@link Capture} object that contains the start and end index of
+	 * the region of the input sequence captured
+	 * 
+	 * @return A {@link Capture} object that contains the start and end index of
+	 *         the region of the input sequence captured
+	 */
 	public Capture getCapture() {
 		return capture;
 	}
 
+	/**
+	 * Returns the children of this node
+	 * 
+	 * @return The children of this node
+	 */
 	public List<CaptureTreeNode> getChildren() {
 		return children;
 	}
 
+	/**
+	 * Returns the parent of this node
+	 * 
+	 * @return The parent of this node
+	 */
 	public CaptureTreeNode getParent() {
 		return parent;
 	}
 
+	/**
+	 * Returns whether this capture is from a
+	 * <a href="Pattern.html#recursion">recursive group call</a>
+	 * 
+	 * @return Whether this capture is from a
+	 *         <a href="Pattern.html#recursion">recursive group call</a>
+	 */
 	public boolean isRecursion() {
 		return recursion;
 	}

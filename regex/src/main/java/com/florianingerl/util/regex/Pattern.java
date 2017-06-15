@@ -644,7 +644,8 @@ import java.util.stream.StreamSupport;
  * <th>&nbsp;</th>
  * </tr>
  * <tr align="left">
- * <th colspan="2" id="recursive">Recursive expressions</th>
+ * <th colspan="2" id="recursive"><a name="recursion">Recursive
+ * expressions</a></th>
  * </tr>
  * <tr>
  * <td valign="top" headers="construct recursive">
@@ -5524,26 +5525,17 @@ public final class Pattern implements java.io.Serializable {
 	static final class GroupHead extends Node {
 		int localIndex;
 		int groupIndex;
-		private boolean recursion;
-		private boolean inLookaround;
 
 		GroupHead(int localCount, int groupCount) {
 			localIndex = localCount;
 			groupIndex = groupCount;
 		}
 
-		boolean match(Matcher matcher, int i, CharSequence seq, boolean recursion, boolean inLookaround) {
-			boolean save = this.recursion;
-			boolean save2 = this.inLookaround;
-			this.recursion = recursion;
-			this.inLookaround = inLookaround;
-			boolean r = match(matcher, i, seq);
-			this.recursion = save;
-			this.inLookaround = save2;
-			return r;
+		boolean match(Matcher matcher, int i, CharSequence seq) {
+			return match(matcher, i, seq, false, false);
 		}
 
-		boolean match(Matcher matcher, int i, CharSequence seq) {
+		boolean match(Matcher matcher, int i, CharSequence seq, boolean recursion, boolean inLookaround) {
 			CaptureTreeNode t = null;
 			if (groupIndex > 0) {
 				t = new CaptureTreeNode();

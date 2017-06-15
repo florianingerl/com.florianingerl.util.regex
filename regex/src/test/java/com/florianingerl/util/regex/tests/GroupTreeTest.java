@@ -69,4 +69,13 @@ public class GroupTreeTest {
 
 	}
 
+	@Test
+	public void test4() throws IOException {
+		Matcher matcher = Pattern.compile("(?x)" + "(?(DEFINE)" + "(?<sum> (?'summand')(?:\\+(?'summand'))+ )"
+				+ "(?<summand> (?'number') | (?'product') )" + "(?<product> (?'factor')(?:\\*(?'factor'))+ )"
+				+ "(?<factor>(?'number') ) " + "(?<number>\\d++)" + ")" + "(?'sum')").matcher("5+6*8");
+		assertTrue(matcher.matches());
+		System.out.println(matcher.captureTree());
+	}
+
 }

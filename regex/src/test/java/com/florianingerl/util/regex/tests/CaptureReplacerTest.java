@@ -84,4 +84,44 @@ public class CaptureReplacerTest {
 		assertEquals(actual, "Row='101' Row='41'");
 	}
 
+	@Test
+	public void test2() throws FileNotFoundException, IOException {
+		Pattern pattern = Pattern.compile("(?x)\r\n" + "(?(DEFINE)\r\n"
+				+ "(?<sum> (?'summand')(?:\\+(?'summand'))+ )\r\n" + "(?<summand> (?'product') | (?'number') )\r\n"
+				+ "(?<product> (?'factor')(?:\\*(?'factor'))+ )\r\n" + "(?<factor>(?'number') )\r\n"
+				+ "(?<number>\\d++)\r\n" + ")\r\n" + "(?'sum')");
+		Matcher matcher = pattern.matcher("First: 6+7*8 Second: 6*8+7");
+		CaptureReplacer replacer = new DefaultCaptureReplacer() {
+
+			@Override
+			public String replace(CaptureTreeNode node) {
+				if ("sum".equals(node.getGroupName())) {
+					return "\\sum{" + node.getChildren().stream().filter(n -> "summand".equals(n.getGroupName()))
+							.map(n -> replace(n)).collect(Collectors.joining(",")) + "}";
+				} else if ("product".equals(node.getGroupName())) {
+					return "\\product{" + node.getChildren().stream().filter(n -> "factor".equals(n.getGroupName()))
+							.map(n -> replace(n)).collect(Collectors.joining(",")) + "}";
+				} else
+					return super.replace(node);
+			}
+
+		};
+		String replacement = matcher.replaceAll(replacer);
+		System.out.println(replacement);
+		assertEquals("First: \\sum{6,\\product{7,8}} Second: \\sum{\\product{6,8},7}", replacement);
+
+		matcher.reset();
+		replacement = matcher.replaceFirst(replacer);
+		assertEquals("First: \\sum{6,\\product{7,8}} Second: 6*8+7", replacement);
+	}
+
+	@Test
+	public void some() {
+		Matcher matcher = Pattern.compile("(?x)" + "(?(DEFINE)" + "(?<sum> (?'summand')(?:\\+(?'summand'))+ )"
+				+ "(?<summand> (?'product') |  (?'number') )" + "(?<product> (?'factor')(?:\\*(?'factor'))+ )"
+				+ "(?<factor>(?'number') ) " + "(?<number>\\d++)" + ")" + "(?'sum')").matcher("5+6*8");
+		matcher.matches();
+		System.out.println(matcher.captureTree());
+	}
+
 }

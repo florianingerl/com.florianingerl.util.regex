@@ -20,7 +20,7 @@ This is a Regular Expressions library for Java. Compared to java.util.regex, it 
 This tutorial assumes that you are already familiar with [Regular Expressions](http://www.regular-expressions.info/tutorial.html) and also with the [Regular Expression API of Java](https://docs.oracle.com/javase/tutorial/essential/regex/). 
 
 ## API usage
-The API is exactly the same as in java.util.regex. The only difference is that the required import statement is `import com.florianingerl.util.regex.\*;` instead of `import java.util.regex.\*;`
+The API is exactly the same as in java.util.regex. The only difference is that the required import statement is `import com.florianingerl.util.regex.*;` instead of `import java.util.regex.*;`
 
 Throughout this tutorial, we will make use of the following two utility functions:
 ```java

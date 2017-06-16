@@ -187,5 +187,7 @@ Read the [JavaDoc for this library](https://florianingerl.github.io/com.floriani
 ## Download
 Download the library from [Maven central](https://mvnrepository.com/artifact/com.github.florianingerl.util/regex/1.0.3).
 
+Alternatively, download this repository and build the library yourself with Ant or Maven.
+
 ## Links
 * [Regular Expressions tutorial](http://www.regular-expressions.info/tutorial.html)

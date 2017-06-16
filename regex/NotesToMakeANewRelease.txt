@@ -1,0 +1,16 @@
+To make a new release
+1) Increase the version number in pom.xml
+2) Call mvn clean deploy
+For this to work, you need to have Maven configured, your settings.xml (in Maven-Install-Dir/conf ) needs to contain the authentication to ossrh:
+
+<servers>
+	....
+	<server>
+		<id>ossrh</id>
+		<username>florianingerl</username>
+		<password>your-password</password>
+    </server>
+	...
+</servers>	
+
+3) Go to https://oss.sonatype.org/, login, go to Staging Repositories, find the repository you just uploaded, and click on the Release-Button!

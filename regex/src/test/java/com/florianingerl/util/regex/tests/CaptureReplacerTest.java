@@ -119,4 +119,42 @@ public class CaptureReplacerTest {
 		System.out.println(matcher.captureTree());
 	}
 
+	@Test
+	public void abcTest() {
+		Pattern pattern = Pattern.compile("(?<abc>ABC\\((?<arg1>(?:(?'abc')|[^,])+)\\,(?<arg2>(?:(?'abc')|[^)])+)\\))");
+		Matcher matcher = pattern.matcher("ABC(ABC(20,2),5)");
+		String replacement = matcher.replaceAll(new DefaultCaptureReplacer() {
+			@Override
+			public String replace(CaptureTreeNode node) {
+				if ("abc".equals(node.getGroupName())) {
+					return "(" + replace(node.getChildren().get(0)) + ")%(" + replace(node.getChildren().get(1)) + ")";
+				} else
+					return super.replace(node);
+			}
+
+		});
+		System.out.println(replacement);
+		assertEquals("((20)%(2))%(5)", replacement);
+	}
+
+	@Test
+	public void abcTest2() {
+		Pattern pattern = Pattern.compile("(?<fraction>(?<arg>\\(((?:(?'fraction')|[^)])+)\\))%(?'arg'))");
+		Matcher matcher = pattern.matcher("((20)%(2))%(5)");
+		String replacement = matcher.replaceAll(new DefaultCaptureReplacer() {
+			@Override
+			public String replace(CaptureTreeNode node) {
+				if ("fraction".equals(node.getGroupName())) {
+					return "ABC(" + replace(node.getChildren().get(0)) + "," + replace(node.getChildren().get(1)) + ")";
+				} else if ("arg".equals(node.getGroupName())) {
+					return replace(node.getChildren().get(0));
+				} else
+					return super.replace(node);
+			}
+
+		});
+		System.out.println(replacement);
+		assertEquals("ABC(ABC(20,2),5)", replacement);
+	}
+
 }

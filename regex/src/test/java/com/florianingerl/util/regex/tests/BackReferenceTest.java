@@ -11,17 +11,17 @@ import com.florianingerl.util.regex.PatternSyntaxException;
 public class BackReferenceTest {
 
 	@Test(expected = PatternSyntaxException.class)
-	public void test() {
+	public void backReferenceToNonExistentGroupShouldCausePatternSyntaxException() {
 		Pattern.compile("\\2");
 	}
 
 	@Test(expected = PatternSyntaxException.class)
-	public void test2() {
+	public void backReferenceToNonExistentNamedGroupShouldCausePatternSyntaxException() {
 		Pattern.compile("\\k<letter>");
 	}
 
 	@Test
-	public void test3() {
+	public void backReferenceToGroupThatsDefinedLaterInTheRegexShouldWork() {
 		Pattern p = Pattern.compile("(?'letter')\\k<letter>(?(DEFINE)(?<letter>[a-z]))");
 		Matcher m = p.matcher("bb");
 		assertTrue(m.matches());

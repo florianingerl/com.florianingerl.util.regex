@@ -185,7 +185,7 @@ so the Regex above could be improved to
 Read the [JavaDoc for this library](https://florianingerl.github.io/com.florianingerl.util.regex/).
 
 ## Download
-Download the library from [Maven central](https://mvnrepository.com/artifact/com.github.florianingerl.util/regex/1.0.3).
+Download the library from [Maven central](https://mvnrepository.com/artifact/com.github.florianingerl.util/regex).
 
 Alternatively, download this repository and build the library yourself with Ant or Maven.
 

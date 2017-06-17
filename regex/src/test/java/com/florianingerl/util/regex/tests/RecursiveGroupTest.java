@@ -11,41 +11,66 @@ import com.florianingerl.util.regex.PatternSyntaxException;
 public class RecursiveGroupTest {
 
 	@Test(expected = PatternSyntaxException.class)
-	public void test1() {
-		Pattern.compile("(?'notdefined')group is not defined!");
+	public void recursionToNamedGroupThatsNotDefinedShouldCausePatternSyntaxException() {
+		Pattern.compile("(?'notdefined')group is not defined");
 	}
 
 	@Test(expected = PatternSyntaxException.class)
-	public void test2() {
-		Pattern.compile("(?<=(?'laterdefined'))something(?(DEFINE)(?<laterdefined>a(?'laterdefined')?b))");
+	public void recursionToGroupThatsNotDefinedShouldCausePatternSyntaxException() {
+		Pattern.compile("(?1)group is not defined");
 	}
 
 	@Test
-	public void test3() {
+	public void recursionToNamedGroupWithoutAMaximumLengthInsideLookbehindShouldCausePatternSyntaxException() {
+		try {
+			Pattern.compile("(?<=(?'laterdefined'))something(?(DEFINE)(?<laterdefined>a(?'laterdefined')?b))");
+		} catch (PatternSyntaxException pse) {
+			assertTrue(pse.getMessage().contains("obvious maximum length"));
+			return;
+		}
+		assertTrue(false);
+	}
+
+	@Test
+	public void recursionToGroupWithoutAMaximumLengthInsideLookbehindShouldCausePatternSyntaxException() {
+		try {
+			Pattern.compile("(?<=(?1))something(?(DEFINE)(a(?1)?b))");
+		} catch (PatternSyntaxException pse) {
+			assertTrue(pse.getMessage().contains("obvious maximum length"));
+			return;
+		}
+		assertTrue(false);
+	}
+
+	@Test
+	public void whenEnteringRecursionAllBackreferencesShouldInitiallyFail() {
 		Pattern p = Pattern.compile("(?<first>[a-z])(?<second>\\k<first>)");
-		Matcher m = p.matcher("bb");
-		assertTrue(m.matches());
+		assertTrue(p.matcher("bb").matches());
 		assertFalse(p.matcher("ab").matches());
 
 		p = Pattern.compile("(?(DEFINE)(?<second>\\k<first>))(?<first>[a-z])(?'second')");
 		assertFalse(p.matcher("bb").matches());
-
-		p = Pattern.compile("(?(DEFINE)(?<first>[a-z]))(?'first')(?<second>\\k<first>)");
-		assertTrue(p.matcher("bb").matches());
 		assertFalse(p.matcher("ab").matches());
 	}
 
 	@Test
-	public void test4() {
-		Pattern p = Pattern.compile("(?(DEFINE)(?<first>(?<letter>[a-z])))(?'first')\\k<letter>");
-		assertFalse(p.matcher("aa").matches());
+	public void whenLeavingRecursionACaptureShouldBeMadeForTheGroupThatWasRecursedTo() {
+		Pattern p = Pattern.compile("(?(DEFINE)(?<first>[a-z]))(?'first')(?<second>\\k<first>)");
+		assertTrue(p.matcher("bb").matches());
+		assertFalse(p.matcher("ab").matches());
 
 		p = Pattern.compile("(?(DEFINE)(?<first>(?<letter>[a-z])))(?'first')\\k<first>");
 		assertTrue(p.matcher("aa").matches());
 	}
 
 	@Test
-	public void shouldMatchAnagrams() {
+	public void whenLeavingRecursionAllCapturesMadeInsideTheRecursionShouldAffectBackreferencesOutside() {
+		Pattern p = Pattern.compile("(?(DEFINE)(?<first>(?<letter>[a-z])))(?'first')\\k<letter>");
+		assertFalse(p.matcher("aa").matches());
+	}
+
+	@Test
+	public void anagramsShouldBeMatched() {
 		Pattern p = Pattern.compile(
 				"(?(DEFINE)(?<letter>[a-zA-Z]))\\b(?<anagram>(?'letter')(?'anagram')?\\k<letter>|(?'letter'))\\b");
 		assertTrue(p.matcher("radar").matches());

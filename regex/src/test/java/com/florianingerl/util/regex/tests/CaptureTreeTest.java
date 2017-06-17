@@ -15,10 +15,10 @@ import com.florianingerl.util.regex.CaptureTreeNode;
 import com.florianingerl.util.regex.Matcher;
 import com.florianingerl.util.regex.Pattern;
 
-public class GroupTreeTest {
+public class CaptureTreeTest {
 
 	@Test
-	public void test() {
+	public void test1() {
 		Pattern p = Pattern.compile("(?<sum>(?<number>\\d+)\\+(?:(?'sum')|(?'number')))");
 		Matcher s = p.matcher("5+8");
 		assertTrue(s.matches());
@@ -30,7 +30,6 @@ public class GroupTreeTest {
 		assertTrue(s.matches());
 
 		gt = s.captureTree();
-		System.out.println(gt);
 		assertEquals("0\n\tsum\n\t\tnumber\n\t\tsum\n\t\t\tnumber\n\t\t\tnumber\n", gt.toString());
 	}
 

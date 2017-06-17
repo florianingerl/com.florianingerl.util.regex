@@ -10,12 +10,12 @@ import com.florianingerl.util.regex.PatternSyntaxException;
 public class LookbehindTest {
 
 	@Test
-	public void test() {
+	public void recursionWithMaximumLengthInsideLookbehindShouldWork() {
 		Pattern.compile("(?<=(?'digits'))(?(DEFINE)(?<digits>\\d))");
 	}
 
 	@Test(expected = PatternSyntaxException.class)
-	public void test3() {
+	public void recursionWithoutMaximumLengthInsideLookbehindShouldntWork() {
 		Pattern.compile("(?<=(?'digits'))(?(DEFINE)(?<digits>a\\d+))");
 	}
 

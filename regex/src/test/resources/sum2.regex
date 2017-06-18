@@ -1,0 +1,1 @@
+(?<sum>(?<number>\d+)\+(?:(?'sum')|(?'number')))

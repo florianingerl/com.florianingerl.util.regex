@@ -137,18 +137,20 @@ produces the output seen in the following screenshot:
 ![a term tree](media/termtree.png)
 
 ## Recursive replace
-Continuing with the example from above, we now want to replace each sum like `6+7` with `\sum{6,7}` and to replace each product like `5*3` with `\product{5,3}`. The short code snippet
+Continuing with the example from above, we now want to replace each sum like `6+7` with `sum(6,7)` and to replace each product like `5*3` with `product(5,3)`. The short code snippet
 
 ```java
 String replacement = m.replaceAll( new DefaultCaptureReplacer() {
 			@Override
 			public String replace(CaptureTreeNode node) {
 				if ("sum".equals(node.getGroupName())) {
-					return "\\sum{" + node.getChildren().stream().filter(n -> "summand".equals(n.getGroupName()))
-							.map(n -> replace(n)).collect(Collectors.joining(",")) + "}";
+					return "sum(" + node.getChildren().stream().filter(n -> "summand".equals(n.getGroupName()))
+							.map(n -> replace(n)).collect(Collectors.joining(",")) + ")";
 				} else if ("product".equals(node.getGroupName())) {
-					return "\\product{" + node.getChildren().stream().filter(n -> "factor".equals(n.getGroupName()))
-							.map(n -> replace(n)).collect(Collectors.joining(",")) + "}";
+					return "product(" + node.getChildren().stream().filter(n -> "factor".equals(n.getGroupName()))
+							.map(n -> replace(n)).collect(Collectors.joining(",")) + ")";
+				} else if (Arrays.asList("summand", "factor").contains(node.getGroupName())) {
+					return replace(node.getChildren().get(0));
 				} else {
 					return super.replace(node);
 				}
@@ -159,7 +161,7 @@ System.out.println(replacement);
 ```
 prints
 ```
-\product{(\sum{\product{6,[\sum{6,7,8}]},9}),78,[\sum{\product{4,(\sum{6,5})},4}]}
+product(sum(product(6,sum(6,7,8)),9),78,sum(product(4,sum(6,5)),4))
 ```
 
 ## Plugins for the Regex engine

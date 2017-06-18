@@ -51,15 +51,15 @@ public class CaptureReplacerTest {
 			}
 
 		};
-		String actual = m.replaceAll(replacer);
-		System.out.println(actual);
+		String replacement = m.replaceAll(replacer);
+		System.out.println(replacement);
 		System.out.println(expected);
 
-		assertEquals(expected, actual);
+		assertEquals(expected, replacement);
 
-		actual = m.replaceFirst(replacer);
-		System.out.println(actual);
-		assertEquals(expected, actual);
+		replacement = m.replaceFirst(replacer);
+		System.out.println(replacement);
+		assertEquals(expected, replacement);
 	}
 
 	@Test

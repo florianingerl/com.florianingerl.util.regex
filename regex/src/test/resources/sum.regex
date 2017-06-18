@@ -1,0 +1,8 @@
+(?x) #comment mode
+(?(DEFINE)
+(?<sum> (?'summand1') \+ (?'summand2') )
+(?<summand1> (?'number') | (?'sum') )
+(?<summand2> (?'number'))
+(?<number>\d+)
+) # end of define
+(?'sum')

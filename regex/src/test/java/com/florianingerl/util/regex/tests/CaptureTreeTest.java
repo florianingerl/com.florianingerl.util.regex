@@ -4,7 +4,10 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 
 import org.apache.commons.io.IOUtils;
@@ -15,66 +18,55 @@ import com.florianingerl.util.regex.CaptureTreeNode;
 import com.florianingerl.util.regex.Matcher;
 import com.florianingerl.util.regex.Pattern;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
 public class CaptureTreeTest {
 
-	@Test
-	public void test1() {
-		Pattern p = Pattern.compile("(?<sum>(?<number>\\d+)\\+(?:(?'sum')|(?'number')))");
-		Matcher s = p.matcher("5+8");
-		assertTrue(s.matches());
+	private void processFile(String filename) throws IOException {
+		Scanner scanner = new Scanner(new FileInputStream(getClass().getClassLoader().getResource(filename).getFile()));
+		String line = null;
+		int count = 0;
+		List<Pair<String, Integer>> statistics = new LinkedList<Pair<String, Integer>>();
+		while (scanner.hasNextLine() && !(line = scanner.nextLine()).isEmpty()) {
+			String file = line;
+			Pattern pattern = Pattern.compile(IOUtils
+					.toString(new FileInputStream(getClass().getClassLoader().getResource(file).getFile()), "UTF-8"));
+			int j = 0;
+			while (scanner.hasNextLine() && !(line = scanner.nextLine()).isEmpty()) {
+				String[] tokens = line.split(" ");
+				Matcher matcher = pattern.matcher(tokens[0]);
+				if (tokens.length == 2) {
+					assertTrue(matcher.matches());
+					Pattern gtp = Pattern.compile(tokens[1]);
+					String captureTree = matcher.captureTree().toString();
+					System.out.println("Capture tree for " + tokens[0]);
+					System.out.println(captureTree);
+					assertTrue(captureTree + " doesn't match the pattern " + tokens[1],
+							gtp.matcher(matcher.captureTree().toString()).matches());
+				} else {
+					assertFalse(matcher.matches());
+				}
+				++j;
+				++count;
+				line = null;
+			}
 
-		CaptureTree gt = s.captureTree();
-		assertEquals("0\n\tsum\n\t\tnumber\n\t\tnumber\n", gt.toString());
+			statistics.add(new ImmutablePair(file, j));
 
-		s = p.matcher("5+6+7");
-		assertTrue(s.matches());
+			if (line == null)
+				break;
 
-		gt = s.captureTree();
-		assertEquals("0\n\tsum\n\t\tnumber\n\t\tsum\n\t\t\tnumber\n\t\t\tnumber\n", gt.toString());
+		}
+		System.err.println("Executed " + count + " tests from CaptureTreeTestCases.txt");
+		for (Pair<String, Integer> pair : statistics) {
+			System.err.println("\tExecuted " + pair.getRight() + " tests from " + pair.getLeft());
+		}
 	}
 
 	@Test
-	public void test2() {
-		Pattern p = Pattern.compile(
-				"(?(DEFINE)(?<term>(?'number')|(?'sum')|(?'product'))(?<sum>(?'summand')(?:\\+(?'summand'))+)(?<product>(?'factor')(?:\\*(?'factor'))+)(?<summand>\\((?'term')\\)|(?'number')|(?'product'))(?<factor>(?'number')|\\((?'term')\\))(?<number>\\d+))(?'term')");
-		Matcher m = p.matcher("5+6*9");
-		assertTrue(m.matches());
-
-		CaptureTree gt = m.captureTree();
-		System.out.println(gt);
-
-	}
-
-	@Test
-	public void test3() throws IOException {
-		String regex = IOUtils.toString(
-				new FileInputStream(getClass().getClassLoader().getResource("term.regex").getFile()), "UTF-8");
-		Pattern p = Pattern.compile(regex);
-
-		String term = "(6*[6+7+8]+9)*78*[4*(6+5)+4]";
-
-		System.out.println("You see the term tree for: " + term);
-		Matcher m = p.matcher(term);
-		assertTrue(m.matches());
-		System.out.println(m.captureTree());
-
-		assertTrue(p.matcher("5").matches());
-		assertTrue(p.matcher("4+55").matches());
-		assertTrue(p.matcher("55+67+888").matches());
-		assertTrue(p.matcher("6+99*2").matches());
-		assertTrue(p.matcher("99*2+7").matches());
-		assertTrue(p.matcher("(4+6*7)*(4+6)").matches());
-		assertTrue(p.matcher("(6*[6+7+8]+9)*78*[4*(6+5)+4]").matches());
-
-	}
-
-	@Test
-	public void test4() throws IOException {
-		Matcher matcher = Pattern.compile("(?x)" + "(?(DEFINE)" + "(?<sum> (?'summand')(?:\\+(?'summand'))+ )"
-				+ "(?<summand> (?'number') | (?'product') )" + "(?<product> (?'factor')(?:\\*(?'factor'))+ )"
-				+ "(?<factor>(?'number') ) " + "(?<number>\\d++)" + ")" + "(?'sum')").matcher("5+6*8");
-		assertTrue(matcher.matches());
-		System.out.println(matcher.captureTree());
+	public void captureTreeTests() throws IOException {
+		processFile("CaptureTreeTestCases.txt");
 	}
 
 }

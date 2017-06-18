@@ -1,0 +1,20 @@
+sum.regex
+5+6 0\n\tsum\n(?:\t{2}summand(?(1)2|(1))\n\t{3}number\n){2}
+5+6+7 0\n\tsum\n\t{2}summand1\n\t{3}sum\n(?:\t{4}summand(?(1)2|(1))\n\t{5}number\n){2}\t{2}summand2\n\t{3}number\n
+
+sum2.regex
+7+88 0\n\tsum\n(\t{2}number\n){2}
+900+7+89 0\n\tsum\n\t{2}number\n\t{2}sum\n(\t{3}number\n){2}
+
+term.regex
+5+6*9 0\n\tterm\n\t{2}sum\n\t{3}summand\n\t{4}number\n\t{3}summand\n\t{4}product\n(\t{5}factor\n\t{6}number\n){2}
+(6*[6+7+8]+9)*78*[4*(6+5)+4] 0\n\tterm\n\t{2}product\n\t{3}factor\n\t{4}sum\n\t{5}summand\n\t{6}product\n\t{7}factor\n\t{8}number\n\t{7}factor\n\t{8}sum\n\t{9}summand\n\t{10}number\n\t{9}summand\n\t{10}number\n\t{9}summand\n\t{10}number\n\t{5}summand\n\t{6}number\n\t{3}factor\n\t{4}number\n\t{3}factor\n\t{4}sum\n\t{5}summand\n\t{6}product\n\t{7}factor\n\t{8}number\n\t{7}factor\n\t{8}sum\n\t{9}summand\n\t{10}number\n\t{9}summand\n\t{10}number\n\t{5}summand\n\t{6}number\n
+(6*[6+7+8)+9)*78*[4*(6+5)+4]
+
+term2.regex
+5+6*9 0\n\tterm\n\t{2}sum\n\t{3}summand\n\t{4}number\n\t{3}summand\n\t{4}product\n(\t{5}factor\n\t{6}number\n){2}
+(6*[6+7+8]+9)*78*[4*(6+5)+4] 0\n\tterm\n\t{2}product\n\t{3}factor\n\t{4}round\n\t{4}sum\n\t{5}summand\n\t{6}product\n\t{7}factor\n\t{8}number\n\t{7}factor\n\t{8}sum\n\t{9}summand\n\t{10}number\n\t{9}summand\n\t{10}number\n\t{9}summand\n\t{10}number\n\t{5}summand\n\t{6}number\n\t{3}factor\n\t{4}number\n\t{3}factor\n\t{4}sum\n\t{5}summand\n\t{6}product\n\t{7}factor\n\t{8}number\n\t{7}factor\n\t{8}round\n\t{8}sum\n\t{9}summand\n\t{10}number\n\t{9}summand\n\t{10}number\n\t{5}summand\n\t{6}number\n
+(6*[6+7+8)+9)*78*[4*(6+5)+4]
+
+simplifiedterm.regex
+6+7*99 0\n\t{1}sum\n\t{2}summand\n\t{3}number\n\t{2}summand\n\t{3}product\n(\t{4}factor\n\t{5}number\n){2}

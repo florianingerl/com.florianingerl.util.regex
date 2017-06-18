@@ -100,19 +100,18 @@ This concept is best illustrated by an example. The following Regex (which is st
 
 ```
 //term.regex
-(?x) # turns on comment mode
+(?x) # comment mode
 (?(DEFINE)
 (?<term>(?'number')|(?'sum')|(?'product'))
 (?<sum> 
 (?'summand')(?:\+(?'summand'))+
 ) # end of sum
-(?<summand> (?'number') | (?'product') | (?: (?'round') | \[ )(?: (?'sum') | (?'product') ) (?(round)\)|\]) ) # end of summand
+(?<summand> (?'number') | (?'product') | \( (?: (?'sum') | (?'product') ) \) | \[ (?: (?'sum') | (?'product') ) \]) # end of summand
 (?<product> 
 (?'factor')(?:\*(?'factor'))+
 ) # end of product
-(?<factor>(?'number')| (?: (?'round') | \[ )(?: (?'sum') | (?'product') ) (?(round)\)|\]) ) # end of factor
+(?<factor>(?'number')| \( (?: (?'sum') | (?'product') ) \) | \[ (?: (?'sum') | (?'product') ) \] ) # end of factor
 (?<number>\d+)
-(?<round>\()
 )# end of DEFINE
 (?'term')
 ```
@@ -127,7 +126,7 @@ Pattern p = Pattern.compile(regex);
 
 String term = "(6*[6+7+8]+9)*78*[4*(6+5)+4]";
 
-System.out.println("You see the term tree for: " + term);
+System.out.println("Capture Tree for: " + term);
 Matcher m = p.matcher(term);
 m.matches();
 System.out.println(m.captureTree());

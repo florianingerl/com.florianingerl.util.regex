@@ -5425,13 +5425,13 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	static final class Branch extends Node {
 		Node[] atoms = new Node[2];
-		int size = 2;
+		int size = 0;
 		Node conn;
 
 		Branch(Node first, Node second, Node branchConn) {
 			conn = branchConn;
-			atoms[0] = first;
-			atoms[1] = second;
+			add(first);
+			add(second);
 		}
 
 		void add(Node node) {
@@ -5440,7 +5440,15 @@ public final class Pattern implements java.io.Serializable {
 				System.arraycopy(atoms, 0, tmp, 0, atoms.length);
 				atoms = tmp;
 			}
-			atoms[size++] = node;
+			int i = size++;
+			new Node() {
+				@Override
+				public void setNext(Node a) {
+					atoms[i] = a;
+					if(a!=null)
+						a.previous = this;
+				}
+			}.setNext(node);
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {

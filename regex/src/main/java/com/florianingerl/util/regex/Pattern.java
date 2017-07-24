@@ -5518,7 +5518,6 @@ public final class Pattern implements java.io.Serializable {
 					a.previous = this;
 				}
 			}.setNext(atom);
-			this.atom = atom;
 		}
 
 		@Override

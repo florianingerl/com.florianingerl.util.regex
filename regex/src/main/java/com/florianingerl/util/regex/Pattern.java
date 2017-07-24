@@ -3641,8 +3641,8 @@ public final class Pattern implements java.io.Serializable {
 				head = createGroup(true);// Conditionals are really uncaptured
 											// groups
 				tail = root;
-				conditional.yes = expr2(tail);
-				conditional.not = root;
+				conditional.setYes( expr2(tail));
+				conditional.setNot( root);
 				head.setNext(conditional);
 				head.getNext().setNext(tail);
 				break;
@@ -3978,15 +3978,25 @@ public final class Pattern implements java.io.Serializable {
 			return beginNode;
 		}
 
-		final Curly curly = new Curly(beginNode, cmin, cmax, type);
+		final CurlyBase cb = new CurlyBase(beginNode, cmin, cmax, type);
 
 		curlyDeterministicChecks().add(() -> {
-			if (!isDeterministic(beginNode)) {
-				curly.setEndNode(createNavigator(endNode));
+			CurlyBase curly = null;
+			if (isDeterministic(beginNode)) {
+				curly = new DeterministicCurly(cb.beginNode, cb.cmin, cb.cmax, cb.type);
 			}
+			else {
+				curly = new Curly(cb.beginNode, createNavigator(endNode), cb.cmin, cb.cmax, cb.type);
+			}
+			curly.setNext(cb.getNext());
+			if(cb.getPrevious()== null) {
+				matchRoot = curly;
+			}
+			else
+				cb.getPrevious().setNext(curly);
 		});
 
-		return curly;
+		return cb;
 
 	}
 
@@ -5173,29 +5183,19 @@ public final class Pattern implements java.io.Serializable {
 		}
 	}
 
-	/**
-	 * Handles the curly-brace style repetition with a specified minimum and
-	 * maximum occurrences. The * quantifier is handled as a special case. This
-	 * class handles the three types.
-	 */
-	static class Curly extends Node {
+	static class CurlyBase extends Node {
 		Node beginNode;
-		Navigator endNode;
 		int type;
 		int cmin;
 		int cmax;
-
-		Curly(Node beginNode, int cmin, int cmax, int type) {
+		
+		CurlyBase(Node beginNode, int cmin, int cmax, int type) {
 			this.beginNode = beginNode;
 			this.cmin = cmin;
 			this.cmax = cmax;
 			this.type = type;
 		}
-
-		void setEndNode(Navigator endNode) {
-			this.endNode = endNode;
-		}
-
+		
 		boolean study(TreeInfo info) {
 			// Save original info
 			int minL = info.minLength;
@@ -5228,17 +5228,16 @@ public final class Pattern implements java.io.Serializable {
 				info.deterministic = false;
 			return getNext().study(info);
 		}
-
+	}
+	
+	static class DeterministicCurly extends CurlyBase {
+		
+		DeterministicCurly(Node beginNode, int cmin, int cmax, int type) {
+			super(beginNode, cmin, cmax, type);
+		}
+		
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			if (endNode == null) {
-				return matchDeterministic(matcher, i, seq);
-			} else {
-				return matchNonDeterministic(matcher, i, seq);
-			}
-		}
-
-		private boolean matchDeterministic(Matcher matcher, int i, CharSequence seq) {
 			int j = 0;
 			for (; j < cmin; ++j) {
 				if (!beginNode.match(matcher, i, seq))
@@ -5286,8 +5285,23 @@ public final class Pattern implements java.io.Serializable {
 				return getNext().match(matcher, i, seq);
 			}
 		}
+	}
+	
+	/**
+	 * Handles the curly-brace style repetition with a specified minimum and
+	 * maximum occurrences. The * quantifier is handled as a special case. This
+	 * class handles the three types.
+	 */
+	static class Curly extends CurlyBase {
+		Navigator endNode;
 
-		boolean matchNonDeterministic(Matcher matcher, int i, CharSequence seq) {
+		Curly(Node beginNode, Navigator endNode, int cmin, int cmax, int type) {
+			super(beginNode, cmin, cmax, type);
+			this.endNode = endNode;
+		}		
+		
+		@Override
+		boolean match(Matcher matcher, int i, CharSequence seq) {
 
 			if (type == GREEDY) {
 				Repeater mgr = new Repeater(this.getNext(), cmax - cmin, true);
@@ -5497,6 +5511,13 @@ public final class Pattern implements java.io.Serializable {
 		private Node atom;
 
 		AtomicGroup(Node atom) {
+			new Node() {
+				@Override
+				public void setNext(Node a) {
+					AtomicGroup.this.atom = a;
+					a.previous = this;
+				}
+			}.setNext(atom);
 			this.atom = atom;
 		}
 
@@ -5941,6 +5962,29 @@ public final class Pattern implements java.io.Serializable {
 	static class Conditional extends Node {
 		Node yes;
 		Node not;
+		
+		void setYes(Node yes) {
+			new Node() {
+				@Override
+				void setNext(Node a) {
+					Conditional.this.yes = a;
+					if(a!=null)
+						a.previous = this;
+				}
+				
+			}.setNext(yes);
+		}
+		
+		void setNot(Node not) {
+			new Node() {
+				@Override
+				void setNext(Node a) {
+					Conditional.this.not = a;
+					if(a!=null)
+						a.previous = this;
+				}
+			}.setNext(not);
+		}
 
 		@Override
 		boolean study(TreeInfo info) {
@@ -6029,15 +6073,27 @@ public final class Pattern implements java.io.Serializable {
 		}
 
 	}
+	
+	static class LookaroundBase extends Node {
+		Node cond;
+		
+		LookaroundBase(Node cond){
+			new Node() {
+				@Override
+				void setNext(Node a) {
+					LookaroundBase.this.cond = a;
+					a.previous = this;
+				}
+			}.setNext(cond);
+		}
+	}
 
 	/**
 	 * Zero width positive lookahead.
 	 */
-	static final class Pos extends Node {
-		Node cond;
-
+	static final class Pos extends LookaroundBase {
 		Pos(Node cond) {
-			this.cond = cond;
+			super(cond);
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
@@ -6067,11 +6123,10 @@ public final class Pattern implements java.io.Serializable {
 	/**
 	 * Zero width negative lookahead.
 	 */
-	static final class Neg extends Node {
-		Node cond;
+	static final class Neg extends LookaroundBase {
 
 		Neg(Node cond) {
-			this.cond = cond;
+			super(cond);
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
@@ -6112,12 +6167,11 @@ public final class Pattern implements java.io.Serializable {
 		}
 	};
 
-	static class BehindBase extends Node {
-		Node cond;
+	static class BehindBase extends LookaroundBase {
 		int rmax, rmin;
 
 		BehindBase(Node cond) {
-			this.cond = cond;
+			super(cond);
 		}
 
 		void setMinMaxLength(int rmax, int rmin) {

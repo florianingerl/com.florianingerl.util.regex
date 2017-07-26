@@ -31,12 +31,14 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.Stack;
@@ -1507,11 +1509,13 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	transient volatile Map<String, Integer> groupIndices;
 	transient volatile Map<Integer, String> groupNames;
+	transient volatile Set<Object> recursivelyCalledGroups;
 
 	private transient ArrayList<GroupHeadAndTail> groupHeadAndTailNodes;
 	private transient List<Runnable> groupExistsChecks;
 	private transient List<Runnable> lookbehindHasMaxChecks;
 	private transient List<Runnable> curlyDeterministicChecks;
+	private transient List<Runnable> groupCalledRecursivelyChecks;
 
 	/**
 	 * Temporary null terminated code point array used by pattern compiling.
@@ -2285,8 +2289,6 @@ public final class Pattern implements java.io.Serializable {
 
 		// Allocate all temporary objects here.
 		buffer = new int[32];
-		groupHeadAndTailNodes = new ArrayList<GroupHeadAndTail>(10);
-		groupHeadAndTailNodes.add(null);
 		groupIndices = null;
 		groupNames = null;
 
@@ -2310,6 +2312,11 @@ public final class Pattern implements java.io.Serializable {
 		for (Runnable r : groupExistsChecks()) {
 			r.run();
 		}
+		
+		for(Runnable r : groupCalledRecursivelyChecks() ) {
+			r.run();
+		}
+		
 		for (Runnable r : lookbehindHasMaxChecks()) {
 			r.run();
 		}
@@ -2348,6 +2355,8 @@ public final class Pattern implements java.io.Serializable {
 			groupNames = new HashMap<Integer, String>();
 		return groupNames;
 	}
+	
+	
 
 	List<Runnable> groupExistsChecks() {
 		if (groupExistsChecks == null)
@@ -2365,6 +2374,18 @@ public final class Pattern implements java.io.Serializable {
 		if (curlyDeterministicChecks == null)
 			curlyDeterministicChecks = new LinkedList<Runnable>();
 		return curlyDeterministicChecks;
+	}
+	
+	List<Runnable> groupCalledRecursivelyChecks() {
+		if(groupCalledRecursivelyChecks == null)
+			groupCalledRecursivelyChecks = new LinkedList<Runnable>();
+		return groupCalledRecursivelyChecks;
+	}
+	
+	Set<Object> recursivelyCalledGroups() {
+		if(recursivelyCalledGroups == null)
+			recursivelyCalledGroups = new HashSet<Object>();
+		return recursivelyCalledGroups;
 	}
 
 	/**
@@ -3551,16 +3572,29 @@ public final class Pattern implements java.io.Serializable {
 				ch = read();
 				if (ASCII.isLower(ch) || ASCII.isUpper(ch)) {
 					// named captured group
-					String name = groupname(ch);
+					final String name = groupname(ch);
 					if (groupIndices().containsKey(name))
 						throw error("Named capturing group <" + name + "> is already defined");
 					head = createGroup(false);
 					tail = root;
-					groupIndices().put(name, capturingGroupCount - 1);
-					groupNames().put(capturingGroupCount - 1, name);
+					int group = capturingGroupCount - 1;
+					groupIndices().put(name, group);
+					groupNames().put(group, name);
 					head.setNext(expr(tail));
-					head = tail = new RecursiveGroupCall(groupIndices().get(name), false, inLookaround);
-					tail.setNext(accept);
+					final RecursiveGroupCall rgc = new RecursiveGroupCall(group, false, inLookaround);
+					groupCalledRecursivelyChecks().add( ()->{
+						if(recursivelyCalledGroups().contains(group) || recursivelyCalledGroups().contains(name) )
+							return;
+						GroupHeadAndTail ghat = groupHeadAndTailNodes().get(group);
+						ghat.groupTail.setNext(rgc.getNext());
+						if(rgc.getPrevious() == null) {
+							matchRoot = ghat.groupHead;
+						}
+						else {
+							rgc.getPrevious().setNext(ghat.groupHead);
+						}
+					});
+					head = tail = rgc;
 					break;
 				}
 				int start = cursor;
@@ -3658,6 +3692,7 @@ public final class Pattern implements java.io.Serializable {
 					final String groupName;
 					if ((groupName = doesGroupNameFollowBefore('\'')) == null || peek() != ')')
 						throw error("Unknown recursion syntax");
+					recursivelyCalledGroups().add(groupName);
 					if (isGroupDefined(groupName)) {
 						head = tail = new RecursiveGroupCall(groupIndices.get(groupName), true, inLookaround);
 					} else {
@@ -3674,6 +3709,7 @@ public final class Pattern implements java.io.Serializable {
 
 				} else if ((groupNumber = doesGroupNumberFollowBefore(')')) != -1) {
 					unread();
+					recursivelyCalledGroups().add(groupNumber);
 					if (isGroupDefined(groupNumber))
 						head = tail = new RecursiveGroupCall(groupNumber, true, inLookaround);
 					else {
@@ -3707,8 +3743,19 @@ public final class Pattern implements java.io.Serializable {
 			tail = root;
 			int groupNumber = capturingGroupCount - 1;
 			head.setNext(expr(tail));
-			head = tail = new RecursiveGroupCall(groupNumber, false, inLookaround);
-			tail.setNext(accept);
+			final RecursiveGroupCall rgc = new RecursiveGroupCall(groupNumber, false, inLookaround);
+			groupCalledRecursivelyChecks().add(()->{
+				if(recursivelyCalledGroups().contains(groupNumber))
+					return;
+				GroupHeadAndTail ghat = groupHeadAndTailNodes().get(groupNumber);
+				ghat.groupTail.setNext(rgc.getNext());
+				if(rgc.getPrevious() == null) {
+					matchRoot = ghat.groupHead;
+				}
+				else
+					rgc.getPrevious().setNext(ghat.groupHead);
+			});
+			head = tail = rgc;
 		}
 
 		accept(')', "Unclosed group");
@@ -3792,16 +3839,23 @@ public final class Pattern implements java.io.Serializable {
 		int groupIndex = 0;
 		if (!anonymous)
 			groupIndex = capturingGroupCount++;
-		GroupHead head = new GroupHead(localIndex, groupIndex);
+		GroupHead head = new GroupHead(localIndex, groupIndex, inLookaround);
 		GroupTail tail = new GroupTail(localIndex, groupIndex);
 		root = tail;
 		if (!anonymous) {
-			groupHeadAndTailNodes.add(new GroupHeadAndTail(head, tail));
+			groupHeadAndTailNodes().add(new GroupHeadAndTail(head, tail));
 		}
 		return head;
 	}
 
-	@SuppressWarnings("fallthrough")
+	private ArrayList<GroupHeadAndTail> groupHeadAndTailNodes() {
+		if(groupHeadAndTailNodes == null) {
+			groupHeadAndTailNodes = new ArrayList<GroupHeadAndTail>(10);
+			groupHeadAndTailNodes.add(null);
+		}
+		return groupHeadAndTailNodes;
+	}
+@SuppressWarnings("fallthrough")
 	/**
 	 * Parses inlined match flags and set them appropriately.
 	 */
@@ -3982,11 +4036,11 @@ public final class Pattern implements java.io.Serializable {
 
 		curlyDeterministicChecks().add(() -> {
 			CurlyBase curly = null;
-			if (isDeterministic(beginNode)) {
+			if (isDeterministic(cb.beginNode)) {
 				curly = new DeterministicCurly(cb.beginNode, cb.cmin, cb.cmax, cb.type);
 			}
 			else {
-				curly = new Curly(cb.beginNode, createNavigator(endNode), cb.cmin, cb.cmax, cb.type);
+				curly = new Curly(cb.beginNode, cb.cmin, cb.cmax, cb.type);
 			}
 			curly.setNext(cb.getNext());
 			if(cb.getPrevious()== null) {
@@ -5190,10 +5244,21 @@ public final class Pattern implements java.io.Serializable {
 		int cmax;
 		
 		CurlyBase(Node beginNode, int cmin, int cmax, int type) {
-			this.beginNode = beginNode;
+			new Node() {
+				@Override
+				public void setNext(Node a) {
+					CurlyBase.this.setBeginNode(a);
+					if(a!=null)
+						a.previous = this;
+				}
+			}.setNext(beginNode);
 			this.cmin = cmin;
 			this.cmax = cmax;
 			this.type = type;
+		}
+		
+		void setBeginNode(Node beginNode) {
+			this.beginNode = beginNode;
 		}
 		
 		boolean study(TreeInfo info) {
@@ -5292,13 +5357,26 @@ public final class Pattern implements java.io.Serializable {
 	 * maximum occurrences. The * quantifier is handled as a special case. This
 	 * class handles the three types.
 	 */
-	static class Curly extends CurlyBase {
+	class Curly extends CurlyBase {
 		Navigator endNode;
 
-		Curly(Node beginNode, Navigator endNode, int cmin, int cmax, int type) {
+		Curly(Node beginNode, int cmin, int cmax, int type) {
 			super(beginNode, cmin, cmax, type);
-			this.endNode = endNode;
 		}		
+		
+		@Override
+		void setBeginNode(Node beginNode) {
+			super.setBeginNode(beginNode);
+			Node end = findEndNode(beginNode);
+			this.endNode = createNavigator(end);
+		}
+		
+		Node findEndNode(Node beginNode) {
+			Node end = beginNode;
+			while(end.getNext() != null && end.getNext() != Pattern.accept )
+				end = end.getNext();
+			return end;
+		}
 		
 		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
@@ -5465,6 +5543,7 @@ public final class Pattern implements java.io.Serializable {
 			}.setNext(node);
 		}
 
+		@Override
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			for (int n = 0; n < size; n++) {
 				if (atoms[n] == null) {
@@ -5477,6 +5556,7 @@ public final class Pattern implements java.io.Serializable {
 			return false;
 		}
 
+		@Override
 		boolean study(TreeInfo info) {
 			int minL = info.minLength;
 			int maxL = info.maxLength;
@@ -5504,6 +5584,11 @@ public final class Pattern implements java.io.Serializable {
 			info.maxValid &= maxV;
 			info.deterministic = false;
 			return false;
+		}
+		
+		@Override
+		Node getNext() {
+			return conn;
 		}
 	}
 
@@ -5553,14 +5638,16 @@ public final class Pattern implements java.io.Serializable {
 	static final class GroupHead extends Node {
 		int localIndex;
 		int groupIndex;
+		boolean inLookaround;
 
-		GroupHead(int localCount, int groupCount) {
+		GroupHead(int localCount, int groupCount, boolean inLookaround) {
 			localIndex = localCount;
 			groupIndex = groupCount;
+			this.inLookaround = inLookaround;
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			return match(matcher, i, seq, false, false);
+			return match(matcher, i, seq, false, inLookaround);
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq, boolean recursion, boolean inLookaround) {
@@ -5575,15 +5662,14 @@ public final class Pattern implements java.io.Serializable {
 				matcher.captureTreeNode = t;
 			}
 			matcher.localVector.get(localIndex).push(i);
-			boolean ret = getNext().match(matcher, i, seq);
+			boolean r = getNext().match(matcher, i, seq);
 			matcher.localVector.get(localIndex).pop();
 			if (t != null) {
 				matcher.captureTreeNode = t.parent;
-				if (!ret)
+				if (!r)
 					matcher.captureTreeNode.children.remove(t);
 			}
-
-			return ret;
+			return r;
 		}
 
 	}
@@ -5611,7 +5697,6 @@ public final class Pattern implements java.io.Serializable {
 			CaptureTreeNode t = null;
 			if (groupIndex > 0) {
 				Capture c = new Capture(seq, tmp, i);
-				// matcher.captures.get(groupIndex).push(c);
 				matcher.captureTreeNode.capture = c;
 				t = matcher.captureTreeNode;
 				matcher.captureTreeNode = t.parent;
@@ -5621,13 +5706,11 @@ public final class Pattern implements java.io.Serializable {
 			if (groupIndex > 0) {
 				matcher.captureTreeNode = t;
 				if (!r) {
-					// matcher.captures.get(groupIndex).pop();
 					t.capture = null;
 				}
 			}
 			matcher.localVector.get(localIndex).push(tmp);
 			return r;
-
 		}
 
 		@Override
@@ -5664,7 +5747,7 @@ public final class Pattern implements java.io.Serializable {
 		}
 
 		void setGroupNumber(int groupNumber) {
-			GroupHeadAndTail ghat = groupHeadAndTailNodes.get(groupNumber);
+			GroupHeadAndTail ghat = groupHeadAndTailNodes().get(groupNumber);
 			groupHead = ghat.groupHead;
 			groupTail = ghat.groupTail;
 		}

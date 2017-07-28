@@ -82,6 +82,65 @@ public class CaptureReplacerTest {
 	}
 
 	@Test
+	public void defaultReplacerShouldIgnoreNamedGroupsInLookahead() {
+		CaptureReplacer replacer = new DefaultCaptureReplacer() {
+			@Override
+			public String replace(CaptureTreeNode node) {
+				if("var".equals(node.getGroupName()))
+					return node.getCapture().getValue() + "*";
+				else
+					return super.replace(node);
+			}
+		};
+		
+		String input = "pow(pow(ab,cde),pow(pow(ef,gh),ij))";
+		String expected = "pow(pow(a*b,c*d*e),pow(pow(e*f,g*h),i*j))";
+		String [] patterns = new String[] {
+				"(?<pow>pow\\((?'arg'),(?'arg')\\))(?(DEFINE)(?<var>[a-j])(?<arg>(?'pow')|(?:(?'var')(?=(?'var')))*[^,)]*))",
+				"(?<pow>pow\\((?'arg'),(?'arg')\\))(?(DEFINE)(?<arg>(?'pow')|(?:(?'var')(?=(?'var')))*[^,)]*)(?<var>[a-j]))",
+				"(?<pow>pow\\((?'arg'),(?'arg')\\))(?(DEFINE)(?<arg>(?'pow')|(?:(?'var')(?=(?<var>[a-j])))*[^,)]*))",
+				"(?<pow>pow\\((?'arg'),(?'arg')\\))(?(DEFINE)(?<arg>(?'pow')|(?:(?<var>[a-j])(?=(?'var')))*[^,)]*))"
+				};
+		for(String pattern : patterns) {
+			Pattern p = Pattern.compile(pattern);
+			Matcher m = p.matcher(input);
+			String replacement = m.replaceAll(replacer);
+			assertEquals(expected, replacement);
+		}
+		
+		
+	}
+	
+	@Test
+	public void defaultReplacerShouldIgnoreNumberedGroupsInLookahead() {
+		CaptureReplacer replacer = new DefaultCaptureReplacer() {
+			@Override
+			public String replace(CaptureTreeNode node) {
+				if(node.getGroupNumber() == 2) {
+					return node.getCapture().getValue() + "*";
+				}
+				else
+					return super.replace(node);
+			}
+		};
+		
+		String input = "pow(pow(ab,cde),pow(pow(ef,gh),ij))";
+		String expected = "pow(pow(a*b,c*d*e),pow(pow(e*f,g*h),i*j))";
+		String [] patterns = new String[] {
+				"(?<pow>pow\\((?'arg'),(?'arg')\\))(?(DEFINE)([a-j])(?<arg>(?'pow')|(?:(?2)(?=(?2)))*[^,)]*))",
+				"(?(DEFINE)(?<arg>(?'pow')|(?:(?2)(?=(?2)))*[^,)]*)([a-j]))(?<pow>pow\\((?'arg'),(?'arg')\\))",
+				"(?(DEFINE)(?<arg>(?'pow')|(?:(?2)(?=([a-j])))*[^,)]*))(?<pow>pow\\((?'arg'),(?'arg')\\))",
+				"(?(DEFINE)(?<arg>(?'pow')|(?:([a-j])(?=(?2)))*[^,)]*))(?<pow>pow\\((?'arg'),(?'arg')\\))"
+		};
+		for(String pattern : patterns) {
+			Pattern p = Pattern.compile(pattern);
+			Matcher m = p.matcher(input);
+			String replacement = m.replaceAll(replacer);
+			assertEquals(expected, replacement);
+		}
+	}
+	
+	@Test
 	public void test2() throws FileNotFoundException, IOException {
 		Pattern pattern = Pattern.compile("(?x)\r\n" + "(?(DEFINE)\r\n"
 				+ "(?<sum> (?'summand')(?:\\+(?'summand'))+ )\r\n" + "(?<summand> (?'product') | (?'number') )\r\n"

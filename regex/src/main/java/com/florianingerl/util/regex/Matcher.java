@@ -25,6 +25,7 @@
 
 package com.florianingerl.util.regex;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -185,6 +186,7 @@ public final class Matcher implements MatchResult {
 	 */
 	Vector<Stack<Integer>> localVector;
 	CaptureTreeNode captureTreeNode;
+	int groups[];
 	private CaptureTree captureTree;
 	Pattern.Node[] nextNodes;
 
@@ -238,6 +240,7 @@ public final class Matcher implements MatchResult {
 		this.parentPattern = parent;
 		this.text = text;
 		// Allocate state storage
+		groups = new int[parentPattern.capturingGroupCount*2];
 		localVector = new Vector<Stack<Integer>>(parentPattern.localCount);
 		localVector.setSize(parentPattern.localCount);
 		nextNodes = new Pattern.Node[parentPattern.localCount];
@@ -328,6 +331,9 @@ public final class Matcher implements MatchResult {
 			localVector.set(i, new Stack<Integer>());
 			nextNodes[i] = null;
 		}
+		for (int i = 0; i < groups.length; ++i) {
+			groups[i] = -1;
+		}
 		genData();
 		lastAppendPosition = 0;
 		from = 0;
@@ -406,10 +412,11 @@ public final class Matcher implements MatchResult {
 	 *             index
 	 */
 	public int start(int group) {
-		Capture c = capture(group);
-		if (c == null)
-			return -1;
-		return c.getStart();
+		if (first < 0)
+			throw new IllegalStateException("No match available");
+		if (group < 0 || group > groupCount())
+			throw new IndexOutOfBoundsException("No group " + group);
+		return groups[group * 2];
 	}
 
 	/**
@@ -434,8 +441,7 @@ public final class Matcher implements MatchResult {
 	 * @since 1.8
 	 */
 	public int start(String name) {
-		int group = getMatchedGroupIndex(name);
-		return start(group);
+		return groups[getMatchedGroupIndex(name)*2];
 	}
 
 	/**
@@ -480,10 +486,11 @@ public final class Matcher implements MatchResult {
 	 *             index
 	 */
 	public int end(int group) {
-		Capture c = capture(group);
-		if (c == null)
-			return -1;
-		return c.getEnd();
+		if (first < 0)
+			throw new IllegalStateException("No match available");
+		if (group < 0 || group > groupCount())
+			throw new IndexOutOfBoundsException("No group " + group);
+		return groups[group * 2 + 1];
 	}
 
 	/**
@@ -508,8 +515,7 @@ public final class Matcher implements MatchResult {
 	 * @since 1.8
 	 */
 	public int end(String name) {
-		int group = getMatchedGroupIndex(name);
-		return end(group);
+		return groups[getMatchedGroupIndex(name)*2+1];
 	}
 
 	/**
@@ -579,10 +585,13 @@ public final class Matcher implements MatchResult {
 	 *             index
 	 */
 	public String group(int group) {
-		Capture c = capture(group);
-		if (c == null)
+		if (first < 0)
+			throw new IllegalStateException("No match found");
+		if (group < 0 || group > groupCount())
+			throw new IndexOutOfBoundsException("No group " + group);
+		if ((groups[group * 2] == -1) || (groups[group * 2 + 1] == -1))
 			return null;
-		return c.getValue();
+		return getSubSequence(groups[group * 2], groups[group * 2 + 1]).toString();
 	}
 
 	/**
@@ -616,7 +625,9 @@ public final class Matcher implements MatchResult {
 	 */
 	public String group(String name) {
 		int group = getMatchedGroupIndex(name);
-		return group(group);
+		if ((groups[group * 2] == -1) || (groups[group * 2 + 1] == -1))
+			return null;
+		return getSubSequence(groups[group * 2], groups[group * 2 + 1]).toString();
 	}
 
 	/**
@@ -1534,6 +1545,7 @@ public final class Matcher implements MatchResult {
 		genData();
 		captureTree = null;
 		captureTreeNode = new CaptureTreeNode();
+		Arrays.fill(groups, -1);
 		acceptMode = NOANCHOR;
 		boolean result = parentPattern.root.match(this, from, text);
 		if (!result)
@@ -1556,6 +1568,7 @@ public final class Matcher implements MatchResult {
 		this.oldLast = oldLast < 0 ? from : oldLast;
 		genData();
 		captureTree = null;
+		Arrays.fill(groups, -1);
 		captureTreeNode = new CaptureTreeNode();
 		acceptMode = anchor;
 		boolean result = parentPattern.matchRoot.match(this, from, text);
@@ -1613,6 +1626,8 @@ public final class Matcher implements MatchResult {
 	void setGroup0(CharSequence seq, int start, int end) {
 		Capture capture = new Capture(seq, start, end);
 		captureTreeNode.capture = capture;
+		groups[0] = start;
+		groups[1] = end;
 	}
 
 }

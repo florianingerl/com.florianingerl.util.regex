@@ -2,6 +2,7 @@ package com.florianingerl.util.regex.tests;
 
 import static org.junit.Assert.*;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.florianingerl.util.regex.Matcher;
@@ -10,6 +11,7 @@ import com.florianingerl.util.regex.Pattern;
 public class StackOverflowExceptionTest {
 	
 	@Test
+	@Ignore
 	public void testRepetitionOfGroupsJavaUtilRegex() {
 		java.util.regex.Pattern p = java.util.regex.Pattern.compile("(\\\\.|[^\"])*");
 		StringBuilder input = new StringBuilder();
@@ -20,6 +22,7 @@ public class StackOverflowExceptionTest {
 	}
 	
 	@Test
+	@Ignore
 	public void testRepetitionOfGroups() {
 		Pattern p1 = Pattern.compile("(\\\\.|[^\"])*");
 		java.util.regex.Pattern p2 = java.util.regex.Pattern.compile(p1.pattern());

@@ -5628,14 +5628,10 @@ public final class Pattern implements java.io.Serializable {
 		}
 
 		boolean match(Matcher matcher, int i, CharSequence seq) {
-			return match(matcher, i, seq, false, inLookaround);
-		}
-
-		boolean match(Matcher matcher, int i, CharSequence seq, boolean recursion, boolean inLookaround) {
 			CaptureTreeNode t = null;
 			if (groupIndex > 0) {
 				t = new CaptureTreeNode();
-				t.recursion = recursion;
+				t.recursion = false;
 				t.inLookaround = inLookaround;
 				t.groupNumber = groupIndex;
 				t.parent = matcher.captureTreeNode;
@@ -5755,13 +5751,16 @@ public final class Pattern implements java.io.Serializable {
 						matcher.groups = new int[matcher.groups.length];
 						Arrays.fill(matcher.groups, -1);
 					}
-					boolean r = groupHead.match(matcher, i, seq, recursion, inLookaround);
+					boolean r = groupHead.match(matcher, i, seq);
 					groupTail.setNext(matcher, groupTailsNext);
 					if (recursion)
 						matcher.groups = savedGroups;
 					return r;
 				} else {
 					groupTail.setNext(matcher, groupTailsNext);
+					CaptureTreeNode t = matcher.captureTreeNode.children.get(matcher.captureTreeNode.children.size()-1);
+					t.recursion = recursion;
+					t.inLookaround = inLookaround;
 					int saveStart = -1, saveEnd=-1;
 					int[] z = null;
 					if (recursion) {

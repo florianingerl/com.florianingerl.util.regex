@@ -134,6 +134,9 @@ public final class Matcher implements MatchResult {
 	 */
 	Pattern parentPattern;
 
+	public static final int CAPTURE_TREE = 1;
+	int mode = 0;
+	boolean captureTreeMode;
 	Map<Class<? extends Pattern.CustomNode>, Object> data;
 
 	/**
@@ -326,7 +329,7 @@ public final class Matcher implements MatchResult {
 		last = 0;
 		oldLast = -1;
 		captureTree = null;
-		captureTreeNode = new CaptureTreeNode();
+		captureTreeNode = captureTreeMode ? new CaptureTreeNode() : null;
 		for (int i = 0; i < localVector.size(); i++) {
 			localVector.set(i, new Stack<Integer>());
 			nextNodes[i] = null;
@@ -358,16 +361,6 @@ public final class Matcher implements MatchResult {
 	public Matcher reset(CharSequence input) {
 		text = input;
 		return reset();
-	}
-
-	private Capture capture(int group) {
-		if (first < 0)
-			throw new IllegalStateException("No match available");
-		if (group < 0 || group > groupCount())
-			throw new IndexOutOfBoundsException("No group " + group);
-		if (group == 0)
-			return captureTreeNode.capture;
-		return captureTreeNode.findGroup(group);
 	}
 
 	/**
@@ -629,6 +622,15 @@ public final class Matcher implements MatchResult {
 			return null;
 		return getSubSequence(groups[group * 2], groups[group * 2 + 1]).toString();
 	}
+	
+	public void setMode(int mode) {
+		this.mode = mode;
+		captureTreeMode = (mode & CAPTURE_TREE) != 0;
+	}
+	
+	public int getMode() {
+		return mode;
+	}
 
 	/**
 	 * Returns the {@link CaptureTree} of the previous match operation.
@@ -671,6 +673,8 @@ public final class Matcher implements MatchResult {
 	public CaptureTree captureTree() {
 		if (first < 0)
 			throw new IllegalStateException("No match available");
+		if(!captureTreeMode)
+			throw new IllegalStateException("Mode CAPTURE_TREE is not set");
 		if (captureTree == null) {
 			captureTreeNode.setGroupName(parentPattern.groupNames());
 			captureTree = new CaptureTree(captureTreeNode);
@@ -925,7 +929,6 @@ public final class Matcher implements MatchResult {
 	 *             does not exist in the pattern
 	 */
 	public Matcher appendReplacement(StringBuffer sb, String replacement) {
-
 		// If no match, return error
 		if (first < 0)
 			throw new IllegalStateException("No match available");
@@ -1019,7 +1022,6 @@ public final class Matcher implements MatchResult {
 	}
 
 	public Matcher appendReplacement(StringBuffer sb, Function<Matcher, String> evaluator) {
-
 		// If no match, return error
 		if (first < 0)
 			throw new IllegalStateException("No match available");
@@ -1040,6 +1042,8 @@ public final class Matcher implements MatchResult {
 		// If no match, return error
 		if (first < 0)
 			throw new IllegalStateException("No match available");
+		if(!captureTreeMode)
+			throw new IllegalStateException("Mode CAPTURE_TREE is not set");
 
 		sb.append(text, lastAppendPosition, first);
 		replacer.setInput(text);
@@ -1190,18 +1194,24 @@ public final class Matcher implements MatchResult {
 	 * @see DefaultCaptureReplacer
 	 */
 	public String replaceAll(CaptureReplacer replacer) {
-		reset();
-		boolean result = find();
-		if (result) {
-			StringBuffer sb = new StringBuffer();
-			do {
-				appendReplacement(sb, replacer);
-				result = find();
-			} while (result);
-			appendTail(sb);
-			return sb.toString();
+		int saveMode = getMode();
+		try {
+			setMode(saveMode | CAPTURE_TREE);
+			reset();
+			boolean result = find();
+			if (result) {
+				StringBuffer sb = new StringBuffer();
+				do {
+					appendReplacement(sb, replacer);
+					result = find();
+				} while (result);
+				appendTail(sb);
+				return sb.toString();
+			}
+			return text.toString();
+		} finally {
+			setMode(saveMode);
 		}
-		return text.toString();
 	}
 
 	/**
@@ -1279,13 +1289,19 @@ public final class Matcher implements MatchResult {
 	public String replaceFirst(CaptureReplacer replacer) {
 		if (replacer == null)
 			throw new NullPointerException("replacer");
-		reset();
-		if (!find())
-			return text.toString();
-		StringBuffer sb = new StringBuffer();
-		appendReplacement(sb, replacer);
-		appendTail(sb);
-		return sb.toString();
+		int saveMode = getMode();
+		try {
+			setMode(saveMode | CAPTURE_TREE);
+			reset();
+			if (!find())
+				return text.toString();
+			StringBuffer sb = new StringBuffer();
+			appendReplacement(sb, replacer);
+			appendTail(sb);
+			return sb.toString();
+		} finally {
+			setMode(saveMode);
+		}
 	}
 
 	/**
@@ -1544,7 +1560,7 @@ public final class Matcher implements MatchResult {
 		this.oldLast = oldLast < 0 ? from : oldLast;
 		genData();
 		captureTree = null;
-		captureTreeNode = new CaptureTreeNode();
+		captureTreeNode = captureTreeMode ? new CaptureTreeNode() : null;
 		Arrays.fill(groups, -1);
 		acceptMode = NOANCHOR;
 		boolean result = parentPattern.root.match(this, from, text);
@@ -1568,8 +1584,8 @@ public final class Matcher implements MatchResult {
 		this.oldLast = oldLast < 0 ? from : oldLast;
 		genData();
 		captureTree = null;
-		Arrays.fill(groups, -1);
-		captureTreeNode = new CaptureTreeNode();
+		Arrays.fill(groups, -1); 
+		captureTreeNode = captureTreeMode ? new CaptureTreeNode() : null;
 		acceptMode = anchor;
 		boolean result = parentPattern.matchRoot.match(this, from, text);
 		if (!result)
@@ -1624,8 +1640,10 @@ public final class Matcher implements MatchResult {
 	}
 
 	void setGroup0(CharSequence seq, int start, int end) {
-		Capture capture = new Capture(seq, start, end);
-		captureTreeNode.capture = capture;
+		if (captureTreeMode) {
+			Capture capture = new Capture(seq, start, end);
+			captureTreeNode.capture = capture;
+		}
 		groups[0] = start;
 		groups[1] = end;
 	}

@@ -163,8 +163,6 @@ public class CaptureReplacerTest {
 		for(String pattern : patterns) {
 			Pattern p = Pattern.compile(pattern);
 			Matcher m = p.matcher(input);
-			m.find();
-			System.out.println(m.captureTree());
 			String replacement = m.replaceAll(replacer);
 			assertEquals(expected, replacement);
 		}
@@ -193,8 +191,6 @@ public class CaptureReplacerTest {
 		for(String pattern : patterns) {
 			Pattern p = Pattern.compile(pattern);
 			Matcher m = p.matcher(input);
-			m.find();
-			System.out.println(m.captureTree());
 			String replacement = m.replaceAll(replacer);
 			assertEquals(expected, replacement);
 		}
@@ -236,6 +232,7 @@ public class CaptureReplacerTest {
 		Matcher matcher = Pattern.compile("(?x)" + "(?(DEFINE)" + "(?<sum> (?'summand')(?:\\+(?'summand'))+ )"
 				+ "(?<summand> (?'product') |  (?'number') )" + "(?<product> (?'factor')(?:\\*(?'factor'))+ )"
 				+ "(?<factor>(?'number') ) " + "(?<number>\\d++)" + ")" + "(?'sum')").matcher("5+6*8");
+		matcher.setMode(Matcher.CAPTURE_TREE);
 		matcher.matches();
 		System.out.println(matcher.captureTree());
 	}

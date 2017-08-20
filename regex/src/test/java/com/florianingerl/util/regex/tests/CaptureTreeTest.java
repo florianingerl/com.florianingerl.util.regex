@@ -23,6 +23,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class CaptureTreeTest {
 
+	
+	
 	private void processFile(String filename) throws IOException {
 		Scanner scanner = new Scanner(new FileInputStream(getClass().getClassLoader().getResource(filename).getFile()));
 		String line = null;
@@ -36,6 +38,7 @@ public class CaptureTreeTest {
 			while (scanner.hasNextLine() && !(line = scanner.nextLine()).isEmpty()) {
 				String[] tokens = line.split(" ");
 				Matcher matcher = pattern.matcher(tokens[0]);
+				matcher.setMode(Matcher.CAPTURE_TREE);
 				if (tokens.length == 2) {
 					assertTrue(matcher.matches());
 					Pattern gtp = Pattern.compile(tokens[1]);
@@ -67,6 +70,15 @@ public class CaptureTreeTest {
 	@Test
 	public void captureTreeTests() throws IOException {
 		processFile("CaptureTreeTestCases.txt");
+	}
+	
+	@Test(expected=IllegalStateException.class)
+	public void captureTreeShouldntBeAvailableIfItsModeIsOff() {
+		Pattern p = Pattern.compile("(a(b))");
+		Matcher m = p.matcher("ab");
+		assertTrue((m.getMode() & Matcher.CAPTURE_TREE) == 0);
+		assertTrue(m.matches());
+		System.out.println( m.captureTree() );
 	}
 
 }

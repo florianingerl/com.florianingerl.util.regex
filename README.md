@@ -127,6 +127,7 @@ String term = "(6*[6+7+8]+9)*78*[4*(6+5)+4]";
 
 System.out.println("Capture Tree for: " + term);
 Matcher m = p.matcher(term);
+m.setMode(Matcher.CAPTURE_TREE);
 m.matches();
 System.out.println(m.captureTree());
 ```

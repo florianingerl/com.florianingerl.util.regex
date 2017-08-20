@@ -17,7 +17,7 @@ public class CaptureTreeNode {
 	int groupNumber;
 	String groupName;
 	Capture capture;
-	List<CaptureTreeNode> children = new LinkedList<CaptureTreeNode>();
+	LinkedList<CaptureTreeNode> children = new LinkedList<CaptureTreeNode>();
 	CaptureTreeNode parent;
 	boolean recursion;
 	boolean inLookaround;
@@ -151,6 +151,12 @@ public class CaptureTreeNode {
 				return c;
 		}
 		return null;
+	}
+	
+	void shrinkChildrenTo(int size) {
+		if (children.size() > size) {
+			children.subList(size, children.size()).clear();
+		}
 	}
 
 }

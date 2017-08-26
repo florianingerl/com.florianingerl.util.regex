@@ -80,5 +80,51 @@ public class CaptureTreeTest {
 		assertTrue(m.matches());
 		System.out.println( m.captureTree() );
 	}
+	
+	@Test
+	public void backtrackingOfCaptureTreeGenerationShouldWork() {
+		check("(?>(a))?a", "a", "0\n");
+		check("(?<groupName>c(?>(a))?ad)","cad","0\n\tgroupName\n");
+		check("a(?<groupName>(?<=(a))b|c)","ac","0\n\tgroupName\n");
+		check("\\ud800\\udc61(?<groupName>(?<=(\\ud800\\udc61))b|c)","\\ud800\\udc61c","0\n\tgroupName\n");
+		check("(?<groupName>(?=(a))ab|ac)","ac","0\n\tgroupName\n");
+		check("(?<groupName>(?=(\\ud800\\udc61))\\ud800\\udc61b|\\ud800\\udc61c)","\\ud800\\udc61c","0\n\tgroupName\n");
+		check("(?(?=(a))ab)|ac","ac","0\n");
+		check("(?!(a))a|(?<groupName>a)","a","0\n\tgroupName\n");
+		check("(?!(\\ud800\\udc61))\\ud800\\udc61|(?<groupName>\\ud800\\udc61)","\\ud800\\udc61","0\n\tgroupName\n");
+		check("a(?:(?<!(a))b|(?<groupName>b))","ab","0\n\tgroupName\n");
+		check("\\ud800\\udc61(?:(?<!(\\ud800\\udc61))b|(?<groupName>b))","\\ud800\\udc61b","0\n\tgroupName\n");
+		check("(?:(a)++|(?<groupName>a)+)a","aaa","0\n\tgroupName\n\tgroupName\n");
+	}
+	
+	
+	
+	private static void check(String pattern, String input, String captureTree) {
+		pattern = replaceSupplementaryCharacters(pattern);
+		check(Pattern.compile(pattern), input, captureTree);
+	}
+	
+	private static String replaceSupplementaryCharacters(String pattern) {
+		int index;
+		while ((index = pattern.indexOf("\\u")) != -1) {
+			StringBuffer temp = new StringBuffer(pattern);
+			String value = temp.substring(index + 2, index + 6);
+			char aChar = (char) Integer.parseInt(value, 16);
+			String unicodeChar = "" + aChar;
+			temp.replace(index, index + 6, unicodeChar);
+			pattern = temp.toString();
+		}
+		return pattern;
+	}
+
+	private static void check(Pattern pattern, String input, String captureTree) {
+		input = replaceSupplementaryCharacters(input);
+		Matcher m = pattern.matcher(input);
+		m.setMode(Matcher.CAPTURE_TREE);
+		assertTrue(m.matches());
+		assertEquals(captureTree, m.captureTree().toString());
+	}
+	
+	
 
 }

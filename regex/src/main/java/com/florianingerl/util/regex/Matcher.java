@@ -134,6 +134,12 @@ public final class Matcher implements MatchResult {
 	 */
 	Pattern parentPattern;
 
+	/**
+	 * Enables the creation of a so-called Capture Tree during matching.
+	 * 
+	 * @see Matcher#setMode(int)
+	 * @see Matcher#captureTree()
+	 */
 	public static final int CAPTURE_TREE = 1;
 	int mode = 0;
 	boolean captureTreeMode;
@@ -623,11 +629,23 @@ public final class Matcher implements MatchResult {
 		return getSubSequence(groups[group * 2], groups[group * 2 + 1]).toString();
 	}
 	
+	/**
+	 * Sets this matcher's matching mode
+	 * 
+	 * @param mode The matching mode, a bit mask that may include currently only {@link Matcher#CAPTURE_TREE} 
+	 * 
+	 * @see Matcher#captureTree()
+	 */
 	public void setMode(int mode) {
 		this.mode = mode;
 		captureTreeMode = (mode & CAPTURE_TREE) != 0;
 	}
 	
+	/**
+	 * Returns this matcher's matching mode.
+	 * 
+	 * @return The matching mode specified with {@link Matcher#setMode(int) } 
+	 */
 	public int getMode() {
 		return mode;
 	}
@@ -645,6 +663,7 @@ public final class Matcher implements MatchResult {
 	 * Matcher matcher = Pattern.compile("(?x)" + "(?(DEFINE)" + "(?&lt;sum&gt; (?'summand')(?:\\+(?'summand'))+ )"
 	 * 		+ "(?&lt;summand&gt; (?'product') |  (?'number') )" + "(?&lt;product&gt; (?'factor')(?:\\*(?'factor'))+ )"
 	 * 		+ "(?&lt;factor&gt;(?'number') ) " + "(?&lt;number&gt;\\d++)" + ")" + "(?'sum')").matcher("5+6*8");
+	 * matcher.setMode(Matcher.CAPTURE_TREE);
 	 * matcher.matches();
 	 * System.out.println(matcher.captureTree());
 	 * </pre>
@@ -666,9 +685,11 @@ public final class Matcher implements MatchResult {
 	 * 
 	 * @throws IllegalStateException
 	 *             If no match has yet been attempted, or if the previous match
-	 *             operation failed
+	 *             operation failed or if the CAPTURE_TREE matching mode hasn't been set wjth {@link Matcher#setMode(int)}
 	 * @return The {@link CaptureTree} of the previous match operation
 	 * @see CaptureTree
+	 * @see Matcher#setMode(int)
+	 * @see Matcher#CAPTURE_TREE
 	 */
 	public CaptureTree captureTree() {
 		if (first < 0)
@@ -1036,6 +1057,9 @@ public final class Matcher implements MatchResult {
 	/**
 	 * Implements a non-terminal append-and-replace step.
 	 * 
+	 * @throws IllegalStateException
+	 *             If no match has yet been attempted, or if the previous match
+	 *             operation failed or if the CAPTURE_TREE matching mode hasn't been set with {@link Matcher#setMode(int)}
 	 * @see Matcher#replaceAll(CaptureReplacer)
 	 */
 	public Matcher appendReplacement(StringBuffer sb, CaptureReplacer replacer) {
@@ -1169,11 +1193,11 @@ public final class Matcher implements MatchResult {
 	 * 	&#64;Override
 	 * 	public String replace(CaptureTreeNode node) {
 	 * 		if ("sum".equals(node.getGroupName())) {
-	 * 			return "\\sum{" + node.getChildren().stream().filter(n -&gt; "summand".equals(n.getGroupName()))
-	 * 					.map(n -&gt; replace(n)).collect(Collectors.joining(",")) + "}";
+	 * 			return "sum(" + node.getChildren().stream().filter(n -&gt; "summand".equals(n.getGroupName()))
+	 * 					.map(n -&gt; replace(n)).collect(Collectors.joining(",")) + ")";
 	 * 		} else if ("product".equals(node.getGroupName())) {
-	 * 			return "\\product{" + node.getChildren().stream().filter(n -&gt; "factor".equals(n.getGroupName()))
-	 * 					.map(n -&gt; replace(n)).collect(Collectors.joining(",")) + "}";
+	 * 			return "product(" + node.getChildren().stream().filter(n -&gt; "factor".equals(n.getGroupName()))
+	 * 					.map(n -&gt; replace(n)).collect(Collectors.joining(",")) + ")";
 	 * 		} else
 	 * 			return super.replace(node);
 	 * 	}
@@ -1184,7 +1208,7 @@ public final class Matcher implements MatchResult {
 	 * prints out
 	 * 
 	 * <pre>
-	 * First: \\sum{6,\\product{7,8}} Second: \\sum{\\product{6,8},7}
+	 * First: sum(6,product(7,8)) Second: sum(product(6,8),7)
 	 * </pre>
 	 * 
 	 * @param replacer

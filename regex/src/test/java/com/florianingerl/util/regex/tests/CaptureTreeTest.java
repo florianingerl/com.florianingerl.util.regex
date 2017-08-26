@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.apache.commons.io.IOUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.florianingerl.util.regex.CaptureTree;
@@ -95,6 +96,15 @@ public class CaptureTreeTest {
 		check("a(?:(?<!(a))b|(?<groupName>b))","ab","0\n\tgroupName\n");
 		check("\\ud800\\udc61(?:(?<!(\\ud800\\udc61))b|(?<groupName>b))","\\ud800\\udc61b","0\n\tgroupName\n");
 		check("(?:(a)++|(?<groupName>a)+)a","aaa","0\n\tgroupName\n\tgroupName\n");
+		
+		check("(?=a)*?ab|ac","ac","0\n");
+		
+	}
+	
+	@Test
+	@Ignore
+	public void failingTest() {
+		check("(?:(?=(a))*?ab|ac)","ac","0\n");
 	}
 	
 	

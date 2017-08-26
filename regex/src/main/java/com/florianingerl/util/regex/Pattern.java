@@ -1494,6 +1494,20 @@ public final class Pattern implements java.io.Serializable {
 	 * beginning. This may include a find that uses BnM or a First node.
 	 */
 	transient Node matchRoot;
+	private transient Node matchRootSetter;
+	private void setMatchRoot(Node node) {
+		if(matchRootSetter==null) {
+			matchRootSetter = new Node() {
+				@Override
+				void setNext(Node a) {
+					matchRoot = a;
+					if(a!=null) a.previous = this;
+				}
+				
+			};
+		}
+		matchRootSetter.setNext(node);
+	}
 
 	/**
 	 * Temporary storage used by parsing pattern slice.
@@ -1926,7 +1940,7 @@ public final class Pattern implements java.io.Serializable {
 		compiled = false;
 		if (pattern.length() == 0) {
 			root = new Start(lastAccept);
-			matchRoot = lastAccept;
+			setMatchRoot( lastAccept);
 			compiled = true;
 		}
 	}
@@ -1953,7 +1967,7 @@ public final class Pattern implements java.io.Serializable {
 			compile();
 		} else {
 			root = new Start(lastAccept);
-			matchRoot = lastAccept;
+			setMatchRoot( lastAccept);
 		}
 	}
 
@@ -2286,11 +2300,11 @@ public final class Pattern implements java.io.Serializable {
 
 		if (has(LITERAL)) {
 			// Literal pattern handling
-			matchRoot = newSlice(temp, patternLength, hasSupplementary);
+			setMatchRoot( newSlice(temp, patternLength, hasSupplementary));
 			matchRoot.setNext(lastAccept);
 		} else {
 			// Start recursive descent parsing
-			matchRoot = expr(lastAccept);
+			setMatchRoot( expr(lastAccept));
 			// Check extra pattern characters
 			if (patternLength != cursor) {
 				if (peek() == ')') {
@@ -3573,11 +3587,7 @@ public final class Pattern implements java.io.Serializable {
 							return;
 						GroupHeadAndTail ghat = groupHeadAndTailNodes().get(group);
 						ghat.groupTail.setNext(rgc.getNext());
-						if (rgc.getPrevious() == null) {
-							matchRoot = ghat.groupHead;
-						} else {
-							rgc.getPrevious().setNext(ghat.groupHead);
-						}
+						rgc.getPrevious().setNext(ghat.groupHead);
 					});
 					head = tail = rgc;
 					break;
@@ -3734,10 +3744,7 @@ public final class Pattern implements java.io.Serializable {
 					return;
 				GroupHeadAndTail ghat = groupHeadAndTailNodes().get(groupNumber);
 				ghat.groupTail.setNext(rgc.getNext());
-				if (rgc.getPrevious() == null) {
-					matchRoot = ghat.groupHead;
-				} else
-					rgc.getPrevious().setNext(ghat.groupHead);
+				rgc.getPrevious().setNext(ghat.groupHead);
 			});
 			head = tail = rgc;
 		}
@@ -4027,10 +4034,7 @@ public final class Pattern implements java.io.Serializable {
 				curly = new Curly(cb.beginNode, cb.cmin, cb.cmax, cb.type);
 			}
 			curly.setNext(cb.getNext());
-			if (cb.getPrevious() == null) {
-				matchRoot = curly;
-			} else
-				cb.getPrevious().setNext(curly);
+			cb.getPrevious().setNext(curly);
 		});
 
 		return cb;
@@ -6208,6 +6212,7 @@ public final class Pattern implements java.io.Serializable {
 				}
 			}.setNext(cond);
 		}
+		
 	}
 
 	/**

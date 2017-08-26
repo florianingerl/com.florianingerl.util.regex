@@ -14,6 +14,7 @@ This is a Regular Expressions library for Java. Compared to java.util.regex, it 
 	- [Known Issues](#known-issues)
 - [JavaDoc](#javadoc)	
 - [Download](#download)	
+- [Contribute](#contribute)
 - [Links](#links)
 
 ## Requirements for this tutorial
@@ -189,6 +190,9 @@ Read the [JavaDoc for this library](https://florianingerl.github.io/com.floriani
 Download the library from [Maven central](https://mvnrepository.com/artifact/com.github.florianingerl.util/regex).
 
 Alternatively, download this repository and build the library yourself with Ant or Maven.
+
+## Contribute
+Contributions are welcome. Just open up a new issue where you describe a bug or a feature request.
 
 ## Links
 * [Regular Expressions tutorial](http://www.regular-expressions.info/tutorial.html)

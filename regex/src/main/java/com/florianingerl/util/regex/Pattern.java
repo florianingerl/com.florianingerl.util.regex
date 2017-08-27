@@ -2914,7 +2914,7 @@ public final class Pattern implements java.io.Serializable {
 			int groupNumber = refNum;
 			groupExistsChecks().add(() -> {
 				if (!isGroupDefined(groupNumber))
-					throw error("capturing group < " + groupNumber + " > does not exist", index);
+					throw error("Backreference to non-existent capturing group "+ groupNumber, index);
 			});
 		}
 		if (has(CASE_INSENSITIVE))
@@ -3077,7 +3077,7 @@ public final class Pattern implements java.io.Serializable {
 					int index = cursor - 1;
 					groupExistsChecks().add(() -> {
 						if (!isGroupDefined(name))
-							throw error("named capturing group <" + name + "> does not exist", index);
+							throw error("Backreference to non-existent named capturing group '"+ name +"'", index);
 						brb.groupIndex = groupIndices().get(name);
 					});
 				}
@@ -3478,9 +3478,9 @@ public final class Pattern implements java.io.Serializable {
 			sb.append(Character.toChars(ch));
 		}
 		if (sb.length() == 0)
-			throw error("named capturing group has 0 length name");
+			throw error("Named capturing group has zero-length name");
 		if (ch != '>')
-			throw error("named capturing group is missing trailing '>'");
+			throw error("Named capturing group is missing trailing '>'");
 		return sb.toString();
 	}
 
@@ -3561,7 +3561,7 @@ public final class Pattern implements java.io.Serializable {
 				} else if (ch == '!') {
 					bb = (hasSupplementary ? new NotBehindS(cond) : new NotBehind(cond));
 				} else {
-					throw error("Unknown look-behind group");
+					throw error("Unknown look-behind group", cursor - 2);
 				}
 				lookbehindHasMaxChecks().add(() -> {
 					TreeInfo info = new TreeInfo();
@@ -3648,7 +3648,7 @@ public final class Pattern implements java.io.Serializable {
 						int index = cursor - 1;
 						groupExistsChecks().add(0, () -> {
 							if (!isGroupDefined(groupName))
-								throw error("Named capturing group < " + groupName + " > does not exist", index);
+								throw error("Recursion to non-existent named capturing group '" + groupName + "'", index);
 							rcg.setGroupNumber(groupIndices.get(groupName));
 						});
 						head = tail = rcg;
@@ -3666,7 +3666,7 @@ public final class Pattern implements java.io.Serializable {
 						int index = cursor - 1;
 						groupExistsChecks().add(0, () -> {
 							if (!isGroupDefined(groupNumber))
-								throw error("capturing group < " + groupNumber + " > does not exist", index);
+								throw error("Recursion to non-existent capturing group " + groupNumber , index);
 							rgc.setGroupNumber(groupNumber);
 
 						});

@@ -2337,7 +2337,7 @@ public final class Pattern implements java.io.Serializable {
 			if (root == matchRoot) {
 				root = hasSupplementary ? new StartS(matchRoot) : new Start(matchRoot);
 			}
-		} else if (matchRoot instanceof Begin || matchRoot instanceof First) {
+		} else if (matchRoot instanceof Begin) {
 			root = matchRoot;
 		} else {
 			root = hasSupplementary ? new StartS(matchRoot) : new Start(matchRoot);
@@ -2390,44 +2390,6 @@ public final class Pattern implements java.io.Serializable {
 		if (recursivelyCalledGroups == null)
 			recursivelyCalledGroups = new HashSet<Object>();
 		return recursivelyCalledGroups;
-	}
-
-	/**
-	 * Used to print out a subtree of the Pattern to help with debugging.
-	 */
-	private static void printObjectTree(Node node) {
-		while (node != null) {
-			/*
-			 * if (node instanceof Prolog) { System.out.println(node);
-			 * printObjectTree(((Prolog) node).loop); System.out.println(
-			 * "**** end contents prolog loop"); } else if (node instanceof Loop) {
-			 * System.out.println(node); printObjectTree(((Loop) node).body);
-			 * System.out.println("**** end contents Loop body");
-			 */
-			if (node instanceof Curly) {
-				System.out.println(node);
-				printObjectTree(((Curly) node).beginNode);
-				System.out.println("**** end contents Curly body");
-				/*
-				 * } else if (node instanceof GroupCurly) { System.out.println(node);
-				 * printObjectTree(((GroupCurly) node).atom); System.out.println(
-				 * "**** end contents GroupCurly body");
-				 */
-			} else if (node instanceof GroupTail) {
-				System.out.println(node);
-				System.out.println("Tail next is " + node.getNext());
-				return;
-			} else {
-				System.out.println(node);
-			}
-			node = node.getNext();
-			if (node != null)
-				System.out.println("->next:");
-			if (node == Pattern.accept) {
-				System.out.println("Accept Node");
-				node = null;
-			}
-		}
 	}
 
 	/**
@@ -2502,15 +2464,6 @@ public final class Pattern implements java.io.Serializable {
 		int ch = temp[cursor++];
 		if (has(COMMENTS))
 			ch = parsePastWhitespace(ch);
-		return ch;
-	}
-
-	/**
-	 * Read the next character, and advance the cursor by one, ignoring the COMMENTS
-	 * setting
-	 */
-	private int readEscaped() {
-		int ch = temp[cursor++];
 		return ch;
 	}
 
@@ -6020,70 +5973,8 @@ public final class Pattern implements java.io.Serializable {
 			return getNext().match(matcher, i + groupSize, seq);
 		}
 
-		/*
-		 * boolean match(Matcher matcher, int i, CharSequence seq) { // If the
-		 * referenced group didn't match, neither can this Capture last =
-		 * matcher.captureTreeNode.findGroup(groupIndex); if (last == null) return
-		 * false;
-		 * 
-		 * int j = last.getStart(); int k = last.getEnd();
-		 * 
-		 * int groupSize = k - j;
-		 * 
-		 * // If there isn't enough input left no match if (i + groupSize > matcher.to)
-		 * { matcher.hitEnd = true; return false; }
-		 * 
-		 * // Check each new char to make sure it matches what the group // referenced
-		 * matched last time around int x = i; for (int index = 0; index < groupSize;
-		 * index++) { int c1 = Character.codePointAt(seq, x); int c2 =
-		 * Character.codePointAt(seq, j); if (c1 != c2) { if (doUnicodeCase) { int cc1 =
-		 * Character.toUpperCase(c1); int cc2 = Character.toUpperCase(c2); if (cc1 !=
-		 * cc2 && Character.toLowerCase(cc1) != Character.toLowerCase(cc2)) return
-		 * false; } else { if (ASCII.toLower(c1) != ASCII.toLower(c2)) return false; } }
-		 * x += Character.charCount(c1); j += Character.charCount(c2); }
-		 * 
-		 * return getNext().match(matcher, i + groupSize, seq); }
-		 */
-
 		boolean study(TreeInfo info) {
 			info.maxValid = false;
-			return getNext().study(info);
-		}
-	}
-
-	/**
-	 * Searches until the next instance of its atom. This is useful for finding the
-	 * atom efficiently without passing an instance of it (greedy problem) and
-	 * without a lot of wasted search time (reluctant problem).
-	 */
-	static final class First extends Node {
-		Node atom;
-
-		First(Node node) {
-			this.atom = BnM.optimize(node);
-		}
-
-		boolean match(Matcher matcher, int i, CharSequence seq) {
-			if (atom instanceof BnM) {
-				return atom.match(matcher, i, seq) && getNext().match(matcher, matcher.last, seq);
-			}
-			for (;;) {
-				if (i > matcher.to) {
-					matcher.hitEnd = true;
-					return false;
-				}
-				if (atom.match(matcher, i, seq)) {
-					return getNext().match(matcher, matcher.last, seq);
-				}
-				i += countChars(seq, i, 1);
-				matcher.first++;
-			}
-		}
-
-		boolean study(TreeInfo info) {
-			atom.study(info);
-			info.maxValid = false;
-			info.deterministic = false;
 			return getNext().study(info);
 		}
 	}

@@ -1959,6 +1959,7 @@ public final class Pattern implements java.io.Serializable {
 		if ((flags & UNICODE_CHARACTER_CLASS) != 0)
 			flags |= UNICODE_CASE;
 
+		int saveFlags = flags;
 		// Reset group index count
 		capturingGroupCount = 1;
 		localCount = 0;
@@ -1969,6 +1970,7 @@ public final class Pattern implements java.io.Serializable {
 			root = new Start(lastAccept);
 			setMatchRoot( lastAccept);
 		}
+		flags = saveFlags;
 	}
 
 	/**

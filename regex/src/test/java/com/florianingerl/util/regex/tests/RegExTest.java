@@ -27,6 +27,7 @@ package com.florianingerl.util.regex.tests;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
@@ -1648,13 +1649,7 @@ public class RegExTest {
 		String patternStr = "(b)";
 		String matchStr = "b";
 		Pattern pattern = Pattern.compile(patternStr);
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		ObjectOutputStream oos = new ObjectOutputStream(baos);
-		oos.writeObject(pattern);
-		oos.close();
-		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
-		Pattern serializedPattern = (Pattern) ois.readObject();
-		ois.close();
+		Pattern serializedPattern = serializeAndDeserialize(pattern);;
 		Matcher matcher = serializedPattern.matcher(matchStr);
 		if (!matcher.matches())
 			failCount++;
@@ -1662,6 +1657,24 @@ public class RegExTest {
 			failCount++;
 
 		report("Serialization");
+	}
+	
+	public static Pattern serializeAndDeserialize(Pattern pattern){
+		try {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(baos);
+		oos.writeObject(pattern);
+		oos.close();
+		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+		Pattern serializedPattern = (Pattern) ois.readObject();
+		ois.close();
+		
+		return serializedPattern;
+		} catch( IOException | ClassNotFoundException ioe) {
+			ioe.printStackTrace();
+			System.err.println(pattern.pattern() + " could not be serialized!");
+			return null;
+		}
 	}
 
 	private static void gTest() {

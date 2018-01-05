@@ -41,6 +41,7 @@ public class CaptureTreeTest {
 				Matcher matcher = pattern.matcher(tokens[0]);
 				matcher.setMode(Matcher.CAPTURE_TREE);
 				if (tokens.length == 2) {
+					System.out.println("Pattern: " + matcher.pattern().pattern() + " Input: " + tokens[0]);
 					assertTrue(matcher.matches());
 					Pattern gtp = Pattern.compile(tokens[1]);
 					String captureTree = matcher.captureTree().toString();

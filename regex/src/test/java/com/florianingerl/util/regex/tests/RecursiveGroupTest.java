@@ -81,5 +81,54 @@ public class RecursiveGroupTest {
 		assertFalse(p.matcher("aa").matches());
 		assertFalse(p.matcher("radar").matches());
 	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoop() {
+		Pattern p = Pattern.compile("a");
+		assertTrue(p.matcher("a").matches() );
+		p = Pattern.compile("(?(DEFINE)(?<A>a|(?'A')a))(?'A')b");
+		assertTrue(p.matcher("ab").matches() );
+		assertTrue(p.matcher("aab").matches() );
+		assertTrue(p.matcher("aaab").matches() );
+		assertFalse(p.matcher("ccc").matches());
+	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoop2() {
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>(?'A')|a))(?'A')");
+		assertTrue(p.matcher("a").matches() );
+		assertFalse(p.matcher("b").matches() );
+	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoop3() {
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>(?'A')a|a))(?'A')b");
+		assertFalse(p.matcher("aaab").matches() );
+	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoop4() {
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>.+(?!)|a|(?'A')a))(?'A')b");
+		assertTrue(p.matcher("aaab").matches() );
+	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoop5() {
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>a(?'A')|a))(?'A')b");
+		assertTrue(p.matcher("aaab").matches() );
+	}
+	
+	@Test
+	public void sideEffectsOfAboveFix() {
+		Pattern p = Pattern.compile("(?x) #comment mode\r\n" + 
+				"(?(DEFINE)\r\n" + 
+				"(?<sum> (?'summand1') \\+ (?'summand2') )\r\n" + 
+				"(?<summand1> (?'number') | (?'sum') )\r\n" + 
+				"(?<summand2> (?'number'))\r\n" + 
+				"(?<number>\\d+)\r\n" + 
+				") # end of define\r\n" + 
+				"(?'sum')");
+		assertTrue(p.matcher("5+6+7").matches() );
+	}
 
 }

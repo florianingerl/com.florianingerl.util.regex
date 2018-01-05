@@ -4775,7 +4775,10 @@ public final class Pattern implements java.io.Serializable {
 	private static abstract class BmpCharProperty extends CharProperty {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			if (i < matcher.to) {
-				return isSatisfiedBy(seq.charAt(i)) && getNext().match(matcher, i + 1, seq);
+				if( isSatisfiedBy(seq.charAt(i))) {
+					++matcher.activity; return getNext().match(matcher, i + 1, seq); 
+				}
+				return false;
 			} else {
 				matcher.hitEnd = true;
 				return false;
@@ -5698,11 +5701,24 @@ public final class Pattern implements java.io.Serializable {
 			boolean first = true;
 			Node groupTailsNext;
 			int[] savedGroups;
+			int [] savedRecursion = new int[3];
 
 			@Override
 			boolean match(Matcher matcher, int i, CharSequence seq) {
 				if (first) {
 					first = false;
+					for(int k=0; k < 3; ++k){
+						savedRecursion[k] = matcher.recursions[groupHead.groupIndex * 3 +k];
+					}
+					if(matcher.recursions[groupHead.groupIndex*3] == i ) {
+						int activity = matcher.activity - matcher.recursions[groupHead.groupIndex * 3 + 1];
+						if( activity <= matcher.recursions[groupHead.groupIndex * 3 + 2] ){
+							return false;
+						}
+						matcher.recursions[groupHead.groupIndex * 3 + 2] = activity;
+					}
+					matcher.recursions[groupHead.groupIndex * 3] = i;
+					matcher.recursions[groupHead.groupIndex * 3 + 1] = matcher.activity;
 					groupTailsNext = groupTail.getNext(matcher);
 					groupTail.setNext(matcher, this);
 					if (recursion) {
@@ -5714,6 +5730,9 @@ public final class Pattern implements java.io.Serializable {
 					groupTail.setNext(matcher, groupTailsNext);
 					if (recursion)
 						matcher.groups = savedGroups;
+					for(int k=0; k < 3; ++k){
+						matcher.recursions[groupHead.groupIndex * 3 + k] = savedRecursion[k];
+					}
 					return r;
 				} else {
 					groupTail.setNext(matcher, groupTailsNext);
@@ -5732,6 +5751,11 @@ public final class Pattern implements java.io.Serializable {
 						z = matcher.groups;
 						matcher.groups = savedGroups;
 					}
+					int [] y = new int[3];
+					for(int k =0; k < 3; ++k){
+						y[k] = matcher.recursions[groupHead.groupIndex * 3 + k];
+						matcher.recursions[groupHead.groupIndex * 3 +k] = savedRecursion[k];
+					}
 					boolean r = RecursiveGroupCall.this.getNext().match(matcher, i, seq);
 					if (recursion) {
 						if (!r) {
@@ -5741,6 +5765,9 @@ public final class Pattern implements java.io.Serializable {
 						matcher.groups = z;
 					}
 					groupTail.setNext(matcher, this);
+					for(int k=0; k < 3; ++k){
+						matcher.recursions[groupHead.groupIndex * 3 + k ] = y[k];
+					}
 					return r;
 				}
 			}

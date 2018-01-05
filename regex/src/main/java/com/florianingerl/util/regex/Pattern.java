@@ -4754,7 +4754,13 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			if (i < matcher.to) {
 				int ch = Character.codePointAt(seq, i);
-				return isSatisfiedBy(ch) && getNext().match(matcher, i + Character.charCount(ch), seq);
+				if(isSatisfiedBy(ch)) {
+					int count = Character.charCount(ch);
+					matcher.activity += count;
+					return getNext().match(matcher, i + count, seq);
+				}
+				return false;
+				//return isSatisfiedBy(ch) && getNext().match(matcher, i + Character.charCount(ch), seq);
 			} else {
 				matcher.hitEnd = true;
 				return false;
@@ -4776,7 +4782,8 @@ public final class Pattern implements java.io.Serializable {
 		boolean match(Matcher matcher, int i, CharSequence seq) {
 			if (i < matcher.to) {
 				if( isSatisfiedBy(seq.charAt(i))) {
-					++matcher.activity; return getNext().match(matcher, i + 1, seq); 
+					++matcher.activity; 
+					return getNext().match(matcher, i + 1, seq); 
 				}
 				return false;
 			} else {
@@ -4977,6 +4984,7 @@ public final class Pattern implements java.io.Serializable {
 				}
 				if (buf[j] != seq.charAt(i + j))
 					return false;
+				++matcher.activity;
 			}
 			return getNext().match(matcher, i + len, seq);
 		}
@@ -5001,6 +5009,7 @@ public final class Pattern implements java.io.Serializable {
 				int c = seq.charAt(i + j);
 				if (buf[j] != c && buf[j] != ASCII.toLower(c))
 					return false;
+				++matcher.activity;
 			}
 			return getNext().match(matcher, i + len, seq);
 		}
@@ -5026,6 +5035,7 @@ public final class Pattern implements java.io.Serializable {
 				int c = seq.charAt(i + j);
 				if (buf[j] != c && buf[j] != Character.toLowerCase(Character.toUpperCase(c)))
 					return false;
+				++matcher.activity;
 			}
 			return getNext().match(matcher, i + len, seq);
 		}
@@ -5051,11 +5061,13 @@ public final class Pattern implements java.io.Serializable {
 				int c = Character.codePointAt(seq, x);
 				if (buf[j] != c)
 					return false;
-				x += Character.charCount(c);
+				int count = Character.charCount(c);
+				x += count;
 				if (x > matcher.to) {
 					matcher.hitEnd = true;
 					return false;
 				}
+				matcher.activity += count;
 			}
 			return getNext().match(matcher, x, seq);
 		}
@@ -5085,11 +5097,13 @@ public final class Pattern implements java.io.Serializable {
 				int c = Character.codePointAt(seq, x);
 				if (buf[j] != c && buf[j] != toLower(c))
 					return false;
-				x += Character.charCount(c);
+				int count = Character.charCount(c);
+				x += count;
 				if (x > matcher.to) {
 					matcher.hitEnd = true;
 					return false;
 				}
+				matcher.activity += count;
 			}
 			return getNext().match(matcher, x, seq);
 		}
@@ -5926,9 +5940,11 @@ public final class Pattern implements java.io.Serializable {
 			}
 			// Check each new char to make sure it matches what the group
 			// referenced matched last time around
-			for (int index = 0; index < groupSize; index++)
+			for (int index = 0; index < groupSize; index++) {
 				if (seq.charAt(i + index) != seq.charAt(j + index))
 					return false;
+				++matcher.activity;
+			}
 			return getNext().match(matcher, i + groupSize, seq);
 			/*
 			 * Capture last = matcher.captureTreeNode.findGroup(groupIndex); if (last ==
@@ -5996,7 +6012,9 @@ public final class Pattern implements java.io.Serializable {
 							return false;
 					}
 				}
-				x += Character.charCount(c1);
+				int count = Character.charCount(c1);
+				x += count;
+				matcher.activity += count;
 				j += Character.charCount(c2);
 			}
 			return getNext().match(matcher, i + groupSize, seq);

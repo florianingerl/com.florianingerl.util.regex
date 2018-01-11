@@ -97,7 +97,8 @@ check(pattern, "(first) [second] [not third) (not fourth match]", new String[] {
 ```
 
 ## Capture Trees
-This concept is best illustrated by an example. The following Regex (which is stored in the file term.regex) should parse mathematical terms such as `(6*[6+7+8]+9)*78*[4*(6+5)+4]` .
+In the Capture Tree, all groups matched during the previous match operation are saved in a way that reflects the hierarchical nature of the groups.
+The concept is best illustrated by an example. The following Regex should parse mathematical terms such as `(6*[6+7+8]+9)*78*[4*(6+5)+4]` .
 
 ```
 (?x) # comment mode

@@ -1,10 +1,10 @@
 package com.florianingerl.util.regex.tests;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.florianingerl.util.regex.Matcher;
 import com.florianingerl.util.regex.Pattern;
 import com.florianingerl.util.regex.PatternSyntaxException;
 
@@ -84,13 +84,12 @@ public class RecursiveGroupTest {
 	
 	@Test
 	public void recursionShouldntLeadToInfiniteLoop() {
-		Pattern p = Pattern.compile("a");
-		assertTrue(p.matcher("a").matches() );
-		p = Pattern.compile("(?(DEFINE)(?<A>a|(?'A')a))(?'A')b");
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>a|(?'A')a))(?'A')b");
+		assertFalse(p.matcher("ccc").matches());
 		assertTrue(p.matcher("ab").matches() );
 		assertTrue(p.matcher("aab").matches() );
 		assertTrue(p.matcher("aaab").matches() );
-		assertFalse(p.matcher("ccc").matches());
+		
 	}
 	
 	@Test
@@ -116,6 +115,66 @@ public class RecursiveGroupTest {
 	public void recursionShouldntLeadToInfiniteLoop5() {
 		Pattern p = Pattern.compile("(?(DEFINE)(?<A>a(?'A')|a))(?'A')b");
 		assertTrue(p.matcher("aaab").matches() );
+	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoopSlice() {
+		//This test covers static final class Slice extends SliceNode
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>(?'A')??ab))(?'A')z");
+		assertTrue(p.matcher("ababababz").matches() );
+		
+		p = Pattern.compile("(?(DEFINE)(?<A>(?'A')?ab))(?'A')z");
+		assertFalse(p.matcher("ababababz").matches() );
+	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoopSliceInsensitive() {
+		//This test covers static class SliceI extends SliceNode
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>(?'A')??ab))(?'A')z", Pattern.CASE_INSENSITIVE);
+		assertTrue(p.matcher("AbaBABabz").matches() );
+		
+		p = Pattern.compile("(?(DEFINE)(?<A>(?'A')?ab))(?'A')z", Pattern.CASE_INSENSITIVE);
+		assertFalse(p.matcher("AbaBABabz").matches() );
+	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoopSliceInsensitiveUnicode() {
+		//This test covers static final class SliceU extends SliceNode
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>(?'A')??ab))(?'A')z", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+		assertTrue(p.matcher("AbaBABabz").matches() );
+		
+		p = Pattern.compile("(?(DEFINE)(?<A>(?'A')?ab))(?'A')z", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE );
+		assertFalse(p.matcher("AbaBABabz").matches() );
+	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoopSliceWithSupplementaryChars() {
+		//This test covers static final class SliceS extends SliceNode
+		String s = "\uD840\uDC00\uD840\uDC00";
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>(?'A')??"+s+"))(?'A')z");
+		assertTrue(p.matcher(s+s+s+s+"z").matches() );
+		
+		p = Pattern.compile("(?(DEFINE)(?<A>(?'A')?"+s+"))(?'A')z" );
+		assertFalse(p.matcher(s+s+s+s+"z").matches() );
+	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoopSliceWithSupplementaryCharsCaseInsensitive() {
+		//This test covers static class SliceIS extends SliceNode
+		String s = "\uD840\uDC00\uD840\uDC00";
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>(?'A')??"+s+"))(?'A')z", Pattern.CASE_INSENSITIVE);
+		assertTrue(p.matcher(s+s+s+s+"z").matches() );
+		
+		p = Pattern.compile("(?(DEFINE)(?<A>(?'A')?"+s+"))(?'A')z", Pattern.CASE_INSENSITIVE );
+		assertFalse(p.matcher(s+s+s+s+"z").matches() );
+	}
+	
+	@Test
+	public void recursionShouldntLeadToInfiniteLoopCaseInsensitive() {
+		Pattern p = Pattern.compile("(?(DEFINE)(?<A>(?'A')??a))(?'A')z", Pattern.CASE_INSENSITIVE);
+		assertTrue(p.matcher("aaaaz").matches() );
+		p = Pattern.compile("(?(DEFINE)(?<A>(?'A')?a))(?'A')z", Pattern.CASE_INSENSITIVE);
+		assertFalse(p.matcher("aaaaz").matches() );
 	}
 	
 	@Test

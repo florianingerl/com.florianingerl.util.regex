@@ -2404,6 +2404,7 @@ public final class Pattern implements java.io.Serializable {
 		boolean maxValid;
 		boolean deterministic;
 		Map<Integer, Boolean> recursive = new HashMap<Integer, Boolean>();
+		Set<Integer> groups = new HashSet<Integer>();
 
 		TreeInfo() {
 			reset();
@@ -5675,6 +5676,7 @@ public final class Pattern implements java.io.Serializable {
 		@Override
 		boolean study(TreeInfo info) {
 			info.deterministic = false;
+			if(groupIndex > 0) info.groups.add(groupIndex);
 			return getNext().study(info);
 		}
 	}
@@ -5799,10 +5801,21 @@ public final class Pattern implements java.io.Serializable {
 			if (info.recursive.containsKey(groupTail.groupIndex) && info.recursive.get(groupTail.groupIndex) == true) {
 				info.maxValid = false;
 				info.minLength = 0xFFFFFFF; // arbitrary large number
-				return false;
+				//We need to study the next stuff!!!
+				info.deterministic = false;
+				return getNext().study(info);
 			}
 			info.recursive.put(groupTail.groupIndex, true);
-			groupHead.study(info);
+			//Only this group number should come into info, if this group is recursive
+			if(recursion && groupHead.groupIndex > 0) {
+				Set<Integer> savedGroups = new HashSet<Integer>(info.groups);
+				savedGroups.add(groupHead.groupIndex);
+				groupHead.study(info);
+				info.groups = savedGroups;
+			}
+			else {
+				groupHead.study(info);
+			}
 			info.recursive.put(groupTail.groupIndex, false);
 			info.deterministic = false;
 			return getNext().study(info);

@@ -3476,7 +3476,7 @@ public final class Pattern implements java.io.Serializable {
 	private String groupname(int ch) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(Character.toChars(ch));
-		while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch)) {
+		while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch) || ASCII.isUnderscore(ch)) {
 			sb.append(Character.toChars(ch));
 		}
 		if (sb.length() == 0)
@@ -3727,7 +3727,7 @@ public final class Pattern implements java.io.Serializable {
 		int save = cursor;
 		if (ASCII.isLower(ch) || ASCII.isUpper(ch)) {
 			StringBuilder sb = new StringBuilder();
-			while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch)) {
+			while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch) || ASCII.isUnderscore(ch)) {
 				sb.append(Character.toChars(ch));
 			}
 			if (ch != closing) {

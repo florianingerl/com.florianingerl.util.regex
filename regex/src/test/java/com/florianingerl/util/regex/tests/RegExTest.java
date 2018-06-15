@@ -3902,7 +3902,8 @@ public class RegExTest {
 
 		// negative
 		checkExpectedFail("(?<groupnamehasnoascii.in>abc)(def)");
-		checkExpectedFail("(?<groupnamehasnoascii_in>abc)(def)");
+		//Underscore in groupname can be allowed
+		//checkExpectedFail("(?<groupnamehasnoascii_in>abc)(def)");
 		checkExpectedFail("(?<6groupnamestartswithdigit>abc)(def)");
 		checkExpectedFail("(?<gname>abc)(def)\\k<gnameX>");
 		checkExpectedFail("(?<gname>abc)(?<gname>def)\\k<gnameX>");

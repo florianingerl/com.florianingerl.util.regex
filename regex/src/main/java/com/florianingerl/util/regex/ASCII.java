@@ -212,6 +212,10 @@ final class ASCII {
 	static boolean isDigit(int ch) {
 		return ((ch - '0') | ('9' - ch)) >= 0;
 	}
+	
+	static boolean isUnderscore(int ch) {
+		return ch == '_';
+	}
 
 	static boolean isAlnum(int ch) {
 		return isType(ch, ALNUM);

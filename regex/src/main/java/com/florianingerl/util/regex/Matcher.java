@@ -987,7 +987,7 @@ public final class Matcher implements MatchResult {
 					StringBuilder gsb = new StringBuilder();
 					while (cursor < replacement.length()) {
 						nextChar = replacement.charAt(cursor);
-						if (ASCII.isLower(nextChar) || ASCII.isUpper(nextChar) || ASCII.isDigit(nextChar)) {
+						if (ASCII.isLower(nextChar) || ASCII.isUpper(nextChar) || ASCII.isDigit(nextChar) ) {
 							gsb.append(nextChar);
 							cursor++;
 						} else {

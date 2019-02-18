@@ -42,7 +42,6 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.Stack;
-import java.util.Vector;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -1405,24 +1404,6 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	public static final int UNICODE_CASE = 0x40;
 
-	/**
-	 * Enables canonical equivalence.
-	 *
-	 * <p>
-	 * When this flag is specified then two characters will be considered to match
-	 * if, and only if, their full canonical decompositions match. The expression
-	 * <tt>"a&#92;u030A"</tt>, for example, will match the string
-	 * <tt>"&#92;u00E5"</tt> when this flag is specified. By default, matching does
-	 * not take canonical equivalence into account.
-	 *
-	 * <p>
-	 * There is no embedded flag character for enabling canonical equivalence.
-	 *
-	 * <p>
-	 * Specifying this flag may impose a performance penalty.
-	 * </p>
-	 */
-	public static final int CANON_EQ = 0x80;
 
 	/**
 	 * Enables the Unicode version of <i>Predefined character classes</i> and
@@ -1584,7 +1565,7 @@ public final class Pattern implements java.io.Serializable {
 	 * @param flags
 	 *            Match flags, a bit mask that may include
 	 *            {@link #CASE_INSENSITIVE}, {@link #MULTILINE}, {@link #DOTALL} ,
-	 *            {@link #UNICODE_CASE}, {@link #CANON_EQ}, {@link #UNIX_LINES},
+	 *            {@link #UNICODE_CASE}, {@link #UNIX_LINES},
 	 *            {@link #LITERAL}, {@link #UNICODE_CHARACTER_CLASS} and
 	 *            {@link #COMMENTS}
 	 *
@@ -1973,203 +1954,6 @@ public final class Pattern implements java.io.Serializable {
 		flags = saveFlags;
 	}
 
-	/**
-	 * The pattern is converted to normalizedD form and then a pure group is
-	 * constructed to match canonical equivalences of the characters.
-	 */
-	private void normalize() {
-		boolean inCharClass = false;
-		int lastCodePoint = -1;
-
-		// Convert pattern into normalizedD form
-		normalizedPattern = Normalizer.normalize(pattern, Normalizer.Form.NFD);
-		patternLength = normalizedPattern.length();
-
-		// Modify pattern to match canonical equivalences
-		StringBuilder newPattern = new StringBuilder(patternLength);
-		for (int i = 0; i < patternLength;) {
-			int c = normalizedPattern.codePointAt(i);
-			StringBuilder sequenceBuffer;
-			if ((Character.getType(c) == Character.NON_SPACING_MARK) && (lastCodePoint != -1)) {
-				sequenceBuffer = new StringBuilder();
-				sequenceBuffer.appendCodePoint(lastCodePoint);
-				sequenceBuffer.appendCodePoint(c);
-				while (Character.getType(c) == Character.NON_SPACING_MARK) {
-					i += Character.charCount(c);
-					if (i >= patternLength)
-						break;
-					c = normalizedPattern.codePointAt(i);
-					sequenceBuffer.appendCodePoint(c);
-				}
-				String ea = produceEquivalentAlternation(sequenceBuffer.toString());
-				newPattern.setLength(newPattern.length() - Character.charCount(lastCodePoint));
-				newPattern.append("(?:").append(ea).append(")");
-			} else if (c == '[' && lastCodePoint != '\\') {
-				i = normalizeCharClass(newPattern, i);
-			} else {
-				newPattern.appendCodePoint(c);
-			}
-			lastCodePoint = c;
-			i += Character.charCount(c);
-		}
-		normalizedPattern = newPattern.toString();
-	}
-
-	/**
-	 * Complete the character class being parsed and add a set of alternations to it
-	 * that will match the canonical equivalences of the characters within the
-	 * class.
-	 */
-	private int normalizeCharClass(StringBuilder newPattern, int i) {
-		StringBuilder charClass = new StringBuilder();
-		StringBuilder eq = null;
-		int lastCodePoint = -1;
-		String result;
-
-		i++;
-		charClass.append("[");
-		while (true) {
-			int c = normalizedPattern.codePointAt(i);
-			StringBuilder sequenceBuffer;
-
-			if (c == ']' && lastCodePoint != '\\') {
-				charClass.append((char) c);
-				break;
-			} else if (Character.getType(c) == Character.NON_SPACING_MARK) {
-				sequenceBuffer = new StringBuilder();
-				sequenceBuffer.appendCodePoint(lastCodePoint);
-				while (Character.getType(c) == Character.NON_SPACING_MARK) {
-					sequenceBuffer.appendCodePoint(c);
-					i += Character.charCount(c);
-					if (i >= normalizedPattern.length())
-						break;
-					c = normalizedPattern.codePointAt(i);
-				}
-				String ea = produceEquivalentAlternation(sequenceBuffer.toString());
-
-				charClass.setLength(charClass.length() - Character.charCount(lastCodePoint));
-				if (eq == null)
-					eq = new StringBuilder();
-				eq.append('|');
-				eq.append(ea);
-			} else {
-				charClass.appendCodePoint(c);
-				i++;
-			}
-			if (i == normalizedPattern.length())
-				throw error("Unclosed character class");
-			lastCodePoint = c;
-		}
-
-		if (eq != null) {
-			result = "(?:" + charClass.toString() + eq.toString() + ")";
-		} else {
-			result = charClass.toString();
-		}
-
-		newPattern.append(result);
-		return i;
-	}
-
-	/**
-	 * Given a specific sequence composed of a regular character and combining marks
-	 * that follow it, produce the alternation that will match all canonical
-	 * equivalences of that sequence.
-	 */
-	private String produceEquivalentAlternation(String source) {
-		int len = countChars(source, 0, 1);
-		if (source.length() == len)
-			// source has one character.
-			return source;
-
-		String base = source.substring(0, len);
-		String combiningMarks = source.substring(len);
-
-		String[] perms = producePermutations(combiningMarks);
-		StringBuilder result = new StringBuilder(source);
-
-		// Add combined permutations
-		for (int x = 0; x < perms.length; x++) {
-			String next = base + perms[x];
-			if (x > 0)
-				result.append("|" + next);
-			next = composeOneStep(next);
-			if (next != null)
-				result.append("|" + produceEquivalentAlternation(next));
-		}
-		return result.toString();
-	}
-
-	/**
-	 * Returns an array of strings that have all the possible permutations of the
-	 * characters in the input string. This is used to get a list of all possible
-	 * orderings of a set of combining marks. Note that some of the permutations are
-	 * invalid because of combining class collisions, and these possibilities must
-	 * be removed because they are not canonically equivalent.
-	 */
-	private String[] producePermutations(String input) {
-		if (input.length() == countChars(input, 0, 1))
-			return new String[] { input };
-
-		if (input.length() == countChars(input, 0, 2)) {
-			int c0 = Character.codePointAt(input, 0);
-			int c1 = Character.codePointAt(input, Character.charCount(c0));
-			if (getClass(c1) == getClass(c0)) {
-				return new String[] { input };
-			}
-			String[] result = new String[2];
-			result[0] = input;
-			StringBuilder sb = new StringBuilder(2);
-			sb.appendCodePoint(c1);
-			sb.appendCodePoint(c0);
-			result[1] = sb.toString();
-			return result;
-		}
-
-		int length = 1;
-		int nCodePoints = countCodePoints(input);
-		for (int x = 1; x < nCodePoints; x++)
-			length = length * (x + 1);
-
-		String[] temp = new String[length];
-
-		int combClass[] = new int[nCodePoints];
-		for (int x = 0, i = 0; x < nCodePoints; x++) {
-			int c = Character.codePointAt(input, i);
-			combClass[x] = getClass(c);
-			i += Character.charCount(c);
-		}
-
-		// For each char, take it out and add the permutations
-		// of the remaining chars
-		int index = 0;
-		int len;
-		// offset maintains the index in code units.
-		loop: for (int x = 0, offset = 0; x < nCodePoints; x++, offset += len) {
-			len = countChars(input, offset, 1);
-			boolean skip = false;
-			for (int y = x - 1; y >= 0; y--) {
-				if (combClass[y] == combClass[x]) {
-					continue loop;
-				}
-			}
-			StringBuilder sb = new StringBuilder(input);
-			String otherChars = sb.delete(offset, offset + len).toString();
-			String[] subResult = producePermutations(otherChars);
-
-			String prefix = input.substring(offset, offset + len);
-			for (int y = 0; y < subResult.length; y++)
-				temp[index++] = prefix + subResult[y];
-		}
-		String[] result = new String[index];
-		for (int x = 0; x < index; x++)
-			result[x] = temp[x];
-		return result;
-	}
-
-	private int getClass(int c) {
-		return sun.text.Normalizer.getCombiningClass(c);
-	}
 
 	/**
 	 * Attempts to compose input by combining the first character with the first
@@ -2268,11 +2052,7 @@ public final class Pattern implements java.io.Serializable {
 	 */
 	private void compile() {
 		// Handle canonical equivalences
-		if (has(CANON_EQ) && !has(LITERAL)) {
-			normalize();
-		} else {
-			normalizedPattern = pattern;
-		}
+		normalizedPattern = pattern;
 		patternLength = normalizedPattern.length();
 
 		// Copy pattern to int array for convenience
@@ -3825,9 +3605,6 @@ public final class Pattern implements java.io.Serializable {
 			case 'u':
 				flags |= UNICODE_CASE;
 				break;
-			case 'c':
-				flags |= CANON_EQ;
-				break;
 			case 'x':
 				flags |= COMMENTS;
 				break;
@@ -3867,9 +3644,6 @@ public final class Pattern implements java.io.Serializable {
 				break;
 			case 'u':
 				flags &= ~UNICODE_CASE;
-				break;
-			case 'c':
-				flags &= ~CANON_EQ;
 				break;
 			case 'x':
 				flags &= ~COMMENTS;

@@ -19,6 +19,8 @@ public class GroupNameWithUnderscoreTest {
 		
 	}
 	
+	
+	
 	@Test
 	public void groupNameWithUnderscoreInRecursiveGroupShouldWork() {
 		
@@ -44,5 +46,15 @@ public class GroupNameWithUnderscoreTest {
 		assertTrue( m.matches() );
 		assertEquals("A", m.group("group_name"));
 	}
+	
+	/*
+	@Test
+	public void groupNamesWithUnderscoreCanBeReplaced() {
+		Pattern p = Pattern.compile("(?<group_name>A|b)");
+		Matcher m = p.matcher("AmenErbarmen");
+		
+		String s = m.replaceAll("[${group_name}]");
+		assertEquals("[A]menEr[b]armen", s);
+	}*/
 
 }

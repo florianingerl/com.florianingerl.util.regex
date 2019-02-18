@@ -25,8 +25,6 @@
 
 package com.florianingerl.util.regex;
 
-import java.util.Stack;
-
 /**
  * The result of a match operation.
  *

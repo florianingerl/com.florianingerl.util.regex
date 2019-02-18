@@ -13,4 +13,10 @@ For this to work, you need to have Maven configured, your settings.xml (in Maven
 	...
 </servers>	
 
-3) Go to https://oss.sonatype.org/, login, go to Staging Repositories, find the repository you just uploaded, and click on the Release-Button!
+Also you need to have downloaded gpg from https://www.gpg4win.de/download-de.html and imported the keys
+from the folder GPGKeys with the commands
+gpg --import GPGKeys\private.key and gpg --import GPGKeys\public.key
+
+
+
+3) Go to https://oss.sonatype.org/, login with username florianingerl, go to Staging Repositories, find the repository you just uploaded, and click on the Release-Button!

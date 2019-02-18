@@ -25,8 +25,6 @@
 
 package com.florianingerl.util.regex;
 
-import sun.security.action.GetPropertyAction;
-
 /**
  * Unchecked exception thrown to indicate a syntax error in a regular-expression
  * pattern.
@@ -89,8 +87,7 @@ public class PatternSyntaxException extends IllegalArgumentException {
 		return pattern;
 	}
 
-	private static final String nl = java.security.AccessController
-			.doPrivileged(new GetPropertyAction("line.separator"));
+	private static final String nl = System.getProperty("line.separator");
 
 	/**
 	 * Returns a multi-line string containing the description of the syntax

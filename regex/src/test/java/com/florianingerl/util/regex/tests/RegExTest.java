@@ -94,9 +94,6 @@ public class RegExTest {
 		stringbufferSubstitute();
 		substitutionBasher();
 
-		// Canonical Equivalence
-		ceTest();
-
 		// Anchors
 		anchorTest();
 
@@ -1130,12 +1127,6 @@ public class RegExTest {
 		check(pattern, "A...b", true);
 		check(pattern, "Axxxb", false);
 
-		flags |= Pattern.CANON_EQ;
-
-		Pattern p = Pattern.compile("testa\u030a", flags);
-		check(pattern, "testa\u030a", false);
-		check(pattern, "test\u00e5", false);
-
 		// Supplementary character test
 		flags = Pattern.LITERAL;
 
@@ -1176,13 +1167,6 @@ public class RegExTest {
 		pattern = Pattern.compile(toSupplementaries("a...b"), flags);
 		check(pattern, toSupplementaries("a...b"), true);
 		check(pattern, toSupplementaries("axxxb"), false);
-
-		flags |= Pattern.CANON_EQ;
-
-		String t = toSupplementaries("test");
-		p = Pattern.compile(t + "a\u030a", flags);
-		check(pattern, t + "a\u030a", false);
-		check(pattern, t + "\u00e5", false);
 
 		report("Literal pattern");
 	}
@@ -2852,108 +2836,6 @@ public class RegExTest {
 			failCount++;
 
 		report("Pattern Matches");
-	}
-
-	/**
-	 * Canonical equivalence testing. Tests the ability of the engine to match
-	 * sequences that are not explicitly specified in the pattern when they are
-	 * considered equivalent by the Unicode Standard.
-	 */
-	private static void ceTest() throws Exception {
-		// Decomposed char outside char classes
-		Pattern p = Pattern.compile("testa\u030a", Pattern.CANON_EQ);
-		Matcher m = p.matcher("test\u00e5");
-		if (!m.matches())
-			failCount++;
-
-		m.reset("testa\u030a");
-		if (!m.matches())
-			failCount++;
-
-		// Composed char outside char classes
-		p = Pattern.compile("test\u00e5", Pattern.CANON_EQ);
-		m = p.matcher("test\u00e5");
-		if (!m.matches())
-			failCount++;
-
-		m.reset("testa\u030a");
-		if (!m.find())
-			failCount++;
-
-		// Decomposed char inside a char class
-		p = Pattern.compile("test[abca\u030a]", Pattern.CANON_EQ);
-		m = p.matcher("test\u00e5");
-		if (!m.find())
-			failCount++;
-
-		m.reset("testa\u030a");
-		if (!m.find())
-			failCount++;
-
-		// Composed char inside a char class
-		p = Pattern.compile("test[abc\u00e5def\u00e0]", Pattern.CANON_EQ);
-		m = p.matcher("test\u00e5");
-		if (!m.find())
-			failCount++;
-
-		m.reset("testa\u0300");
-		if (!m.find())
-			failCount++;
-
-		m.reset("testa\u030a");
-		if (!m.find())
-			failCount++;
-
-		// Marks that cannot legally change order and be equivalent
-		p = Pattern.compile("testa\u0308\u0300", Pattern.CANON_EQ);
-		check(p, "testa\u0308\u0300", true);
-		check(p, "testa\u0300\u0308", false);
-
-		// Marks that can legally change order and be equivalent
-		p = Pattern.compile("testa\u0308\u0323", Pattern.CANON_EQ);
-		check(p, "testa\u0308\u0323", true);
-		check(p, "testa\u0323\u0308", true);
-
-		// Test all equivalences of the sequence a\u0308\u0323\u0300
-		p = Pattern.compile("testa\u0308\u0323\u0300", Pattern.CANON_EQ);
-		check(p, "testa\u0308\u0323\u0300", true);
-		check(p, "testa\u0323\u0308\u0300", true);
-		check(p, "testa\u0308\u0300\u0323", true);
-		check(p, "test\u00e4\u0323\u0300", true);
-		check(p, "test\u00e4\u0300\u0323", true);
-
-		/*
-		 * The following canonical equivalence tests don't work. Bug id:
-		 * 4916384.
-		 *
-		 * // Decomposed hangul (jamos) p = Pattern.compile("\u1100\u1161",
-		 * Pattern.CANON_EQ); m = p.matcher("\u1100\u1161"); if (!m.matches())
-		 * failCount++;
-		 * 
-		 * m.reset("\uac00"); if (!m.matches()) failCount++;
-		 * 
-		 * // Composed hangul p = Pattern.compile("\uac00", Pattern.CANON_EQ); m
-		 * = p.matcher("\u1100\u1161"); if (!m.matches()) failCount++;
-		 * 
-		 * m.reset("\uac00"); if (!m.matches()) failCount++;
-		 * 
-		 * // Decomposed supplementary outside char classes p =
-		 * Pattern.compile("test\ud834\uddbc\ud834\udd6f", Pattern.CANON_EQ); m
-		 * = p.matcher("test\ud834\uddc0"); if (!m.matches()) failCount++;
-		 * 
-		 * m.reset("test\ud834\uddbc\ud834\udd6f"); if (!m.matches())
-		 * failCount++;
-		 * 
-		 * // Composed supplementary outside char classes p =
-		 * Pattern.compile("test\ud834\uddc0", Pattern.CANON_EQ);
-		 * m.reset("test\ud834\uddbc\ud834\udd6f"); if (!m.matches())
-		 * failCount++;
-		 * 
-		 * m = p.matcher("test\ud834\uddc0"); if (!m.matches()) failCount++;
-		 * 
-		 */
-
-		report("Canonical Equivalence");
 	}
 
 	/**

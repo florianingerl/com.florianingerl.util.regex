@@ -47,7 +47,7 @@ public class GroupNameWithUnderscoreTest {
 		assertEquals("A", m.group("group_name"));
 	}
 	
-	/*
+	
 	@Test
 	public void groupNamesWithUnderscoreCanBeReplaced() {
 		Pattern p = Pattern.compile("(?<group_name>A|b)");
@@ -55,6 +55,6 @@ public class GroupNameWithUnderscoreTest {
 		
 		String s = m.replaceAll("[${group_name}]");
 		assertEquals("[A]menEr[b]armen", s);
-	}*/
+	}
 
 }

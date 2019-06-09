@@ -3249,6 +3249,9 @@ public final class Pattern implements java.io.Serializable {
 		return p;
 	}
 
+	static boolean isCharOfGroupname(int ch) {
+		return ASCII.isLower(ch) || ASCII.isUpper(ch) || ASCII.isDigit(ch) || ASCII.isUnderscore(ch);
+	}
 	/**
 	 * Parses and returns the name of a "named capturing group", the trailing ">" is
 	 * consumed after parsing.
@@ -3256,7 +3259,7 @@ public final class Pattern implements java.io.Serializable {
 	private String groupname(int ch) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(Character.toChars(ch));
-		while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch) || ASCII.isUnderscore(ch)) {
+		while (isCharOfGroupname(ch = read())) {
 			sb.append(Character.toChars(ch));
 		}
 		if (sb.length() == 0)
@@ -3266,6 +3269,9 @@ public final class Pattern implements java.io.Serializable {
 		return sb.toString();
 	}
 
+	static boolean isFirstCharOfGroupname(int ch) {
+		return ASCII.isLower(ch) || ASCII.isUpper(ch);
+	}
 	/**
 	 * Parses a group and returns the head node of a set of nodes that process the
 	 * group. Sometimes a double return system is used where the tail is returned in
@@ -3305,7 +3311,7 @@ public final class Pattern implements java.io.Serializable {
 				break;
 			case '<': // (?<xxx) look behind
 				ch = read();
-				if (ASCII.isLower(ch) || ASCII.isUpper(ch)) {
+				if (isFirstCharOfGroupname(ch)) {
 					// named captured group
 					final String name = groupname(ch);
 					if (groupIndices().containsKey(name))
@@ -3505,9 +3511,9 @@ public final class Pattern implements java.io.Serializable {
 	private String doesGroupNameFollowBefore(int closing) {
 		int ch = peek();
 		int save = cursor;
-		if (ASCII.isLower(ch) || ASCII.isUpper(ch)) {
+		if (isFirstCharOfGroupname(ch)) {
 			StringBuilder sb = new StringBuilder();
-			while (ASCII.isLower(ch = read()) || ASCII.isUpper(ch) || ASCII.isDigit(ch) || ASCII.isUnderscore(ch)) {
+			while (isCharOfGroupname(ch=read())) {
 				sb.append(Character.toChars(ch));
 			}
 			if (ch != closing) {

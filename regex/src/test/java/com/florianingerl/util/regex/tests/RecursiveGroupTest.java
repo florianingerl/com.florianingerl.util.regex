@@ -189,5 +189,12 @@ public class RecursiveGroupTest {
 				"(?'sum')");
 		assertTrue(p.matcher("5+6+7").matches() );
 	}
+	
+	@Test
+	public void groupDefinedButNeverRecursedToShouldntLeadToException() {
+		Pattern p = Pattern.compile("(?(DEFINE)(?<firstgroup>hello)(?<secondgroup>goodbye))(?'secondgroup')");
+		
+		assertTrue(p.matcher("goodbye").matches());
+	}
 
 }

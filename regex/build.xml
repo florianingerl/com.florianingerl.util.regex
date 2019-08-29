@@ -57,7 +57,7 @@
 	</target>
 
 	<target name="jar" depends="test"  >
-		<jar destfile="ant-target/regex-1.1.8.jar" basedir="${output-main}" includes="**/*.class">
+		<jar destfile="ant-target/regex-1.1.9.jar" basedir="${output-main}" includes="**/*.class">
 			<manifest>
 				<attribute name="Author" value="Florian Ingerl" />
 			</manifest>

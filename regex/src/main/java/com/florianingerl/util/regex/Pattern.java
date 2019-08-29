@@ -3324,7 +3324,7 @@ public final class Pattern implements java.io.Serializable {
 					head.setNext(expr(tail));
 					final RecursiveGroupCall rgc = new RecursiveGroupCall(group, false, inLookaround);
 					groupCalledRecursivelyChecks().add(() -> {
-						if (recursivelyCalledGroups().contains(group) || recursivelyCalledGroups().contains(name))
+						if (recursivelyCalledGroups().contains(group) || recursivelyCalledGroups().contains(name) || rgc.getPrevious() == null)
 							return;
 						GroupHeadAndTail ghat = groupHeadAndTailNodes().get(group);
 						ghat.groupTail.setNext(rgc.getNext());

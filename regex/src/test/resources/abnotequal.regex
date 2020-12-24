@@ -1,6 +1,6 @@
 (?x) #comment mode
-(?<DEFINE>
-(?<S>a(?'S')b|C)
+(?(DEFINE)
+(?<S>a(?'S')b|(?'C'))
 (?<C>a(?'A')|b(?'B'))
 (?<A>a(?'A')|)
 (?<B>b(?'B')|)

@@ -1,6 +1,8 @@
 package com.florianingerl.util.regex.tests;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -9,8 +11,6 @@ import java.io.IOException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
-import com.florianingerl.util.regex.CaptureReplacer;
-import com.florianingerl.util.regex.DefaultCaptureReplacer;
 import com.florianingerl.util.regex.Matcher;
 import com.florianingerl.util.regex.Pattern;
 
@@ -21,6 +21,7 @@ public class ContextFreeGrammarsTest {
 
 		String regex = IOUtils.toString(
 				new FileInputStream(getClass().getClassLoader().getResource("abnotequal.regex").getFile()), "UTF-8");
+		System.out.println(regex);
 		Pattern p = Pattern.compile(regex);
 
 		assertFalse(p.matcher("ab").matches());
@@ -34,6 +35,7 @@ public class ContextFreeGrammarsTest {
 
 		String regex = IOUtils.toString(
 				new FileInputStream(getClass().getClassLoader().getResource("casoftenasaandb.regex").getFile()), "UTF-8");
+		System.out.println(regex);
 		Pattern p = Pattern.compile(regex);
 
 		assertTrue(p.matcher("abbccc").matches());

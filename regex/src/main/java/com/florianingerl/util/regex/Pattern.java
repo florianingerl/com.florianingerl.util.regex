@@ -1544,6 +1544,41 @@ public final class Pattern implements java.io.Serializable {
 	private transient boolean hasSupplementary;
 
 	/**
+	 * The TreeInfo of the complete object tree.
+	 */
+	private transient volatile TreeInfo treeInfoRoot;
+
+	private TreeInfo getTreeInfoRoot() {
+		// double checked locking
+		TreeInfo treeInfo = treeInfoRoot;
+		if (treeInfo == null) {
+			synchronized (this) {
+				treeInfo = treeInfoRoot;
+				if (treeInfo == null) {
+					matchRoot.study(treeInfo = new TreeInfo());
+					treeInfoRoot = treeInfo;
+				}
+			}
+		}
+		return treeInfo;
+	}
+
+	/**
+	 * @return The minimum length of a possible match.
+	 */
+	public int getMinLength() {
+		return getTreeInfoRoot().minLength;
+	}
+
+	/**
+	 * @return The maximum length of a possible match or {@link Integer.MAX_VALUE} if there is no maximum.
+	 */
+	public int getMaxLength() {
+		TreeInfo treeInfo = getTreeInfoRoot();
+		return treeInfo.maxValid ? treeInfo.maxLength : Integer.MAX_VALUE;
+	}
+
+	/**
 	 * Compiles the given regular expression into a pattern.
 	 *
 	 * @param regex

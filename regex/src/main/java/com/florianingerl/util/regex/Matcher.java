@@ -289,6 +289,10 @@ public final class Matcher implements MatchResult {
 		Matcher result = new Matcher(this.parentPattern, text.toString());
 		result.first = this.first;
 		result.last = this.last;
+		result.groups = new int [this.groups.length];
+		for(int i=0; i < this.groups.length; ++i) {
+			result.groups[i] = this.groups[i];
+		}
 		result.captureTreeNode = this.captureTreeNode;
 		return result;
 

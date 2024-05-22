@@ -93,135 +93,135 @@ import java.util.stream.StreamSupport;
  * such use.
  *
  *
- * <h3><a name="sum">Summary of regular-expression constructs</a></h3>
+ * <h2><a>Summary of regular-expression constructs</a></h2>
  *
- * <table border="0" cellpadding="1" cellspacing="0" summary= "Regular
- * expression constructs, and what they match">
+ * <table  style="padding: 1px" >
+ * <caption></caption>
  *
- * <tr align="left">
- * <th align="left" id="construct">Construct</th>
- * <th align="left" id="matches">Matches</th>
+ * <tr style="text-align: left">
+ * <th style="text-align: left" id="construct">Construct</th>
+ * <th style="text-align: left" id="matches">Matches</th>
  * </tr>
  *
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="characters">Characters</th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct characters"><i>x</i></td>
+ * <td style="vertical-align: top" headers="construct characters"><i>x</i></td>
  * <td headers="matches">The character <i>x</i></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\\</tt></td>
+ * <td style="vertical-align: top" headers="construct characters"><code>\\</code></td>
  * <td headers="matches">The backslash character</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\0</tt><i>n</i></td>
- * <td headers="matches">The character with octal value <tt>0</tt><i>n</i>
- * (0&nbsp;<tt>&lt;=</tt>&nbsp;<i>n</i>&nbsp;<tt>&lt;=</tt>&nbsp;7)</td>
+ * <td style="vertical-align: top" headers="construct characters"><code>\0</code><i>n</i></td>
+ * <td headers="matches">The character with octal value <code>0</code><i>n</i>
+ * (0&nbsp;<code>&lt;=</code>&nbsp;<i>n</i>&nbsp;<code>&lt;=</code>&nbsp;7)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\0</tt><i>nn</i></td>
- * <td headers="matches">The character with octal value <tt>0</tt><i>nn</i>
- * (0&nbsp;<tt>&lt;=</tt>&nbsp;<i>n</i>&nbsp;<tt>&lt;=</tt>&nbsp;7)</td>
+ * <td style="vertical-align: top" headers="construct characters"><code>\0</code><i>nn</i></td>
+ * <td headers="matches">The character with octal value <code>0</code><i>nn</i>
+ * (0&nbsp;<code>&lt;=</code>&nbsp;<i>n</i>&nbsp;<code>&lt;=</code>&nbsp;7)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\0</tt><i>mnn</i></td>
- * <td headers="matches">The character with octal value <tt>0</tt><i>mnn</i>
- * (0&nbsp;<tt>&lt;=</tt>&nbsp;<i>m</i>&nbsp;<tt>&lt;=</tt>&nbsp;3, 0&nbsp;
- * <tt>&lt;=</tt>&nbsp;<i>n</i>&nbsp;<tt>&lt;=</tt>&nbsp;7)</td>
+ * <td style="vertical-align: top" headers="construct characters"><code>\0</code><i>mnn</i></td>
+ * <td headers="matches">The character with octal value <code>0</code><i>mnn</i>
+ * (0&nbsp;<code>&lt;=</code>&nbsp;<i>m</i>&nbsp;<code>&lt;=</code>&nbsp;3, 0&nbsp;
+ * <code>&lt;=</code>&nbsp;<i>n</i>&nbsp;<code>&lt;=</code>&nbsp;7)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\x</tt><i>hh</i></td>
+ * <td style="vertical-align: top" headers="construct characters"><code>\x</code><i>hh</i></td>
  * <td headers="matches">The character with hexadecimal&nbsp;value&nbsp;
- * <tt>0x</tt><i>hh</i></td>
+ * <code>0x</code><i>hh</i></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>&#92;u</tt><i>hhhh</i>
+ * <td style="vertical-align: top" headers="construct characters"><code>&#92;u</code><i>hhhh</i>
  * </td>
  * <td headers="matches">The character with hexadecimal&nbsp;value&nbsp;
- * <tt>0x</tt><i>hhhh</i></td>
+ * <code>0x</code><i>hhhh</i></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>&#92;x</tt><i>{h...h}</i>
+ * <td style="vertical-align: top" headers="construct characters"><code>&#92;x</code><i>{h...h}</i>
  * </td>
  * <td headers="matches">The character with hexadecimal&nbsp;value&nbsp;
- * <tt>0x</tt><i>h...h</i> ({@link java.lang.Character#MIN_CODE_POINT
- * Character.MIN_CODE_POINT} &nbsp;&lt;=&nbsp;<tt>0x</tt><i>h...h</i>
+ * <code>0x</code><i>h...h</i> ({@link java.lang.Character#MIN_CODE_POINT
+ * Character.MIN_CODE_POINT} &nbsp;&lt;=&nbsp;<code>0x</code><i>h...h</i>
  * &nbsp;&lt;=&nbsp; {@link java.lang.Character#MAX_CODE_POINT
  * Character.MAX_CODE_POINT})</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="matches"><tt>\t</tt></td>
- * <td headers="matches">The tab character (<tt>'&#92;u0009'</tt>)</td>
+ * <td style="vertical-align: top" headers="matches"><code>\t</code></td>
+ * <td headers="matches">The tab character (<code>'&#92;u0009'</code>)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\n</tt></td>
+ * <td style="vertical-align: top" headers="construct characters"><code>\n</code></td>
  * <td headers="matches">The newline (line feed) character (
- * <tt>'&#92;u000A'</tt>)</td>
+ * <code>'&#92;u000A'</code>)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\r</tt></td>
- * <td headers="matches">The carriage-return character (<tt>'&#92;u000D'</tt>)
+ * <td style="vertical-align: top" headers="construct characters"><code>\r</code></td>
+ * <td headers="matches">The carriage-return character (<code>'&#92;u000D'</code>)
  * </td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\f</tt></td>
- * <td headers="matches">The form-feed character (<tt>'&#92;u000C'</tt>)</td>
+ * <td style="vertical-align: top" headers="construct characters"><code>\f</code></td>
+ * <td headers="matches">The form-feed character (<code>'&#92;u000C'</code>)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\a</tt></td>
- * <td headers="matches">The alert (bell) character (<tt>'&#92;u0007'</tt>)</td>
+ * <td style="vertical-align: top" headers="construct characters"><code>\a</code></td>
+ * <td headers="matches">The alert (bell) character (<code>'&#92;u0007'</code>)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\e</tt></td>
- * <td headers="matches">The escape character (<tt>'&#92;u001B'</tt>)</td>
+ * <td style="vertical-align: top" headers="construct characters"><code>\e</code></td>
+ * <td headers="matches">The escape character (<code>'&#92;u001B'</code>)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct characters"><tt>\c</tt><i>x</i></td>
+ * <td style="vertical-align: top" headers="construct characters"><code>\c</code><i>x</i></td>
  * <td headers="matches">The control character corresponding to <i>x</i></td>
  * </tr>
  *
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="classes">Character classes</th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct classes">{@code [abc]}</td>
+ * <td style="vertical-align: top" headers="construct classes">{@code [abc]}</td>
  * <td headers="matches">{@code a}, {@code b}, or {@code c} (simple class)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct classes">{@code [^abc]}</td>
+ * <td style="vertical-align: top" headers="construct classes">{@code [^abc]}</td>
  * <td headers="matches">Any character except {@code a}, {@code b}, or {@code c}
  * (negation)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct classes">{@code [a-zA-Z]}</td>
+ * <td style="vertical-align: top" headers="construct classes">{@code [a-zA-Z]}</td>
  * <td headers="matches">{@code a} through {@code z} or {@code A} through
  * {@code Z}, inclusive (range)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct classes">{@code [a-d[m-p]]}</td>
+ * <td style="vertical-align: top" headers="construct classes">{@code [a-d[m-p]]}</td>
  * <td headers="matches">{@code a} through {@code d}, or {@code m} through
  * {@code p}: {@code [a-dm-p]} (union)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct classes">{@code [a-z&&[def]]}</td>
+ * <td style="vertical-align: top" headers="construct classes">{@code [a-z&&[def]]}</td>
  * <td headers="matches">{@code d}, {@code e}, or {@code f} (intersection)
  * </tr>
  * <tr>
- * <td valign="top" headers="construct classes">{@code [a-z&&[^bc]]}</td>
+ * <td style="vertical-align: top" headers="construct classes">{@code [a-z&&[^bc]]}</td>
  * <td headers="matches">{@code a} through {@code z}, except for {@code b} and
  * {@code c}: {@code [ad-z]} (subtraction)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct classes">{@code [a-z&&[^m-p]]}</td>
+ * <td style="vertical-align: top" headers="construct classes">{@code [a-z&&[^m-p]]}</td>
  * <td headers="matches">{@code a} through {@code z}, and not {@code m} through
  * {@code p}: {@code [a-lq-z]}(subtraction)</td>
  * </tr>
@@ -229,188 +229,188 @@ import java.util.stream.StreamSupport;
  * <th>&nbsp;</th>
  * </tr>
  *
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="predef">Predefined character classes</th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct predef"><tt>.</tt></td>
+ * <td style="vertical-align: top" headers="construct predef"><code>.</code></td>
  * <td headers="matches">Any character (may or may not match <a href="#lt">line
  * terminators</a>)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct predef"><tt>\d</tt></td>
- * <td headers="matches">A digit: <tt>[0-9]</tt></td>
+ * <td style="vertical-align: top" headers="construct predef"><code>\d</code></td>
+ * <td headers="matches">A digit: <code>[0-9]</code></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct predef"><tt>\D</tt></td>
- * <td headers="matches">A non-digit: <tt>[^0-9]</tt></td>
+ * <td style="vertical-align: top" headers="construct predef"><code>\D</code></td>
+ * <td headers="matches">A non-digit: <code>[^0-9]</code></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct predef"><tt>\h</tt></td>
+ * <td style="vertical-align: top" headers="construct predef"><code>\h</code></td>
  * <td headers="matches">A horizontal whitespace character:
- * <tt>[ \t\xA0&#92;u1680&#92;u180e&#92;u2000-&#92;u200a&#92;u202f&#92;u205f&#92;u3000]</tt>
+ * <code>[ \t\xA0&#92;u1680&#92;u180e&#92;u2000-&#92;u200a&#92;u202f&#92;u205f&#92;u3000]</code>
  * </td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct predef"><tt>\H</tt></td>
- * <td headers="matches">A non-horizontal whitespace character: <tt>[^\h]</tt>
+ * <td style="vertical-align: top" headers="construct predef"><code>\H</code></td>
+ * <td headers="matches">A non-horizontal whitespace character: <code>[^\h]</code>
  * </td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct predef"><tt>\s</tt></td>
- * <td headers="matches">A whitespace character: <tt>[ \t\n\x0B\f\r]</tt></td>
+ * <td style="vertical-align: top" headers="construct predef"><code>\s</code></td>
+ * <td headers="matches">A whitespace character: <code>[ \t\n\x0B\f\r]</code></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct predef"><tt>\S</tt></td>
- * <td headers="matches">A non-whitespace character: <tt>[^\s]</tt></td>
+ * <td style="vertical-align: top" headers="construct predef"><code>\S</code></td>
+ * <td headers="matches">A non-whitespace character: <code>[^\s]</code></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct predef"><tt>\v</tt></td>
+ * <td style="vertical-align: top" headers="construct predef"><code>\v</code></td>
  * <td headers="matches">A vertical whitespace character:
- * <tt>[\n\x0B\f\r\x85&#92;u2028&#92;u2029]</tt></td>
+ * <code>[\n\x0B\f\r\x85&#92;u2028&#92;u2029]</code></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct predef"><tt>\V</tt></td>
- * <td headers="matches">A non-vertical whitespace character: <tt>[^\v]</tt>
+ * <td style="vertical-align: top" headers="construct predef"><code>\V</code></td>
+ * <td headers="matches">A non-vertical whitespace character: <code>[^\v]</code>
  * </td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct predef"><tt>\w</tt></td>
- * <td headers="matches">A word character: <tt>[a-zA-Z_0-9]</tt></td>
+ * <td style="vertical-align: top" headers="construct predef"><code>\w</code></td>
+ * <td headers="matches">A word character: <code>[a-zA-Z_0-9]</code></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct predef"><tt>\W</tt></td>
- * <td headers="matches">A non-word character: <tt>[^\w]</tt></td>
+ * <td style="vertical-align: top" headers="construct predef"><code>\W</code></td>
+ * <td headers="matches">A non-word character: <code>[^\w]</code></td>
  * </tr>
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="posix"><b>POSIX character classes (US-ASCII only)</b>
  * </th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Lower}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Lower}}</td>
  * <td headers="matches">A lower-case alphabetic character: {@code [a-z]}</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Upper}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Upper}}</td>
  * <td headers="matches">An upper-case alphabetic character:{@code [A-Z]}</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{ASCII}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{ASCII}}</td>
  * <td headers="matches">All ASCII:{@code [\x00-\x7F]}</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Alpha}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Alpha}}</td>
  * <td headers="matches">An alphabetic character:{@code [\p{Lower}\p{Upper}]}
  * </td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Digit}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Digit}}</td>
  * <td headers="matches">A decimal digit: {@code [0-9]}</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Alnum}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Alnum}}</td>
  * <td headers="matches">An alphanumeric character:{@code [\p{Alpha}\p{Digit}]}
  * </td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Punct}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Punct}}</td>
  * <td headers="matches">Punctuation: One of {@code !"#$%&'()*+,-./:;
  * <=>?@[\]^_`{|}~}</td>
  * </tr>
  * <!-- {@code [\!"#\$%&'\(\)\*\+,\-\./:;\<=\>\?@\[\\\]\^_`\{\|\}~]}
  * {@code [\X21-\X2F\X31-\X40\X5B-\X60\X7B-\X7E]} -->
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Graph}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Graph}}</td>
  * <td headers="matches">A visible character: {@code [\p{Alnum}\p{Punct}]}</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Print}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Print}}</td>
  * <td headers="matches">A printable character: {@code [\p{Graph}\x20]}</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Blank}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Blank}}</td>
  * <td headers="matches">A space or a tab: {@code [ \t]}</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Cntrl}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Cntrl}}</td>
  * <td headers="matches">A control character: {@code [\x00-\x1F\x7F]}</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{XDigit}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{XDigit}}</td>
  * <td headers="matches">A hexadecimal digit: {@code [0-9a-fA-F]}</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct posix">{@code \p{Space}}</td>
+ * <td style="vertical-align: top" headers="construct posix">{@code \p{Space}}</td>
  * <td headers="matches">A whitespace character: {@code [ \t\n\x0B\f\r]}</td>
  * </tr>
  *
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2">java.lang.Character classes (simple <a href="#jcc">java
  * character type</a>)</th>
  * </tr>
  *
  * <tr>
- * <td valign="top"><tt>\p{javaLowerCase}</tt></td>
+ * <td style="vertical-align: top"><code>\p{javaLowerCase}</code></td>
  * <td>Equivalent to java.lang.Character.isLowerCase()</td>
  * </tr>
  * <tr>
- * <td valign="top"><tt>\p{javaUpperCase}</tt></td>
+ * <td style="vertical-align: top"><code>\p{javaUpperCase}</code></td>
  * <td>Equivalent to java.lang.Character.isUpperCase()</td>
  * </tr>
  * <tr>
- * <td valign="top"><tt>\p{javaWhitespace}</tt></td>
+ * <td style="vertical-align: top"><code>\p{javaWhitespace}</code></td>
  * <td>Equivalent to java.lang.Character.isWhitespace()</td>
  * </tr>
  * <tr>
- * <td valign="top"><tt>\p{javaMirrored}</tt></td>
+ * <td style="vertical-align: top"><code>\p{javaMirrored}</code></td>
  * <td>Equivalent to java.lang.Character.isMirrored()</td>
  * </tr>
  *
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="unicode">Classes for Unicode scripts, blocks, categories
  * and binary properties</th>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct unicode">{@code \p{IsLatin}}</td>
+ * <td style="vertical-align: top" headers="construct unicode">{@code \p{IsLatin}}</td>
  * <td headers="matches">A Latin&nbsp;script character (
  * <a href="#usc">script</a>)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct unicode">{@code \p{InGreek}}</td>
+ * <td style="vertical-align: top" headers="construct unicode">{@code \p{InGreek}}</td>
  * <td headers="matches">A character in the Greek&nbsp;block (
  * <a href="#ubc">block</a>)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct unicode">{@code \p{Lu}}</td>
+ * <td style="vertical-align: top" headers="construct unicode">{@code \p{Lu}}</td>
  * <td headers="matches">An uppercase letter (<a href="#ucc">category</a>)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct unicode">{@code \p{IsAlphabetic}}</td>
+ * <td style="vertical-align: top" headers="construct unicode">{@code \p{IsAlphabetic}}</td>
  * <td headers="matches">An alphabetic character (<a href="#ubpc">binary
  * property</a>)</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct unicode">{@code \p{Sc}}</td>
+ * <td style="vertical-align: top" headers="construct unicode">{@code \p{Sc}}</td>
  * <td headers="matches">A currency symbol</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct unicode">{@code \P{InGreek}}</td>
+ * <td style="vertical-align: top" headers="construct unicode">{@code \P{InGreek}}</td>
  * <td headers="matches">Any character except one in the Greek block (negation)
  * </td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct unicode">{@code [\p{L}&&[^\p{Lu}]]}</td>
+ * <td style="vertical-align: top" headers="construct unicode">{@code [\p{L}&&[^\p{Lu}]]}</td>
  * <td headers="matches">Any letter except an uppercase letter (subtraction)
  * </td>
  * </tr>
@@ -418,89 +418,89 @@ import java.util.stream.StreamSupport;
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="bounds">Boundary matchers</th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct bounds"><tt>^</tt></td>
+ * <td style="vertical-align: top" headers="construct bounds"><code>^</code></td>
  * <td headers="matches">The beginning of a line</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct bounds"><tt>$</tt></td>
+ * <td style="vertical-align: top" headers="construct bounds"><code>$</code></td>
  * <td headers="matches">The end of a line</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct bounds"><tt>\b</tt></td>
+ * <td style="vertical-align: top" headers="construct bounds"><code>\b</code></td>
  * <td headers="matches">A word boundary</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct bounds"><tt>\B</tt></td>
+ * <td style="vertical-align: top" headers="construct bounds"><code>\B</code></td>
  * <td headers="matches">A non-word boundary</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct bounds"><tt>\A</tt></td>
+ * <td style="vertical-align: top" headers="construct bounds"><code>\A</code></td>
  * <td headers="matches">The beginning of the input</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct bounds"><tt>\G</tt></td>
+ * <td style="vertical-align: top" headers="construct bounds"><code>\G</code></td>
  * <td headers="matches">The end of the previous match</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct bounds"><tt>\Z</tt></td>
+ * <td style="vertical-align: top" headers="construct bounds"><code>\Z</code></td>
  * <td headers="matches">The end of the input but for the final
  * <a href="#lt">terminator</a>, if&nbsp;any</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct bounds"><tt>\z</tt></td>
+ * <td style="vertical-align: top" headers="construct bounds"><code>\z</code></td>
  * <td headers="matches">The end of the input</td>
  * </tr>
  *
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="lineending">Linebreak matcher</th>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct lineending"><tt>\R</tt></td>
+ * <td style="vertical-align: top" headers="construct lineending"><code>\R</code></td>
  * <td headers="matches">Any Unicode linebreak sequence, is equivalent to
- * <tt>&#92;u000D&#92;u000A|[&#92;u000A&#92;u000B&#92;u000C&#92;u000D&#92;u0085&#92;u2028&#92;u2029]
- *     </tt></td>
+ * <code>&#92;u000D&#92;u000A|[&#92;u000A&#92;u000B&#92;u000C&#92;u000D&#92;u0085&#92;u2028&#92;u2029]
+ *     </code></td>
  * </tr>
  *
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="greedy">Greedy quantifiers</th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct greedy"><i>X</i><tt>?</tt></td>
+ * <td style="vertical-align: top" headers="construct greedy"><i>X</i><code>?</code></td>
  * <td headers="matches"><i>X</i>, once or not at all</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct greedy"><i>X</i><tt>*</tt></td>
+ * <td style="vertical-align: top" headers="construct greedy"><i>X</i><code>*</code></td>
  * <td headers="matches"><i>X</i>, zero or more times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct greedy"><i>X</i><tt>+</tt></td>
+ * <td style="vertical-align: top" headers="construct greedy"><i>X</i><code>+</code></td>
  * <td headers="matches"><i>X</i>, one or more times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct greedy"><i>X</i><tt>{</tt><i>n</i>
- * <tt>}</tt></td>
+ * <td style="vertical-align: top" headers="construct greedy"><i>X</i><code>{</code><i>n</i>
+ * <code>}</code></td>
  * <td headers="matches"><i>X</i>, exactly <i>n</i> times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct greedy"><i>X</i><tt>{</tt><i>n</i>
- * <tt>,}</tt></td>
+ * <td style="vertical-align: top" headers="construct greedy"><i>X</i><code>{</code><i>n</i>
+ * <code>,}</code></td>
  * <td headers="matches"><i>X</i>, at least <i>n</i> times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct greedy"><i>X</i><tt>{</tt><i>n</i>
- * <tt>,</tt><i>m</i><tt>}</tt></td>
+ * <td style="vertical-align: top" headers="construct greedy"><i>X</i><code>{</code><i>n</i>
+ * <code>,</code><i>m</i><code>}</code></td>
  * <td headers="matches"><i>X</i>, at least <i>n</i> but not more than <i>m</i>
  * times</td>
  * </tr>
@@ -508,35 +508,35 @@ import java.util.stream.StreamSupport;
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="reluc">Reluctant quantifiers</th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct reluc"><i>X</i><tt>??</tt></td>
+ * <td style="vertical-align: top" headers="construct reluc"><i>X</i><code>??</code></td>
  * <td headers="matches"><i>X</i>, once or not at all</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct reluc"><i>X</i><tt>*?</tt></td>
+ * <td style="vertical-align: top" headers="construct reluc"><i>X</i><code>*?</code></td>
  * <td headers="matches"><i>X</i>, zero or more times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct reluc"><i>X</i><tt>+?</tt></td>
+ * <td style="vertical-align: top" headers="construct reluc"><i>X</i><code>+?</code></td>
  * <td headers="matches"><i>X</i>, one or more times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct reluc"><i>X</i><tt>{</tt><i>n</i>
- * <tt>}?</tt></td>
+ * <td style="vertical-align: top" headers="construct reluc"><i>X</i><code>{</code><i>n</i>
+ * <code>}?</code></td>
  * <td headers="matches"><i>X</i>, exactly <i>n</i> times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct reluc"><i>X</i><tt>{</tt><i>n</i>
- * <tt>,}?</tt></td>
+ * <td style="vertical-align: top" headers="construct reluc"><i>X</i><code>{</code><i>n</i>
+ * <code>,}?</code></td>
  * <td headers="matches"><i>X</i>, at least <i>n</i> times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct reluc"><i>X</i><tt>{</tt><i>n</i>
- * <tt>,</tt><i>m</i><tt>}?</tt></td>
+ * <td style="vertical-align: top" headers="construct reluc"><i>X</i><code>{</code><i>n</i>
+ * <code>,</code><i>m</i><code>}?</code></td>
  * <td headers="matches"><i>X</i>, at least <i>n</i> but not more than <i>m</i>
  * times</td>
  * </tr>
@@ -544,35 +544,35 @@ import java.util.stream.StreamSupport;
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="poss">Possessive quantifiers</th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct poss"><i>X</i><tt>?+</tt></td>
+ * <td style="vertical-align: top" headers="construct poss"><i>X</i><code>?+</code></td>
  * <td headers="matches"><i>X</i>, once or not at all</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct poss"><i>X</i><tt>*+</tt></td>
+ * <td style="vertical-align: top" headers="construct poss"><i>X</i><code>*+</code></td>
  * <td headers="matches"><i>X</i>, zero or more times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct poss"><i>X</i><tt>++</tt></td>
+ * <td style="vertical-align: top" headers="construct poss"><i>X</i><code>++</code></td>
  * <td headers="matches"><i>X</i>, one or more times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct poss"><i>X</i><tt>{</tt><i>n</i>
- * <tt>}+</tt></td>
+ * <td style="vertical-align: top" headers="construct poss"><i>X</i><code>{</code><i>n</i>
+ * <code>}+</code></td>
  * <td headers="matches"><i>X</i>, exactly <i>n</i> times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct poss"><i>X</i><tt>{</tt><i>n</i>
- * <tt>,}+</tt></td>
+ * <td style="vertical-align: top" headers="construct poss"><i>X</i><code>{</code><i>n</i>
+ * <code>,}+</code></td>
  * <td headers="matches"><i>X</i>, at least <i>n</i> times</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct poss"><i>X</i><tt>{</tt><i>n</i>
- * <tt>,</tt><i>m</i><tt>}+</tt></td>
+ * <td style="vertical-align: top" headers="construct poss"><i>X</i><code>{</code><i>n</i>
+ * <code>,</code><i>m</i><code>}+</code></td>
  * <td headers="matches"><i>X</i>, at least <i>n</i> but not more than <i>m</i>
  * times</td>
  * </tr>
@@ -580,20 +580,20 @@ import java.util.stream.StreamSupport;
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="logical">Logical operators</th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct logical"><i>XY</i></td>
+ * <td style="vertical-align: top" headers="construct logical"><i>XY</i></td>
  * <td headers="matches"><i>X</i> followed by <i>Y</i></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct logical"><i>X</i><tt>|</tt><i>Y</i></td>
+ * <td style="vertical-align: top" headers="construct logical"><i>X</i><code>|</code><i>Y</i></td>
  * <td headers="matches">Either <i>X</i> or <i>Y</i></td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct logical"><tt>(</tt><i>X</i><tt>)</tt>
+ * <td style="vertical-align: top" headers="construct logical"><code>(</code><i>X</i><code>)</code>
  * </td>
  * <td headers="matches">X, as a <a href="#cg">capturing group</a></td>
  * </tr>
@@ -601,42 +601,42 @@ import java.util.stream.StreamSupport;
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="backref">Back references</th>
  * </tr>
  *
  * <tr>
- * <td valign="bottom" headers="construct backref"><tt>\</tt><i>n</i></td>
- * <td valign="bottom" headers="matches">Whatever the <i>n</i><sup>th</sup>
+ * <td style="vertical-align: bottom" headers="construct backref"><code>\</code><i>n</i></td>
+ * <td style="vertical-align: bottom" headers="matches">Whatever the <i>n</i><sup>th</sup>
  * <a href="#cg">capturing group</a> matched</td>
  * </tr>
  *
  * <tr>
- * <td valign="bottom" headers="construct backref"><tt>\</tt><i>k</i>&lt;
+ * <td style="vertical-align: bottom" headers="construct backref"><code>\</code><i>k</i>&lt;
  * <i>name</i>&gt;</td>
- * <td valign="bottom" headers="matches">Whatever the
+ * <td style="vertical-align: bottom" headers="matches">Whatever the
  * <a href="#groupname">named-capturing group</a> "name" matched</td>
  * </tr>
  *
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="quot">Quotation</th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct quot"><tt>\</tt></td>
+ * <td style="vertical-align: top" headers="construct quot"><code>\</code></td>
  * <td headers="matches">Nothing, but quotes the following character</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct quot"><tt>\Q</tt></td>
- * <td headers="matches">Nothing, but quotes all characters until <tt>\E</tt>
+ * <td style="vertical-align: top" headers="construct quot"><code>\Q</code></td>
+ * <td headers="matches">Nothing, but quotes all characters until <code>\E</code>
  * </td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct quot"><tt>\E</tt></td>
- * <td headers="matches">Nothing, but ends quoting started by <tt>\Q</tt></td>
+ * <td style="vertical-align: top" headers="construct quot"><code>\E</code></td>
+ * <td headers="matches">Nothing, but ends quoting started by <code>\Q</code></td>
  * </tr>
  * <!-- Metachars: !$()*+.<>?[\]^{|} -->
  *
@@ -644,18 +644,18 @@ import java.util.stream.StreamSupport;
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
- * <th colspan="2" id="recursive"><a name="recursion">Recursive
+ * <tr style="text-align: left">
+ * <th colspan="2" id="recursive"><a>Recursive
  * expressions</a></th>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct recursive">
- * <tt>(?'<a href="#groupname">name</a>')</tt></td>
+ * <td style="vertical-align: top" headers="construct recursive">
+ * <code>(?'<a href="#groupname">name</a>')</code></td>
  * <td headers="matches">Matches the pattern of the
  * <a href="#groupname">named-capturing group</a> "name" again.</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct recursive"><tt>(?</tt><i>n</i><tt>)</tt>
+ * <td style="vertical-align: top" headers="construct recursive"><code>(?</code><i>n</i><code>)</code>
  * </td>
  * <td headers="matches">Matches the pattern given by the <i>n</i><sup>th</sup>
  * group again. <i>n</i> must be greater than 0.</td>
@@ -663,24 +663,24 @@ import java.util.stream.StreamSupport;
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="conditional">Conditional expressions</th>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct conditional">
- * <tt>(?(<a href="#groupname">name</a>)Y|N)</tt></td>
+ * <td style="vertical-align: top" headers="construct conditional">
+ * <code>(?(<a href="#groupname">name</a>)Y|N)</code></td>
  * <td headers="matches">If the capture stack of the
  * <a href="#groupname">named-capturing group</a> "name" isn't empty, Y is
  * matched. Otherwise the optional pattern N is matched.</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct conditional"><tt>(?(</tt><i>n</i>
- * <tt>)Y|N)</tt></td>
+ * <td style="vertical-align: top" headers="construct conditional"><code>(?(</code><i>n</i>
+ * <code>)Y|N)</code></td>
  * <td headers="matches">If the capture stack of the <i>n</i><sup>th</sup> group
  * isn't empty, Y is matched. Otherwise the optional pattern N is matched.</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct conditional"><tt>(?(?=COND)Y|N)</tt></td>
+ * <td style="vertical-align: top" headers="construct conditional"><code>(?(?=COND)Y|N)</code></td>
  * <td headers="matches">If the pattern (?=COND) can be matched, Y is matched.
  * Otherwise the optional pattern N is matched.</td>
  * </tr>
@@ -688,31 +688,31 @@ import java.util.stream.StreamSupport;
  * <tr>
  * <th>&nbsp;</th>
  * </tr>
- * <tr align="left">
+ * <tr style="text-align: left">
  * <th colspan="2" id="special">Special constructs (named-capturing and
  * non-capturing)</th>
  * </tr>
  *
  * <tr>
- * <td valign="top" headers="construct special">
- * <tt>(?&lt;<a href="#groupname">name</a>&gt;</tt><i>X</i><tt>)</tt></td>
+ * <td style="vertical-align: top" headers="construct special">
+ * <code>(?&lt;<a href="#groupname">name</a>&gt;</code><i>X</i><code>)</code></td>
  * <td headers="matches"><i>X</i>, as a named-capturing group</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct
- * special"><tt>(?(DEFINE)</tt><i>X</i><tt>)</tt></td>
+ * <td style="vertical-align: top" headers="construct
+ * special"><code>(?(DEFINE)</code><i>X</i><code>)</code></td>
  * <td headers="matches">Defines the pattern <i>X</i> that is never executed and
  * matches no characters. This is usually used to define one or more named
  * groups which are referred to from elsewhere in the pattern.</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct special"><tt>(?:</tt><i>X</i><tt>)</tt>
+ * <td style="vertical-align: top" headers="construct special"><code>(?:</code><i>X</i><code>)</code>
  * </td>
  * <td headers="matches"><i>X</i>, as a non-capturing group</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct special">
- * <tt>(?idmsuxU-idmsuxU)&nbsp;</tt></td>
+ * <td style="vertical-align: top" headers="construct special">
+ * <code>(?idmsuxU-idmsuxU)&nbsp;</code></td>
  * <td headers="matches">Nothing, but turns match flags
  * <a href="#CASE_INSENSITIVE">i</a> <a href="#UNIX_LINES">d</a>
  * <a href="#MULTILINE">m</a> <a href="#DOTALL">s</a>
@@ -720,8 +720,8 @@ import java.util.stream.StreamSupport;
  * <a href="#UNICODE_CHARACTER_CLASS">U</a> on - off</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct special"><tt>(?idmsux-idmsux:</tt>
- * <i>X</i><tt>)</tt>&nbsp;&nbsp;</td>
+ * <td style="vertical-align: top" headers="construct special"><code>(?idmsux-idmsux:</code>
+ * <i>X</i><code>)</code>&nbsp;&nbsp;</td>
  * <td headers="matches"><i>X</i>, as a <a href="#cg">non-capturing group</a>
  * with the given flags <a href="#CASE_INSENSITIVE">i</a>
  * <a href="#UNIX_LINES">d</a> <a href="#MULTILINE">m</a>
@@ -729,28 +729,28 @@ import java.util.stream.StreamSupport;
  * <a href="#COMMENTS">x</a> on - off</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct special"><tt>(?=</tt><i>X</i><tt>)</tt>
+ * <td style="vertical-align: top" headers="construct special"><code>(?=</code><i>X</i><code>)</code>
  * </td>
  * <td headers="matches"><i>X</i>, via zero-width positive lookahead</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct special"><tt>(?!</tt><i>X</i><tt>)</tt>
+ * <td style="vertical-align: top" headers="construct special"><code>(?!</code><i>X</i><code>)</code>
  * </td>
  * <td headers="matches"><i>X</i>, via zero-width negative lookahead</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct special"><tt>(?&lt;=</tt><i>X</i>
- * <tt>)</tt></td>
+ * <td style="vertical-align: top" headers="construct special"><code>(?&lt;=</code><i>X</i>
+ * <code>)</code></td>
  * <td headers="matches"><i>X</i>, via zero-width positive lookbehind</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct special"><tt>(?&lt;!</tt><i>X</i>
- * <tt>)</tt></td>
+ * <td style="vertical-align: top" headers="construct special"><code>(?&lt;!</code><i>X</i>
+ * <code>)</code></td>
  * <td headers="matches"><i>X</i>, via zero-width negative lookbehind</td>
  * </tr>
  * <tr>
- * <td valign="top" headers="construct special"><tt>(?&gt;</tt><i>X</i>
- * <tt>)</tt></td>
+ * <td style="vertical-align: top" headers="construct special"><code>(?&gt;</code><i>X</i>
+ * <code>)</code></td>
  * <td headers="matches"><i>X</i>, as an atomic, non-capturing group</td>
  * </tr>
  * </table>
@@ -758,13 +758,13 @@ import java.util.stream.StreamSupport;
  * <hr>
  *
  *
- * <h3><a name="bs">Backslashes, escapes, and quoting</a></h3>
+ * <h2><a>Backslashes, escapes, and quoting</a></h2>
  *
  * <p>
- * The backslash character (<tt>'\'</tt>) serves to introduce escaped
+ * The backslash character (<code>'\'</code>) serves to introduce escaped
  * constructs, as defined in the table above, as well as to quote characters
  * that otherwise would be interpreted as unescaped constructs. Thus the
- * expression <tt>\\</tt> matches a single backslash and <tt>\{</tt> matches a
+ * expression <code>\\</code> matches a single backslash and <code>\{</code> matches a
  * left brace.
  *
  * <p>
@@ -780,19 +780,19 @@ import java.util.stream.StreamSupport;
  * Unicode escapes (section 3.3) or other character escapes (section 3.10.6) It
  * is therefore necessary to double backslashes in string literals that
  * represent regular expressions to protect them from interpretation by the Java
- * bytecode compiler. The string literal <tt>"&#92;b"</tt>, for example, matches
+ * bytecode compiler. The string literal <code>"&#92;b"</code>, for example, matches
  * a single backspace character when interpreted as a regular expression, while
- * <tt>"&#92;&#92;b"</tt> matches a word boundary. The string literal
- * <tt>"&#92;(hello&#92;)"</tt> is illegal and leads to a compile-time error; in
- * order to match the string <tt>(hello)</tt> the string literal
- * <tt>"&#92;&#92;(hello&#92;&#92;)"</tt> must be used.
+ * <code>"&#92;&#92;b"</code> matches a word boundary. The string literal
+ * <code>"&#92;(hello&#92;)"</code> is illegal and leads to a compile-time error; in
+ * order to match the string <code>(hello)</code> the string literal
+ * <code>"&#92;&#92;(hello&#92;&#92;)"</code> must be used.
  *
- * <h3><a name="cc">Character Classes</a></h3>
+ * <h2><a>Character Classes</a></h2>
  *
  * <p>
  * Character classes may appear within other character classes, and may be
  * composed by the union operator (implicit) and the intersection operator (
- * <tt>&amp;&amp;</tt>). The union operator denotes a class that contains every
+ * <code>&amp;&amp;</code>). The union operator denotes a class that contains every
  * character that is in at least one of its operand classes. The intersection
  * operator denotes a class that contains every character that is in both of its
  * operand classes.
@@ -802,27 +802,27 @@ import java.util.stream.StreamSupport;
  * lowest:
  *
  * <blockquote>
- * <table border="0" cellpadding="1" cellspacing="0" summary= "Precedence of
- * character class operators.">
+ * <table  style="padding: 1px" >
+ * <caption></caption>
  * <tr>
  * <th>1&nbsp;&nbsp;&nbsp;&nbsp;</th>
  * <td>Literal escape&nbsp;&nbsp;&nbsp;&nbsp;</td>
- * <td><tt>\x</tt></td>
+ * <td><code>\x</code></td>
  * </tr>
  * <tr>
  * <th>2&nbsp;&nbsp;&nbsp;&nbsp;</th>
  * <td>Grouping</td>
- * <td><tt>[...]</tt></td>
+ * <td><code>[...]</code></td>
  * </tr>
  * <tr>
  * <th>3&nbsp;&nbsp;&nbsp;&nbsp;</th>
  * <td>Range</td>
- * <td><tt>a-z</tt></td>
+ * <td><code>a-z</code></td>
  * </tr>
  * <tr>
  * <th>4&nbsp;&nbsp;&nbsp;&nbsp;</th>
  * <td>Union</td>
- * <td><tt>[a-e][i-u]</tt></td>
+ * <td><code>[a-e][i-u]</code></td>
  * </tr>
  * <tr>
  * <th>5&nbsp;&nbsp;&nbsp;&nbsp;</th>
@@ -835,10 +835,10 @@ import java.util.stream.StreamSupport;
  * <p>
  * Note that a different set of metacharacters are in effect inside a character
  * class than outside a character class. For instance, the regular expression
- * <tt>.</tt> loses its special meaning inside a character class, while the
- * expression <tt>-</tt> becomes a range forming metacharacter.
+ * <code>.</code> loses its special meaning inside a character class, while the
+ * expression <code>-</code> becomes a range forming metacharacter.
  *
- * <h3><a name="lt">Line terminators</a></h3>
+ * <h2><a>Line terminators</a></h2>
  *
  * <p>
  * A <i>line terminator</i> is a one- or two-character sequence that marks the
@@ -847,18 +847,18 @@ import java.util.stream.StreamSupport;
  *
  * <ul>
  *
- * <li>A newline (line feed) character&nbsp;(<tt>'\n'</tt>),
+ * <li>A newline (line feed) character&nbsp;(<code>'\n'</code>),
  *
  * <li>A carriage-return character followed immediately by a newline
- * character&nbsp;(<tt>"\r\n"</tt>),
+ * character&nbsp;(<code>"\r\n"</code>),
  *
- * <li>A standalone carriage-return character&nbsp;(<tt>'\r'</tt>),
+ * <li>A standalone carriage-return character&nbsp;(<code>'\r'</code>),
  *
- * <li>A next-line character&nbsp;(<tt>'&#92;u0085'</tt>),
+ * <li>A next-line character&nbsp;(<code>'&#92;u0085'</code>),
  *
- * <li>A line-separator character&nbsp;(<tt>'&#92;u2028'</tt>), or
+ * <li>A line-separator character&nbsp;(<code>'&#92;u2028'</code>), or
  *
- * <li>A paragraph-separator character&nbsp;(<tt>'&#92;u2029</tt>).
+ * <li>A paragraph-separator character&nbsp;(<code>'&#92;u2029</code>).
  *
  * </ul>
  * <p>
@@ -866,43 +866,44 @@ import java.util.stream.StreamSupport;
  * recognized are newline characters.
  *
  * <p>
- * The regular expression <tt>.</tt> matches any character except a line
+ * The regular expression <code>.</code> matches any character except a line
  * terminator unless the {@link #DOTALL} flag is specified.
  *
  * <p>
- * By default, the regular expressions <tt>^</tt> and <tt>$</tt> ignore line
+ * By default, the regular expressions <code>^</code> and <code>$</code> ignore line
  * terminators and only match at the beginning and the end, respectively, of the
  * entire input sequence. If {@link #MULTILINE} mode is activated then
- * <tt>^</tt> matches at the beginning of input and after any line terminator
- * except at the end of input. When in {@link #MULTILINE} mode <tt>$</tt>
+ * <code>^</code> matches at the beginning of input and after any line terminator
+ * except at the end of input. When in {@link #MULTILINE} mode <code>$</code>
  * matches just before a line terminator or the end of the input sequence.
  *
- * <h3><a name="cg">Groups and capturing</a></h3>
+ * <h2><a>Groups and capturing</a></h2>
  *
- * <h4><a name="gnumber">Group number</a></h4>
+ * <h2><a>Group number</a></h2>
  * <p>
  * Capturing groups are numbered by counting their opening parentheses from left
- * to right. In the expression <tt>((A)(B(C)))</tt>, for example, there are four
+ * to right. In the expression <code>((A)(B(C)))</code>, for example, there are four
  * such groups:
  * </p>
  *
  * <blockquote>
- * <table cellpadding=1 cellspacing=0 summary="Capturing group numberings">
+ * <table  style="padding: 1px" >
+ * <caption></caption>
  * <tr>
  * <th>1&nbsp;&nbsp;&nbsp;&nbsp;</th>
- * <td><tt>((A)(B(C)))</tt></td>
+ * <td><code>((A)(B(C)))</code></td>
  * </tr>
  * <tr>
  * <th>2&nbsp;&nbsp;&nbsp;&nbsp;</th>
- * <td><tt>(A)</tt></td>
+ * <td><code>(A)</code></td>
  * </tr>
  * <tr>
  * <th>3&nbsp;&nbsp;&nbsp;&nbsp;</th>
- * <td><tt>(B(C))</tt></td>
+ * <td><code>(B(C))</code></td>
  * </tr>
  * <tr>
  * <th>4&nbsp;&nbsp;&nbsp;&nbsp;</th>
- * <td><tt>(C)</tt></td>
+ * <td><code>(C)</code></td>
  * </tr>
  * </table>
  * </blockquote>
@@ -916,73 +917,73 @@ import java.util.stream.StreamSupport;
  * subsequence may be used later in the expression, via a back reference, and
  * may also be retrieved from the matcher once the match operation is complete.
  *
- * <h4><a name="groupname">Group name</a></h4>
+ * <h2><a>Group name</a></h2>
  * <p>
  * A capturing group can also be assigned a "name", a
- * <tt>named-capturing group</tt>, and then be back-referenced later by the
+ * <code>named-capturing group</code>, and then be back-referenced later by the
  * "name". Group names are composed of the following characters. The first
- * character must be a <tt>letter</tt>.
+ * character must be a <code>letter</code>.
  *
  * <ul>
- * <li>The uppercase letters <tt>'A'</tt> through <tt>'Z'</tt> (
- * <tt>'&#92;u0041'</tt>&nbsp;through&nbsp;<tt>'&#92;u005a'</tt>),
- * <li>The lowercase letters <tt>'a'</tt> through <tt>'z'</tt> (
- * <tt>'&#92;u0061'</tt>&nbsp;through&nbsp;<tt>'&#92;u007a'</tt>),
- * <li>The digits <tt>'0'</tt> through <tt>'9'</tt> (<tt>'&#92;u0030'</tt>
- * &nbsp;through&nbsp;<tt>'&#92;u0039'</tt>),
+ * <li>The uppercase letters <code>'A'</code> through <code>'Z'</code> (
+ * <code>'&#92;u0041'</code>&nbsp;through&nbsp;<code>'&#92;u005a'</code>),
+ * <li>The lowercase letters <code>'a'</code> through <code>'z'</code> (
+ * <code>'&#92;u0061'</code>&nbsp;through&nbsp;<code>'&#92;u007a'</code>),
+ * <li>The digits <code>'0'</code> through <code>'9'</code> (<code>'&#92;u0030'</code>
+ * &nbsp;through&nbsp;<code>'&#92;u0039'</code>),
  * </ul>
  *
  * <p>
- * A <tt>named-capturing group</tt> is still numbered as described in
+ * A <code>named-capturing group</code> is still numbered as described in
  * <a href="#gnumber">Group number</a>.
  *
  * <p>
  * The captured input associated with a group is always the subsequence that the
  * group most recently matched. If a group is evaluated a second time because of
  * quantification then its previously-captured value, if any, will be retained
- * if the second evaluation fails. Matching the string <tt>"aba"</tt> against
- * the expression <tt>(a(b)?)+</tt>, for example, leaves group two set to
- * <tt>"b"</tt>. All captured input is discarded at the beginning of each match.
+ * if the second evaluation fails. Matching the string <code>"aba"</code> against
+ * the expression <code>(a(b)?)+</code>, for example, leaves group two set to
+ * <code>"b"</code>. All captured input is discarded at the beginning of each match.
  *
  * <p>
- * Groups beginning with <tt>(?</tt> are either pure, <i>non-capturing</i>
+ * Groups beginning with <code>(?</code> are either pure, <i>non-capturing</i>
  * groups that do not capture text and do not count towards the group total, or
  * <i>named-capturing</i> group.
  *
- * <h3>Unicode support</h3>
+ * <h2>Unicode support</h2>
  *
  * <p>
  * This class is in conformance with Level 1 of
  * <a href="http://www.unicode.org/reports/tr18/"><i>Unicode Technical Standard
  * #18: Unicode Regular Expression</i></a>, plus RL2.1 Canonical Equivalents.
  * <p>
- * <b>Unicode escape sequences</b> such as <tt>&#92;u2014</tt> in Java source
+ * <b>Unicode escape sequences</b> such as <code>&#92;u2014</code> in Java source
  * code are processed as described in section 3.3 of <cite>The Java&trade;
  * Language Specification</cite>. Such escape sequences are also implemented
  * directly by the regular-expression parser so that Unicode escapes can be used
  * in expressions that are read from files or from the keyboard. Thus the
- * strings <tt>"&#92;u2014"</tt> and <tt>"\\u2014"</tt>, while not equal,
+ * strings <code>"&#92;u2014"</code> and <code>"\\u2014"</code>, while not equal,
  * compile into the same pattern, which matches the character with hexadecimal
- * value <tt>0x2014</tt>.
+ * value <code>0x2014</code>.
  * <p>
  * A Unicode character can also be represented in a regular-expression by using
  * its <b>Hex notation</b>(hexadecimal code point value) directly as described
- * in construct <tt>&#92;x{...}</tt>, for example a supplementary character
- * U+2011F can be specified as <tt>&#92;x{2011F}</tt>, instead of two
+ * in construct <code>&#92;x{...}</code>, for example a supplementary character
+ * U+2011F can be specified as <code>&#92;x{2011F}</code>, instead of two
  * consecutive Unicode escape sequences of the surrogate pair
- * <tt>&#92;uD840</tt><tt>&#92;uDD1F</tt>.
+ * <code>&#92;uD840</code><code>&#92;uDD1F</code>.
  * <p>
  * Unicode scripts, blocks, categories and binary properties are written with
- * the <tt>\p</tt> and <tt>\P</tt> constructs as in Perl. <tt>\p{</tt>
- * <i>prop</i><tt>}</tt> matches if the input has the property <i>prop</i>,
- * while <tt>\P{</tt><i>prop</i><tt>}</tt> does not match if the input has that
+ * the <code>\p</code> and <code>\P</code> constructs as in Perl. <code>\p{</code>
+ * <i>prop</i><code>}</code> matches if the input has the property <i>prop</i>,
+ * while <code>\P{</code><i>prop</i><code>}</code> does not match if the input has that
  * property.
  * <p>
  * Scripts, blocks, categories and binary properties can be used both inside and
  * outside of a character class.
  *
  * <p>
- * <b><a name="usc">Scripts</a></b> are specified either with the prefix
+ * <b><a>Scripts</a></b> are specified either with the prefix
  * {@code Is}, as in {@code IsHiragana}, or by using the {@code script} keyword
  * (or its short form {@code sc})as in {@code script=Hiragana} or
  * {@code sc=Hiragana}.
@@ -993,7 +994,7 @@ import java.util.stream.StreamSupport;
  * UnicodeScript.forName}.
  *
  * <p>
- * <b><a name="ubc">Blocks</a></b> are specified with the prefix {@code In}, as
+ * <b><a>Blocks</a></b> are specified with the prefix {@code In}, as
  * in {@code InMongolian}, or by using the keyword {@code block} (or its short
  * form {@code blk}) as in {@code block=Mongolian} or {@code blk=Mongolian}.
  * <p>
@@ -1003,7 +1004,7 @@ import java.util.stream.StreamSupport;
  * .
  * <p>
  *
- * <b><a name="ucc">Categories</a></b> may be specified with the optional prefix
+ * <b><a>Categories</a></b> may be specified with the optional prefix
  * {@code Is}: Both {@code \p{L}} and {@code \p{IsL}} denote the category of
  * Unicode letters. Same as scripts and blocks, categories can also be specified
  * by using the keyword {@code general_category} (or its short form {@code gc})
@@ -1016,7 +1017,7 @@ import java.util.stream.StreamSupport;
  * defined in the Standard, both normative and informative.
  * <p>
  *
- * <b><a name="ubpc">Binary properties</a></b> are specified with the prefix
+ * <b><a>Binary properties</a></b> are specified with the prefix
  * {@code Is}, as in {@code IsAlphabetic}. The supported binary properties by
  * <code>Pattern</code> are
  * <ul>
@@ -1042,100 +1043,100 @@ import java.util.stream.StreamSupport;
  * <a href="http://www.unicode.org/reports/tr18/"><i>Unicode Regular Expression
  * </i></a>, when {@link #UNICODE_CHARACTER_CLASS} flag is specified.
  *
- * <table border="0" cellpadding="1" cellspacing="0" summary= "predefined and
- * posix character classes in Unicode mode">
- * <tr align="left">
- * <th align="left" id="predef_classes">Classes</th>
- * <th align="left" id="predef_matches">Matches</th>
+ * <table  style="padding: 1px" >
+ * <caption></caption>
+ * <tr style="text-align: left">
+ * <th style="text-align: left" id="predef_classes">Classes</th>
+ * <th style="text-align: left" id="predef_matches">Matches</th>
  * </tr>
  * <tr>
- * <td><tt>\p{Lower}</tt></td>
- * <td>A lowercase character:<tt>\p{IsLowercase}</tt></td>
+ * <td><code>\p{Lower}</code></td>
+ * <td>A lowercase character:<code>\p{IsLowercase}</code></td>
  * </tr>
  * <tr>
- * <td><tt>\p{Upper}</tt></td>
- * <td>An uppercase character:<tt>\p{IsUppercase}</tt></td>
+ * <td><code>\p{Upper}</code></td>
+ * <td>An uppercase character:<code>\p{IsUppercase}</code></td>
  * </tr>
  * <tr>
- * <td><tt>\p{ASCII}</tt></td>
- * <td>All ASCII:<tt>[\x00-\x7F]</tt></td>
+ * <td><code>\p{ASCII}</code></td>
+ * <td>All ASCII:<code>[\x00-\x7F]</code></td>
  * </tr>
  * <tr>
- * <td><tt>\p{Alpha}</tt></td>
- * <td>An alphabetic character:<tt>\p{IsAlphabetic}</tt></td>
+ * <td><code>\p{Alpha}</code></td>
+ * <td>An alphabetic character:<code>\p{IsAlphabetic}</code></td>
  * </tr>
  * <tr>
- * <td><tt>\p{Digit}</tt></td>
- * <td>A decimal digit character:<tt>p{IsDigit}</tt></td>
+ * <td><code>\p{Digit}</code></td>
+ * <td>A decimal digit character:<code>p{IsDigit}</code></td>
  * </tr>
  * <tr>
- * <td><tt>\p{Alnum}</tt></td>
- * <td>An alphanumeric character:<tt>[\p{IsAlphabetic}\p{IsDigit}]</tt></td>
+ * <td><code>\p{Alnum}</code></td>
+ * <td>An alphanumeric character:<code>[\p{IsAlphabetic}\p{IsDigit}]</code></td>
  * </tr>
  * <tr>
- * <td><tt>\p{Punct}</tt></td>
- * <td>A punctuation character:<tt>p{IsPunctuation}</tt></td>
+ * <td><code>\p{Punct}</code></td>
+ * <td>A punctuation character:<code>p{IsPunctuation}</code></td>
  * </tr>
  * <tr>
- * <td><tt>\p{Graph}</tt></td>
+ * <td><code>\p{Graph}</code></td>
  * <td>A visible character:
- * <tt>[^\p{IsWhite_Space}\p{gc=Cc}\p{gc=Cs}\p{gc=Cn}]</tt></td>
+ * <code>[^\p{IsWhite_Space}\p{gc=Cc}\p{gc=Cs}\p{gc=Cn}]</code></td>
  * </tr>
  * <tr>
- * <td><tt>\p{Print}</tt></td>
+ * <td><code>\p{Print}</code></td>
  * <td>A printable character: {@code [\p{Graph}\p{Blank}&&[^\p{Cntrl}]]}</td>
  * </tr>
  * <tr>
- * <td><tt>\p{Blank}</tt></td>
+ * <td><code>\p{Blank}</code></td>
  * <td>A space or a tab:
  * {@code [\p{IsWhite_Space}&&[^\p{gc=Zl}\p{gc=Zp}\x0a\x0b\x0c\x0d\x85]]}</td>
  * </tr>
  * <tr>
- * <td><tt>\p{Cntrl}</tt></td>
- * <td>A control character: <tt>\p{gc=Cc}</tt></td>
+ * <td><code>\p{Cntrl}</code></td>
+ * <td>A control character: <code>\p{gc=Cc}</code></td>
  * </tr>
  * <tr>
- * <td><tt>\p{XDigit}</tt></td>
- * <td>A hexadecimal digit: <tt>[\p{gc=Nd}\p{IsHex_Digit}]</tt></td>
+ * <td><code>\p{XDigit}</code></td>
+ * <td>A hexadecimal digit: <code>[\p{gc=Nd}\p{IsHex_Digit}]</code></td>
  * </tr>
  * <tr>
- * <td><tt>\p{Space}</tt></td>
- * <td>A whitespace character:<tt>\p{IsWhite_Space}</tt></td>
+ * <td><code>\p{Space}</code></td>
+ * <td>A whitespace character:<code>\p{IsWhite_Space}</code></td>
  * </tr>
  * <tr>
- * <td><tt>\d</tt></td>
- * <td>A digit: <tt>\p{IsDigit}</tt></td>
+ * <td><code>\d</code></td>
+ * <td>A digit: <code>\p{IsDigit}</code></td>
  * </tr>
  * <tr>
- * <td><tt>\D</tt></td>
- * <td>A non-digit: <tt>[^\d]</tt></td>
+ * <td><code>\D</code></td>
+ * <td>A non-digit: <code>[^\d]</code></td>
  * </tr>
  * <tr>
- * <td><tt>\s</tt></td>
- * <td>A whitespace character: <tt>\p{IsWhite_Space}</tt></td>
+ * <td><code>\s</code></td>
+ * <td>A whitespace character: <code>\p{IsWhite_Space}</code></td>
  * </tr>
  * <tr>
- * <td><tt>\S</tt></td>
- * <td>A non-whitespace character: <tt>[^\s]</tt></td>
+ * <td><code>\S</code></td>
+ * <td>A non-whitespace character: <code>[^\s]</code></td>
  * </tr>
  * <tr>
- * <td><tt>\w</tt></td>
+ * <td><code>\w</code></td>
  * <td>A word character:
- * <tt>[\p{Alpha}\p{gc=Mn}\p{gc=Me}\p{gc=Mc}\p{Digit}\p{gc=Pc}\p{IsJoin_Control}]</tt>
+ * <code>[\p{Alpha}\p{gc=Mn}\p{gc=Me}\p{gc=Mc}\p{Digit}\p{gc=Pc}\p{IsJoin_Control}]</code>
  * </td>
  * </tr>
  * <tr>
- * <td><tt>\W</tt></td>
- * <td>A non-word character: <tt>[^\w]</tt></td>
+ * <td><code>\W</code></td>
+ * <td>A non-word character: <code>[^\w]</code></td>
  * </tr>
  * </table>
  * <p>
- * <a name="jcc"> Categories that behave like the java.lang.Character boolean is
+ * <a> Categories that behave like the java.lang.Character boolean is
  * <i>methodname</i> methods (except for the deprecated ones) are available
- * through the same <tt>\p{</tt><i>prop</i><tt>}</tt> syntax where the specified
- * property has the name <tt>java<i>methodname</i></tt></a>.
+ * through the same <code>\p{</code><i>prop</i><code>}</code> syntax where the specified
+ * property has the name <code>java<i>methodname</i></code></a>.
  *
- * <h3>Comparison to Perl 5</h3>
+ * <h2>Comparison to Perl 5</h2>
  *
  * <p>
  * The <code>Pattern</code> engine performs traditional NFA-based matching with
@@ -1150,7 +1151,7 @@ import java.util.stream.StreamSupport;
  * <p>
  * Predefined character classes (Unicode character)
  * <p>
- * <tt>\X&nbsp;&nbsp;&nbsp;&nbsp;</tt>Match Unicode
+ * <code>\X&nbsp;&nbsp;&nbsp;&nbsp;</code>Match Unicode
  * <a href="http://www.unicode.org/reports/tr18/#Default_Grapheme_Clusters"> <i>
  * extended grapheme cluster</i></a>
  * </p>
@@ -1158,44 +1159,44 @@ import java.util.stream.StreamSupport;
  *
  * <li>
  * <p>
- * The backreference constructs, <tt>\g{</tt><i>n</i><tt>}</tt> for the <i>n</i>
- * <sup>th</sup><a href="#cg">capturing group</a> and <tt>\g{</tt><i>name</i>
- * <tt>}</tt> for <a href="#groupname">named-capturing group</a>.
+ * The backreference constructs, <code>\g{</code><i>n</i><code>}</code> for the <i>n</i>
+ * <sup>th</sup><a href="#cg">capturing group</a> and <code>\g{</code><i>name</i>
+ * <code>}</code> for <a href="#groupname">named-capturing group</a>.
  * </p>
  * </li>
  *
  * <li>
  * <p>
- * The named character construct, <tt>\N{</tt><i>name</i><tt>}</tt> for a
+ * The named character construct, <code>\N{</code><i>name</i><code>}</code> for a
  * Unicode character by its name.
  * </p>
  * </li>
  *
  * <li>
  * <p>
- * The conditional constructs <tt>(?(</tt><i>condition</i><tt>)</tt><i>X</i>
- * <tt>)</tt> and <tt>(?(</tt><i>condition</i><tt>)</tt><i>X</i><tt>|</tt>
- * <i>Y</i><tt>)</tt>,
+ * The conditional constructs <code>(?(</code><i>condition</i><code>)</code><i>X</i>
+ * <code>)</code> and <code>(?(</code><i>condition</i><code>)</code><i>X</i><code>|</code>
+ * <i>Y</i><code>)</code>,
  * </p>
  * </li>
  *
  * <li>
  * <p>
- * The embedded code constructs <tt>(?{</tt><i>code</i><tt>})</tt> and
- * <tt>(??{</tt><i>code</i><tt>})</tt>,
+ * The embedded code constructs <code>(?{</code><i>code</i><code>})</code> and
+ * <code>(??{</code><i>code</i><code>})</code>,
  * </p>
  * </li>
  *
  * <li>
  * <p>
- * The embedded comment syntax <tt>(?#comment)</tt>, and
+ * The embedded comment syntax <code>(?#comment)</code>, and
  * </p>
  * </li>
  *
  * <li>
  * <p>
- * The preprocessing operations <tt>\l</tt> <tt>&#92;u</tt>, <tt>\L</tt>, and
- * <tt>\U</tt>.
+ * The preprocessing operations <code>\l</code> <code>&#92;u</code>, <code>\L</code>, and
+ * <code>\U</code>.
  * </p>
  * </li>
  *
@@ -1223,11 +1224,11 @@ import java.util.stream.StreamSupport;
  *
  * <li>
  * <p>
- * In Perl, <tt>\1</tt> through <tt>\9</tt> are always interpreted as back
- * references; a backslash-escaped number greater than <tt>9</tt> is treated as
+ * In Perl, <code>\1</code> through <code>\9</code> are always interpreted as back
+ * references; a backslash-escaped number greater than <code>9</code> is treated as
  * a back reference if at least that many subexpressions exist, otherwise it is
  * interpreted, if possible, as an octal escape. In this class octal escapes
- * must always begin with a zero. In this class, <tt>\1</tt> through <tt>\9</tt>
+ * must always begin with a zero. In this class, <code>\1</code> through <code>\9</code>
  * are always interpreted as back references, and a larger number is accepted as
  * a back reference if at least that many subexpressions exist at that point in
  * the regular expression, otherwise the parser will drop digits until the
@@ -1238,7 +1239,7 @@ import java.util.stream.StreamSupport;
  *
  * <li>
  * <p>
- * Perl uses the <tt>g</tt> flag to request a match that resumes where the last
+ * Perl uses the <code>g</code> flag to request a match that resumes where the last
  * match left off. This functionality is provided implicitly by the
  * {@link Matcher} class: Repeated invocations of the {@link Matcher#find find}
  * method will resume where the last match left off, unless the matcher is
@@ -1294,12 +1295,12 @@ public final class Pattern implements java.io.Serializable {
 	 * Enables Unix lines mode.
 	 *
 	 * <p>
-	 * In this mode, only the <tt>'\n'</tt> line terminator is recognized in the
-	 * behavior of <tt>.</tt>, <tt>^</tt>, and <tt>$</tt>.
+	 * In this mode, only the <code>'\n'</code> line terminator is recognized in the
+	 * behavior of <code>.</code>, <code>^</code>, and <code>$</code>.
 	 *
 	 * <p>
 	 * Unix lines mode can also be enabled via the embedded flag
-	 * expression&nbsp;<tt>(?d)</tt>.
+	 * expression&nbsp;<code>(?d)</code>.
 	 */
 	public static final int UNIX_LINES = 0x01;
 
@@ -1314,7 +1315,7 @@ public final class Pattern implements java.io.Serializable {
 	 *
 	 * <p>
 	 * Case-insensitive matching can also be enabled via the embedded flag
-	 * expression&nbsp;<tt>(?i)</tt>.
+	 * expression&nbsp;<code>(?i)</code>.
 	 *
 	 * <p>
 	 * Specifying this flag may impose a slight performance penalty.
@@ -1327,11 +1328,11 @@ public final class Pattern implements java.io.Serializable {
 	 *
 	 * <p>
 	 * In this mode, whitespace is ignored, and embedded comments starting with
-	 * <tt>#</tt> are ignored until the end of a line.
+	 * <code>#</code> are ignored until the end of a line.
 	 *
 	 * <p>
 	 * Comments mode can also be enabled via the embedded flag expression&nbsp;
-	 * <tt>(?x)</tt>.
+	 * <code>(?x)</code>.
 	 */
 	public static final int COMMENTS = 0x04;
 
@@ -1339,14 +1340,14 @@ public final class Pattern implements java.io.Serializable {
 	 * Enables multiline mode.
 	 *
 	 * <p>
-	 * In multiline mode the expressions <tt>^</tt> and <tt>$</tt> match just after
+	 * In multiline mode the expressions <code>^</code> and <code>$</code> match just after
 	 * or just before, respectively, a line terminator or the end of the input
 	 * sequence. By default these expressions only match at the beginning and the
 	 * end of the entire input sequence.
 	 *
 	 * <p>
 	 * Multiline mode can also be enabled via the embedded flag expression&nbsp;
-	 * <tt>(?m)</tt>.
+	 * <code>(?m)</code>.
 	 * </p>
 	 */
 	public static final int MULTILINE = 0x08;
@@ -1374,12 +1375,12 @@ public final class Pattern implements java.io.Serializable {
 	 * Enables dotall mode.
 	 *
 	 * <p>
-	 * In dotall mode, the expression <tt>.</tt> matches any character, including a
+	 * In dotall mode, the expression <code>.</code> matches any character, including a
 	 * line terminator. By default this expression does not match line terminators.
 	 *
 	 * <p>
 	 * Dotall mode can also be enabled via the embedded flag expression&nbsp;
-	 * <tt>(?s)</tt>. (The <tt>s</tt> is a mnemonic for "single-line" mode, which is
+	 * <code>(?s)</code>. (The <code>s</code> is a mnemonic for "single-line" mode, which is
 	 * what this is called in Perl.)
 	 * </p>
 	 */
@@ -1396,7 +1397,7 @@ public final class Pattern implements java.io.Serializable {
 	 *
 	 * <p>
 	 * Unicode-aware case folding can also be enabled via the embedded flag
-	 * expression&nbsp;<tt>(?u)</tt>.
+	 * expression&nbsp;<code>(?u)</code>.
 	 *
 	 * <p>
 	 * Specifying this flag may impose a performance penalty.
@@ -1417,7 +1418,7 @@ public final class Pattern implements java.io.Serializable {
 	 * Properties</i>.
 	 * <p>
 	 * The UNICODE_CHARACTER_CLASS mode can also be enabled via the embedded flag
-	 * expression&nbsp;<tt>(?U)</tt>.
+	 * expression&nbsp;<code>(?U)</code>.
 	 * <p>
 	 * The flag implies UNICODE_CASE, that is, it enables Unicode-aware case
 	 * folding.
@@ -1573,7 +1574,7 @@ public final class Pattern implements java.io.Serializable {
 	 *         flags
 	 * @throws IllegalArgumentException
 	 *             If bit values other than those corresponding to the defined match
-	 *             flags are set in <tt>flags</tt>
+	 *             flags are set in <code>flags</code>
 	 *
 	 * @throws PatternSyntaxException
 	 *             If the expression's syntax is invalid
@@ -1720,7 +1721,7 @@ public final class Pattern implements java.io.Serializable {
 	 * leading substring.
 	 *
 	 * <p>
-	 * The <tt>limit</tt> parameter controls the number of times the pattern is
+	 * The <code>limit</code> parameter controls the number of times the pattern is
 	 * applied and therefore affects the length of the resulting array. If the limit
 	 * <i>n</i> is greater than zero then the pattern will be applied at most
 	 * <i>n</i>&nbsp;-&nbsp;1 times, the array's length will be no greater than
@@ -1731,46 +1732,46 @@ public final class Pattern implements java.io.Serializable {
 	 * the array can have any length, and trailing empty strings will be discarded.
 	 *
 	 * <p>
-	 * The input <tt>"boo:and:foo"</tt>, for example, yields the following results
+	 * The input <code>"boo:and:foo"</code>, for example, yields the following results
 	 * with these parameters:
 	 *
 	 * <blockquote>
-	 * <table cellpadding=1 cellspacing=0 summary= "Split examples showing regex,
-	 * limit, and result">
+	 * <table  style="padding: 1px" >
+	 * <caption></caption>
 	 * <tr>
-	 * <th align="left"><i>Regex&nbsp;&nbsp;&nbsp;&nbsp;</i></th>
-	 * <th align="left"><i>Limit&nbsp;&nbsp;&nbsp;&nbsp;</i></th>
-	 * <th align="left"><i>Result&nbsp;&nbsp;&nbsp;&nbsp;</i></th>
+	 * <th style="text-align: left"><i>Regex&nbsp;&nbsp;&nbsp;&nbsp;</i></th>
+	 * <th style="text-align: left"><i>Limit&nbsp;&nbsp;&nbsp;&nbsp;</i></th>
+	 * <th style="text-align: left"><i>Result&nbsp;&nbsp;&nbsp;&nbsp;</i></th>
 	 * </tr>
 	 * <tr>
-	 * <td align=center>:</td>
-	 * <td align=center>2</td>
-	 * <td><tt>{ "boo", "and:foo" }</tt></td>
+	 * <td style="text-align: center">:</td>
+	 * <td style="text-align: center">2</td>
+	 * <td><code>{ "boo", "and:foo" }</code></td>
 	 * </tr>
 	 * <tr>
-	 * <td align=center>:</td>
-	 * <td align=center>5</td>
-	 * <td><tt>{ "boo", "and", "foo" }</tt></td>
+	 * <td style="text-align: center">:</td>
+	 * <td style="text-align: center">5</td>
+	 * <td><code>{ "boo", "and", "foo" }</code></td>
 	 * </tr>
 	 * <tr>
-	 * <td align=center>:</td>
-	 * <td align=center>-2</td>
-	 * <td><tt>{ "boo", "and", "foo" }</tt></td>
+	 * <td style="text-align: center">:</td>
+	 * <td style="text-align: center">-2</td>
+	 * <td><code>{ "boo", "and", "foo" }</code></td>
 	 * </tr>
 	 * <tr>
-	 * <td align=center>o</td>
-	 * <td align=center>5</td>
-	 * <td><tt>{ "b", "", ":and:f", "", "" }</tt></td>
+	 * <td style="text-align: center">o</td>
+	 * <td style="text-align: center">5</td>
+	 * <td><code>{ "b", "", ":and:f", "", "" }</code></td>
 	 * </tr>
 	 * <tr>
-	 * <td align=center>o</td>
-	 * <td align=center>-2</td>
-	 * <td><tt>{ "b", "", ":and:f", "", "" }</tt></td>
+	 * <td style="text-align: center">o</td>
+	 * <td style="text-align: center">-2</td>
+	 * <td><code>{ "b", "", ":and:f", "", "" }</code></td>
 	 * </tr>
 	 * <tr>
-	 * <td align=center>o</td>
-	 * <td align=center>0</td>
-	 * <td><tt>{ "b", "", ":and:f" }</tt></td>
+	 * <td style="text-align: center">o</td>
+	 * <td style="text-align: center">0</td>
+	 * <td><code>{ "b", "", ":and:f" }</code></td>
 	 * </tr>
 	 * </table>
 	 * </blockquote>
@@ -1836,23 +1837,23 @@ public final class Pattern implements java.io.Serializable {
 	 * </p>
 	 *
 	 * <p>
-	 * The input <tt>"boo:and:foo"</tt>, for example, yields the following results
+	 * The input <code>"boo:and:foo"</code>, for example, yields the following results
 	 * with these expressions:
 	 *
 	 * <blockquote>
-	 * <table cellpadding=1 cellspacing=0 summary= "Split examples showing regex and
-	 * result">
+	 * <table  style="padding: 1px" >
+	 * <caption></caption>
 	 * <tr>
-	 * <th align="left"><i>Regex&nbsp;&nbsp;&nbsp;&nbsp;</i></th>
-	 * <th align="left"><i>Result</i></th>
+	 * <th style="text-align: left"><i>Regex&nbsp;&nbsp;&nbsp;&nbsp;</i></th>
+	 * <th style="text-align: left"><i>Result</i></th>
 	 * </tr>
 	 * <tr>
-	 * <td align=center>:</td>
-	 * <td><tt>{ "boo", "and", "foo" }</tt></td>
+	 * <td style="text-align: center">:</td>
+	 * <td><code>{ "boo", "and", "foo" }</code></td>
 	 * </tr>
 	 * <tr>
-	 * <td align=center>o</td>
-	 * <td><tt>{ "b", "", ":and:f" }</tt></td>
+	 * <td style="text-align: center">o</td>
+	 * <td><code>{ "b", "", ":and:f" }</code></td>
 	 * </tr>
 	 * </table>
 	 * </blockquote>

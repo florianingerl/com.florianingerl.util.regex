@@ -4,7 +4,7 @@
 
 	<groupId>com.github.florianingerl.util</groupId>
 	<artifactId>regex</artifactId>
-	<version>1.1.10</version>
+	<version>1.1.11</version>
 	<packaging>jar</packaging>
 
 
@@ -35,20 +35,21 @@
 		</developer>
 	</developers>
 
+
 	<distributionManagement>
 		<snapshotRepository>
 			<id>ossrh</id>
 			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
 		</snapshotRepository>
-	</distributionManagement>
+	</distributionManagement> 
+
+	
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<gpg.keyname>6919F5E8</gpg.keyname>
 	</properties>
 
 	<dependencies>
-		<!-- https://mvnrepository.com/artifact/junit/junit -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -100,6 +101,9 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
@@ -125,17 +129,17 @@
 				<executions>
 					<execution>
 						<id>sign-artifacts</id>
-						<phase>deploy</phase>
+						<phase>verify</phase>
 						<goals>
 							<goal>sign</goal>
 						</goals>
-						<configuration>
-							<keyname>${gpg.keyname}</keyname>
-							<passphraseServerId>${gpg.keyname}</passphraseServerId>
-						</configuration>
+						<!-- If there is only one key, this one key is used
+						You can verify that there is only one key by
+						gpg list-keys -->
 					</execution>
 				</executions>
 			</plugin>
+
 
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
@@ -145,9 +149,10 @@
 				<configuration>
 					<serverId>ossrh</serverId>
 					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
-					<autoReleaseAfterClose>false</autoReleaseAfterClose>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
 				</configuration>
 			</plugin>
+
 
 		</plugins>
 
